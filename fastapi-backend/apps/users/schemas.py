@@ -21,11 +21,17 @@ class UserRegistrationSchema(BaseModel):
     @classmethod
     def validate_password_length(cls, v: str) -> str:
         """Validate password length (bcrypt has 72-byte limit)"""
+        if not v:
+            return v
         if isinstance(v, str):
             password_bytes = v.encode('utf-8')
             if len(password_bytes) > 72:
-                # Truncate to 72 bytes to prevent bcrypt error
-                return password_bytes[:72].decode('utf-8', errors='ignore')
+                # Truncate to exactly 72 bytes
+                # Remove any incomplete UTF-8 sequences at the end
+                truncated_bytes = password_bytes[:72]
+                while truncated_bytes and (truncated_bytes[-1] & 0x80) and not (truncated_bytes[-1] & 0x40):
+                    truncated_bytes = truncated_bytes[:-1]
+                return truncated_bytes.decode('utf-8', errors='ignore')
         return v
 
 
@@ -68,12 +74,17 @@ class PasswordResetConfirmSchema(BaseModel):
     @classmethod
     def validate_password_length(cls, v: str) -> str:
         """Validate password length (bcrypt has 72-byte limit)"""
+        if not v:
+            return v
         if isinstance(v, str):
             password_bytes = v.encode('utf-8')
             if len(password_bytes) > 72:
-                # Truncate to 72 bytes to prevent bcrypt error
-                # Note: This is a workaround - ideally passwords should be < 72 bytes
-                return password_bytes[:72].decode('utf-8', errors='ignore')
+                # Truncate to exactly 72 bytes
+                # Remove any incomplete UTF-8 sequences at the end
+                truncated_bytes = password_bytes[:72]
+                while truncated_bytes and (truncated_bytes[-1] & 0x80) and not (truncated_bytes[-1] & 0x40):
+                    truncated_bytes = truncated_bytes[:-1]
+                return truncated_bytes.decode('utf-8', errors='ignore')
         return v
 
 
@@ -93,11 +104,17 @@ class UserUpdateSchema(BaseModel):
     @classmethod
     def validate_password_length(cls, v: Optional[str]) -> Optional[str]:
         """Validate password length (bcrypt has 72-byte limit)"""
-        if v and isinstance(v, str):
+        if not v:
+            return v
+        if isinstance(v, str):
             password_bytes = v.encode('utf-8')
             if len(password_bytes) > 72:
-                # Truncate to 72 bytes to prevent bcrypt error
-                return password_bytes[:72].decode('utf-8', errors='ignore')
+                # Truncate to exactly 72 bytes, ensuring we don't break UTF-8 encoding
+                truncated_bytes = password_bytes[:72]
+                # Remove any incomplete UTF-8 sequences at the end
+                while truncated_bytes and truncated_bytes[-1] & 0x80 and not (truncated_bytes[-1] & 0x40):
+                    truncated_bytes = truncated_bytes[:-1]
+                return truncated_bytes.decode('utf-8', errors='ignore')
         return v
 
 

@@ -18,14 +18,34 @@ def hash_password(password: str) -> str:
     """
     Hash a password using bcrypt.
     
-    Note: bcrypt has a 72-byte limit. Passwords longer than 72 bytes
+    Note: bcrypt has a strict 72-byte limit. Passwords longer than 72 bytes
     will be truncated to prevent errors.
     """
-    # Bcrypt has a 72-byte limit, truncate if necessary
-    if isinstance(password, str):
-        password_bytes = password.encode('utf-8')
-        if len(password_bytes) > 72:
-            password = password_bytes[:72].decode('utf-8', errors='ignore')
+    if not password:
+        raise ValueError("Password cannot be empty")
+    
+    # Ensure password is a string
+    if isinstance(password, bytes):
+        password = password.decode('utf-8', errors='ignore')
+    
+    # Bcrypt has a strict 72-byte limit, truncate if necessary
+    # Convert to bytes to check actual byte length (not character length)
+    password_bytes = password.encode('utf-8')
+    if len(password_bytes) > 72:
+        # Truncate to exactly 72 bytes
+        # Remove any incomplete UTF-8 sequences at the end to avoid decode errors
+        truncated_bytes = password_bytes[:72]
+        # Remove trailing bytes that are part of incomplete UTF-8 sequences
+        while truncated_bytes and (truncated_bytes[-1] & 0x80) and not (truncated_bytes[-1] & 0x40):
+            truncated_bytes = truncated_bytes[:-1]
+        password = truncated_bytes.decode('utf-8', errors='ignore')
+    
+    # Final safety check - ensure byte length is exactly <= 72
+    final_bytes = password.encode('utf-8')
+    if len(final_bytes) > 72:
+        # Last resort: truncate and decode
+        password = final_bytes[:72].decode('utf-8', errors='ignore')
+    
     return pwd_context.hash(password)
 
 
