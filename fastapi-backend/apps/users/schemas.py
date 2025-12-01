@@ -2,7 +2,7 @@
 User Pydantic Schemas for Request/Response
 """
 from typing import Optional
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 from apps.users.models import UserRole
 
 
@@ -16,6 +16,17 @@ class UserRegistrationSchema(BaseModel):
     last_name: str
     phone_number: Optional[str] = None
     role: UserRole = UserRole.USER
+    
+    @field_validator('password')
+    @classmethod
+    def validate_password_length(cls, v: str) -> str:
+        """Validate password length (bcrypt has 72-byte limit)"""
+        if isinstance(v, str):
+            password_bytes = v.encode('utf-8')
+            if len(password_bytes) > 72:
+                # Truncate to 72 bytes to prevent bcrypt error
+                return password_bytes[:72].decode('utf-8', errors='ignore')
+        return v
 
 
 class UserLoginSchema(BaseModel):
@@ -52,6 +63,18 @@ class PasswordResetConfirmSchema(BaseModel):
     email: EmailStr
     otp: str
     new_password: str
+    
+    @field_validator('new_password')
+    @classmethod
+    def validate_password_length(cls, v: str) -> str:
+        """Validate password length (bcrypt has 72-byte limit)"""
+        if isinstance(v, str):
+            password_bytes = v.encode('utf-8')
+            if len(password_bytes) > 72:
+                # Truncate to 72 bytes to prevent bcrypt error
+                # Note: This is a workaround - ideally passwords should be < 72 bytes
+                return password_bytes[:72].decode('utf-8', errors='ignore')
+        return v
 
 
 class UserUpdateSchema(BaseModel):
@@ -65,6 +88,17 @@ class UserUpdateSchema(BaseModel):
     role: Optional[UserRole] = None
     is_active: Optional[bool] = None
     is_verified: Optional[bool] = None
+    
+    @field_validator('password')
+    @classmethod
+    def validate_password_length(cls, v: Optional[str]) -> Optional[str]:
+        """Validate password length (bcrypt has 72-byte limit)"""
+        if v and isinstance(v, str):
+            password_bytes = v.encode('utf-8')
+            if len(password_bytes) > 72:
+                # Truncate to 72 bytes to prevent bcrypt error
+                return password_bytes[:72].decode('utf-8', errors='ignore')
+        return v
 
 
 # Response Schemas
