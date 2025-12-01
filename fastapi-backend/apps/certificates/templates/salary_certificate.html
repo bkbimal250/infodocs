@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salary Certificate - Palm Atlantis Spa</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"
+        rel="stylesheet">
+
+    <style>
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        body {
+            background: #e8e8e8;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .certificate-container {
+            width: 210mm;
+            height: 297mm;
+            margin: 10px auto;
+            background: #ffffff;
+            position: relative;
+            box-shadow: 0 0 25px rgba(0, 0, 0, 0.15);
+            padding: 55px 60px;
+            border: 12px solid #d4a955;
+        }
+
+        .header-title {
+            font-size: 3.3rem;
+            font-weight: 700;
+            color: #c98d54;
+            text-align: center;
+            letter-spacing: 4px;
+            margin-bottom: 5px;
+        }
+
+        .header-subtitle {
+            font-weight: bold;
+            font-size: 1.4rem;
+            color: #b35d51;
+            letter-spacing: 2px;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .date-text {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: -15px;
+            text-align: right;
+        }
+
+        .section-title {
+            font-size: 1.7rem;
+            font-weight: 700;
+            text-decoration: underline;
+            text-align: center;
+            margin: 15px 0;
+        }
+
+        .certificate-body {
+            font-size: 1.1rem;
+            line-height: 1.9;
+            text-align: justify;
+        }
+
+        .salary-table {
+            margin: 10px auto;
+            max-width: 420px;
+            border: 2px solid #333;
+        }
+
+        .salary-table th,
+        .salary-table td {
+            border: 2px solid #333 !important;
+            padding: 10px 15px;
+            font-size: 1.05rem;
+            font-weight: 600;
+        }
+
+        .footer-note {
+            font-size: 1.05rem;
+            margin-top: 15px;
+        }
+
+        .signature-block {
+            margin-top: 40px;
+        }
+
+        .signature-name {
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-top: -63px;
+        }
+
+
+        .signature-image {
+            width: 200px;
+            margin-left: -36px;
+            height: auto;
+            margin-top: -67px;
+        }
+
+
+        .contact-section {
+            position: absolute;
+            bottom: 20px;
+            right: 40px;
+            font-size: 1rem;
+            padding: 18px 25px;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .contact-icon {
+            font-size: 1.3rem;
+            margin-right: 10px;
+            color: #ffd479;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="certificate-container">
+
+        <!-- Header -->
+        <div class="header-title">{{ spa_name or 'Spa / Company Name' }}</div>
+        <div class="header-subtitle">SALARY CERTIFICATE</div>
+
+        <div class="date-text">DATE: <strong>{{ date }}</strong></div>
+
+        <div class="section-title">TO WHOM IT MAY CONCERN</div>
+
+        <!-- Main Body -->
+        <div class="certificate-body">
+            <p>
+                This is to certify <strong>{{ manager_name }}</strong> is working as
+                <strong>{{ position }}</strong> at <strong>{{ spa_name or 'our organization' }}</strong>,
+                located at {{ spa_address }}. The Monthly Net Salary is
+                <strong>Rs. {{ monthly_salary }}{% if monthly_salary_in_words %} ({{ monthly_salary_in_words }}){% elif salary_in_words %} ({{ salary_in_words }}){% endif %}</strong>.
+                Joining date: <strong>{{ joining_date }}</strong>.
+            </p>
+        </div>
+
+        <!-- Salary Table -->
+        <div class="salary-table">
+            <table class="table table-bordered mb-0">
+                <thead>
+                    <tr>
+                        <th>MONTH</th>
+                        <th>SALARY</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if salary_breakdown %}
+                        {{ salary_breakdown | safe }}
+                    {% else %}
+                        <tr>
+                            <td>—</td>
+                            <td>—</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+
+            </table>
+        </div>
+
+        <!-- Footer note -->
+        <div class="footer-note">
+            This certificate may be used for loan applications and other official purposes.
+        </div>
+
+        <!-- Signature -->
+        <div class="signature-block">
+            <div>Best regards,</div>
+            <img src="{{ manager_signature or signatory_signature or '/Bhim Sir signature.png' }}" alt="Signature" class="signature-image">
+            <div class="signature-name">{{ signatory_name or manager_name or 'Authorized Signatory' }}</div>
+        </div>
+
+        <!-- Contact box -->
+        <div class="contact-section">
+            <div class="contact-item">
+                <i class="bi bi-telephone-fill contact-icon"></i>
+                <!-- spa phone and alternate number -->
+                <div><strong>{{ spa_phone }}{% if spa_phone1 %} | {{ spa_phone1 }}{% endif %}</strong></div>
+            </div>
+
+            <div class="contact-item">
+                <i class="bi bi-geo-alt-fill contact-icon"></i>
+                <div>
+                    <strong>
+                        <!-- make sure spa address show -->
+                        {{ spa_address }}
+                    </strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>

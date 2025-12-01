@@ -1,0 +1,114 @@
+############################
+# Global ignores
+############################
+
+# OS junk
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.swp
+*.swo
+
+# Editor / IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# Cursor / tooling
+.cursor/
+terminals/
+
+
+############################
+# Node / Vite client
+############################
+
+Client/node_modules/
+Client/dist/
+Client/.vite/
+Client/.eslintcache
+Client/coverage/
+
+
+############################
+# Python backend
+############################
+
+fastapi-backend/venv/
+fastapi-backend/__pycache__/
+fastapi-backend/**/__pycache__/
+fastapi-backend/*.log
+
+# Test artifacts
+fastapi-backend/.pytest_cache/
+fastapi-backend/.mypy_cache/
+fastapi-backend/.coverage
+fastapi-backend/htmlcov/
+
+# Test files and scripts
+fastapi-backend/test_*.py
+fastapi-backend/tests/
+fastapi-backend/debug_*.py
+fastapi-backend/*_test.py
+fastapi-backend/TEST_*.md
+fastapi-backend/TEST_RESULTS.md
+
+# Migration and setup scripts
+fastapi-backend/add_*.py
+fastapi-backend/create_*.py
+fastapi-backend/drop_*.py
+fastapi-backend/fix_*.py
+fastapi-backend/init_db.py
+fastapi-backend/mongo_ping.py
+fastapi-backend/tmp_*.py
+fastapi-backend/try_*.py
+
+# Client test files
+Client/**/*.test.js
+Client/**/*.test.jsx
+Client/**/*.spec.js
+Client/**/*.spec.jsx
+Client/__tests__/
+Client/**/__tests__/
+
+
+############################
+# Generated / uploaded data
+############################
+
+# Uploaded files & media
+fastapi-backend/uploads/
+fastapi-backend/media/certificates/
+
+
+############################
+# Environment files
+############################
+
+# Backend .env files
+fastapi-backend/.env
+fastapi-backend/.env.local
+fastapi-backend/.env.production
+fastapi-backend/.env.development
+
+# Frontend .env files
+Client/.env
+Client/.env.local
+Client/.env.production
+Client/.env.development
+
+# Keep .env.example files (they are templates)
+# !fastapi-backend/.env.example
+# !Client/.env.example
+
+
+############################
+# Project-level
+############################
+
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Experience Certificate</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+    <style>
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 210mm;
+            height: 297mm;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: Georgia, 'Times New Roman', serif;
+            background: #fdfbf7;
+            padding: 20mm;
+            color: #222;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 297mm;
+        }
+
+        /* Elegant border box - centered and fits A4 */
+        .certificate-border {
+            border: 6px double #b78a6f;
+            padding: 20px;
+            width: 100%;
+            max-width: 170mm;
+            margin: 0 auto;
+            background: white;
+            position: relative;
+            height: fit-content;
+            min-height: 257mm;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .inner-border {
+            border: 2px solid #d4b8a4;
+            padding: 25px 30px 50px 30px;
+            position: relative;
+            background: #fffaf6;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+
+        .company-name {
+            font-size: 38px;
+            font-weight: 700;
+            color: #7a4c32;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            line-height: 0.9;
+        }
+
+        .company-branch {
+            font-size: 22px;
+            letter-spacing: 1px;
+            color: #7a4c32;
+        }
+
+        .date {
+            font-size: 13px;
+            font-weight: bold;
+            color: #7a4c32;
+            margin-top: 20px;
+        }
+
+        .certificate-title {
+            text-align: center;
+            font-size: 24px;
+            font-weight: 700;
+            color: #7a4c32;
+            letter-spacing: 2px;
+            margin: 0 0 6px 0;
+        }
+
+        .to-whom {
+            text-align: center;
+            font-size: 18px;
+            font-weight: 700;
+            text-decoration: underline;
+            margin: 18px 0 15px 0;
+            color: #222;
+        }
+
+        .content {
+            line-height: 1.7;
+            font-size: 16px;
+            text-align: justify;
+            margin-bottom: 12px;
+            color: #222;
+            flex: 1;
+        }
+
+        .content p {
+            margin-bottom: 10px;
+        }
+
+        .closing {
+            margin-top: 4px;
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .signature-section {
+            margin-top: 20px;
+            display: flex;
+            justify-content: flex-start;
+            gap: 50px;
+        }
+
+        .signature-block img {
+            width: 130px;
+            height: 160px;
+            object-fit: contain;
+        }
+
+        .signature-name {
+            font-weight: bold;
+            font-size: 15px;
+            margin-top: 8px;
+            color: #000;
+        }
+
+        /* Footer contact info elegantly placed at bottom-right */
+        .footer-contact {
+            position: absolute;
+            bottom: 25px;
+            right: 30px;
+            text-align: right;
+            font-size: 12px;
+            color: #7a4c32;
+            line-height: 1.5;
+            max-width: 300px;
+        }
+
+        .footer-contact i {
+            margin-right: 6px;
+            color: #7a4c32;
+        }
+
+        /* Print optimizations */
+        @media print {
+            body {
+                padding: 0;
+                margin: 0;
+            }
+            
+            .certificate-border {
+                margin: 0;
+                max-width: 100%;
+                width: 100%;
+                height: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="certificate-border">
+        <div class="inner-border">
+
+            <!-- HEADER -->
+            <div class="header">
+                <div>
+                    <div class="company-name">{{ spa.name }}</div>
+                    <div class="company-branch">{{ spa.area }}</div>
+                </div>
+                <div class="date">DATE: {{ date }}</div>
+            </div>
+
+            <!-- TITLE -->
+            <div class="certificate-title">EXPERIENCE CERTIFICATE</div>
+
+            <div class="to-whom">TO WHOM IT MAY CONCERN</div>
+
+            <!-- CONTENT -->
+            <div class="content">
+                <p>
+                    This is to certify that <strong>{{ candidate_name }}</strong> has been working as 
+                    <strong>{{ position }}</strong> at <strong>{{ spa.name }}</strong>
+                    [{{ spa.address }}] from 
+                    <strong>{{ start_date }}</strong> to <strong>{{ end_date }}</strong>for a duration of <strong>{{ duration }}</strong> at a monthly Salary of 
+                    <strong>Rs. {{ salary }}.</strong>
+                </p>
+
+                <p>
+                    <strong>{{ candidate_name }} </strong>has been an Excellent <strong>{{ position }}</strong> from day one, fulfilling all her duties professionally.
+                    We hope to look forward to her continued dedication in work.
+                   
+                </p>
+            </div>
+
+            <!-- CLOSING -->
+            <div class="closing">Best regards,</div>
+
+            <!-- SIGNATURE -->
+            <div class="signature-section">
+                <div class="signature-block">
+                    <img src="{{ certificate_signatory_image }}" alt="Signature">
+                    <div class="signature-name">Bhimasingh Naik</div>
+                </div>
+            </div>
+
+            <!-- FOOTER -->
+            <div class="footer-contact">
+                <div><i class="bi bi-telephone-fill"></i> {{spa.phone_number}}/ {{spa.alternate_number}}</div>
+                <div><i class="bi bi-geo-alt-fill"></i> 
+                    {{spa.address}}
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</body>
+
+</html>
