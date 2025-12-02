@@ -198,7 +198,7 @@ def prepare_certificate_data(template: CertificateTemplate, certificate_data: Di
     # Determine image URLs based on context
     if use_http_urls:
         # For browser preview - use HTTP URLs
-        base_url = certificate_data.get("base_url", "http://localhost:8000")
+        base_url = certificate_data.get("base_url", "http://localhost:8009")
         background_image = certificate_data.get("certificate_background_image") or f"{base_url}/static/images/spacertificate.png"
         stamp_image = certificate_data.get("certificate_stamp_image") or f"{base_url}/static/images/Spa Certificate Stamp.png"
         signatory_image = certificate_data.get("certificate_signatory_image") or f"{base_url}/static/images/Spa Certificate Signatory.png"
@@ -243,7 +243,7 @@ def prepare_certificate_data(template: CertificateTemplate, certificate_data: Di
     # For SPA_THERAPIST, handle image paths/URLs
     if template.category == CertificateCategory.SPA_THERAPIST:
         from config.settings import settings
-        base_url = certificate_data.get("base_url", "http://localhost:8000")
+        base_url = certificate_data.get("base_url", "http://localhost:8009")
         media_base_path = Path(settings.UPLOAD_DIR).resolve()
         media_base_path_str = str(media_base_path).replace("\\", "/")
         

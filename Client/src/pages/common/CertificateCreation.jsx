@@ -80,20 +80,20 @@ const CertificateCreation = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-[var(--color-bg-secondary)] py-8 px-4">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Create Certificate</h1>
+        <h1 className="text-3xl font-bold text-[var(--color-text-primary)] mb-8">Create Certificate</h1>
 
         {/* Template Selection */}
         {!selectedTemplate && (
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <div className="bg-[var(--color-bg-primary)] rounded-lg shadow p-6 mb-6">
             <h2 className="text-xl font-semibold mb-4">Select a Certificate Template</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {templates.map((template) => (
                 <div
                   key={template.id}
                   onClick={() => handleTemplateSelect(template)}
-                  className="border rounded-lg p-4 cursor-pointer hover:border-blue-500 hover:shadow-md transition"
+                  className="border border-[var(--color-border-primary)] rounded-lg p-4 cursor-pointer hover:border-[var(--color-primary)] hover:shadow-md transition"
                 >
                   {template.template_image && (
                     <img
@@ -102,8 +102,8 @@ const CertificateCreation = () => {
                       className="w-full h-32 object-cover rounded mb-2"
                     />
                   )}
-                  <h3 className="font-semibold text-gray-900">{template.name}</h3>
-                  <p className="text-sm text-gray-600 mt-1">{template.description}</p>
+                  <h3 className="font-semibold text-[var(--color-text-primary)]">{template.name}</h3>
+                  <p className="text-sm text-[var(--color-text-secondary)] mt-1">{template.description}</p>
                 </div>
               ))}
             </div>
@@ -112,12 +112,12 @@ const CertificateCreation = () => {
 
         {/* Certificate Form */}
         {selectedTemplate && (
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-[var(--color-bg-primary)] rounded-lg shadow p-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-semibold">Certificate Details</h2>
               <button
                 onClick={() => setSelectedTemplate(null)}
-                className="text-gray-600 hover:text-gray-900"
+                className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
               >
                 Change Template
               </button>
@@ -133,7 +133,7 @@ const CertificateCreation = () => {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="name" className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
                   Full Name *
                 </label>
                 <input
@@ -143,13 +143,13 @@ const CertificateCreation = () => {
                   value={formData.name}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-[var(--color-border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
                   placeholder="Enter your full name"
                 />
               </div>
 
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="email" className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
                   Email Address *
                 </label>
                 <input
@@ -159,7 +159,7 @@ const CertificateCreation = () => {
                   value={formData.email}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-[var(--color-border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
                   placeholder="Enter your email"
                 />
               </div>
@@ -168,14 +168,14 @@ const CertificateCreation = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 bg-[var(--color-primary)] text-[var(--color-text-inverse)] py-2 px-4 rounded-lg hover:bg-[var(--color-primary-dark)] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? 'Generating...' : 'Generate Certificate'}
                 </button>
                 <button
                   type="button"
                   onClick={() => setSelectedTemplate(null)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                  className="px-4 py-2 border border-[var(--color-border-primary)] rounded-lg hover:bg-[var(--color-gray-50)]"
                 >
                   Cancel
                 </button>

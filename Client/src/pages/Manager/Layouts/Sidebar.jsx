@@ -61,8 +61,8 @@ const ManagerSidebar = () => {
   ];
 
   return (
-    <div className="w-64 h-full bg-gray-900 text-white flex flex-col">
-      <div className="p-6 border-b border-gray-700">
+    <div className="w-64 h-full bg-[var(--color-gray-900)] text-[var(--color-text-inverse)] flex flex-col">
+      <div className="p-6 border-b border-[var(--color-gray-700)]">
         <h2 className="text-xl font-bold">Manager Panel</h2>
       </div>
       <nav className="flex-1 overflow-y-auto mt-6">
@@ -73,8 +73,8 @@ const ManagerSidebar = () => {
                 to={item.path}
                 className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
                   isActive(item.path)
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                    ? 'bg-[var(--color-primary)] text-[var(--color-text-inverse)]'
+                    : 'text-[var(--color-gray-300)] hover:bg-[var(--color-gray-800)] hover:text-[var(--color-text-inverse)]'
                 }`}
               >
                 <item.icon className="mr-3 text-xl" />

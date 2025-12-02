@@ -180,10 +180,10 @@ const DashboardStats = () => {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
         {[...Array(6)].map((_, i) => (
-          <div key={i} className="bg-white rounded-lg shadow p-6 animate-pulse">
-            <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-            <div className="h-8 bg-gray-200 rounded w-1/2 mb-2"></div>
-            <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+          <div key={i} className="bg-[var(--color-bg-primary)] rounded-lg shadow p-6 animate-pulse">
+            <div className="h-4 bg-[var(--color-gray-200)] rounded w-3/4 mb-4"></div>
+            <div className="h-8 bg-[var(--color-gray-200)] rounded w-1/2 mb-2"></div>
+            <div className="h-3 bg-[var(--color-gray-200)] rounded w-1/3"></div>
           </div>
         ))}
       </div>
@@ -191,12 +191,12 @@ const DashboardStats = () => {
   }
 
   const colorClasses = {
-    blue: 'bg-blue-50 border-blue-200 text-blue-700',
-    green: 'bg-green-50 border-green-200 text-green-700',
-    purple: 'bg-purple-50 border-purple-200 text-purple-700',
-    orange: 'bg-orange-50 border-orange-200 text-orange-700',
-    indigo: 'bg-indigo-50 border-indigo-200 text-indigo-700',
-    pink: 'bg-pink-50 border-pink-200 text-pink-700',
+    blue: 'bg-[var(--color-primary-light)] border-[var(--color-primary-light)] text-[var(--color-primary)]',
+    green: 'bg-[var(--color-success-light)] border-[var(--color-success-light)] text-[var(--color-success-dark)]',
+    purple: 'bg-[var(--color-secondary-light)] border-[var(--color-secondary-light)] text-[var(--color-secondary-dark)]',
+    orange: 'bg-[var(--color-warning-light)] border-[var(--color-warning-light)] text-[var(--color-warning-dark)]',
+    indigo: 'bg-[var(--color-primary-light)] border-[var(--color-primary-light)] text-[var(--color-primary-dark)]',
+    pink: 'bg-[var(--color-secondary-light)] border-[var(--color-secondary-light)] text-[var(--color-secondary-dark)]',
   };
 
   return (
@@ -204,14 +204,14 @@ const DashboardStats = () => {
       {statCards.map((card, index) => {
         const CardContent = (
           <div
-            className={`bg-white rounded-lg shadow-md p-6 border-l-4 hover:shadow-lg transition-all cursor-pointer ${colorClasses[card.color]}`}
+            className={`bg-[var(--color-bg-primary)] rounded-lg shadow-md p-6 border-l-4 hover:shadow-lg transition-all cursor-pointer ${colorClasses[card.color]}`}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-gray-600">{card.title}</h3>
+              <h3 className="text-sm font-medium text-[var(--color-text-secondary)]">{card.title}</h3>
               <card.icon className="text-2xl" />
             </div>
-            <div className="text-3xl font-bold text-gray-900 mb-1">{card.value}</div>
-            <p className="text-sm text-gray-500">{card.subtitle}</p>
+            <div className="text-3xl font-bold text-[var(--color-text-primary)] mb-1">{card.value}</div>
+            <p className="text-sm text-[var(--color-text-secondary)]">{card.subtitle}</p>
           </div>
         );
 

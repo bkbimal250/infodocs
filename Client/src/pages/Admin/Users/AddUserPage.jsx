@@ -56,24 +56,24 @@ const AddUserPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
-      <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-8">
+    <div className="min-h-screen bg-gradient-to-br from-[var(--color-bg-secondary)] to-[var(--color-gray-100)] py-8 px-4">
+      <div className="max-w-4xl mx-auto bg-[var(--color-bg-primary)] rounded-xl shadow-lg p-8">
         <button
           onClick={() => navigate('/admin/users')}
-          className="text-blue-600 hover:text-blue-800 mb-6 flex items-center gap-2 font-medium transition-colors"
+          className="text-[var(--color-primary)] hover:text-[var(--color-primary-dark)] mb-6 flex items-center gap-2 font-medium transition-colors"
         >
           <FaArrowLeft className="mr-1" /> Back to Users
         </button>
 
-        <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
+        <div className="flex justify-between items-center mb-6 pb-4 border-b border-[var(--color-border-primary)]">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Create New User</h2>
-            <p className="text-sm text-gray-500 mt-1">Fill in the details to create a new user account</p>
+            <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">Create New User</h2>
+            <p className="text-sm text-[var(--color-text-secondary)] mt-1">Fill in the details to create a new user account</p>
           </div>
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-800 rounded-lg flex items-center gap-2">
+          <div className="mb-6 p-4 bg-[var(--color-error-light)] border-l-4 border-[var(--color-error)] text-[var(--color-error-dark)] rounded-lg flex items-center gap-2">
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
               <path
                 fillRule="evenodd"
@@ -88,7 +88,7 @@ const AddUserPage = () => {
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-[var(--color-text-primary)] mb-2">
                 Username <span className="text-red-500">*</span>
               </label>
               <input
@@ -97,13 +97,13 @@ const AddUserPage = () => {
                 value={formData.username}
                 onChange={handleInputChange}
                 required
-                className="w-full px-4 py-2.5 border-1.5 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                className="w-full px-4 py-2.5 border-1.5 border-[var(--color-border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] transition"
                 placeholder="Enter username"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-[var(--color-text-primary)] mb-2">
                 Email <span className="text-red-500">*</span>
               </label>
               <input
@@ -112,13 +112,13 @@ const AddUserPage = () => {
                 value={formData.email}
                 onChange={handleInputChange}
                 required
-                className="w-full px-4 py-2.5 border-1.5 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                className="w-full px-4 py-2.5 border-1.5 border-[var(--color-border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] transition"
                 placeholder="Enter email"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-[var(--color-text-primary)] mb-2">
                 First Name <span className="text-red-500">*</span>
               </label>
               <input
@@ -127,13 +127,13 @@ const AddUserPage = () => {
                 value={formData.first_name}
                 onChange={handleInputChange}
                 required
-                className="w-full px-4 py-2.5 border-1.5 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                className="w-full px-4 py-2.5 border-1.5 border-[var(--color-border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] transition"
                 placeholder="Enter first name"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-[var(--color-text-primary)] mb-2">
                 Last Name <span className="text-red-500">*</span>
               </label>
               <input
@@ -142,13 +142,13 @@ const AddUserPage = () => {
                 value={formData.last_name}
                 onChange={handleInputChange}
                 required
-                className="w-full px-4 py-2.5 border-1.5 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                className="w-full px-4 py-2.5 border-1.5 border-[var(--color-border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] transition"
                 placeholder="Enter last name"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-[var(--color-text-primary)] mb-2">
                 Password <span className="text-red-500">*</span>
               </label>
               <input
@@ -157,25 +157,25 @@ const AddUserPage = () => {
                 value={formData.password}
                 onChange={handleInputChange}
                 required
-                className="w-full px-4 py-2.5 border-1.5 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                className="w-full px-4 py-2.5 border-1.5 border-[var(--color-border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] transition"
                 placeholder="Enter password"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Phone Number</label>
+              <label className="block text-sm font-semibold text-[var(--color-text-primary)] mb-2">Phone Number</label>
               <input
                 type="tel"
                 name="phone_number"
                 value={formData.phone_number}
                 onChange={handleInputChange}
-                className="w-full px-4 py-2.5 border-1.5 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                className="w-full px-4 py-2.5 border-1.5 border-[var(--color-border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] transition"
                 placeholder="Enter phone number"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-[var(--color-text-primary)] mb-2">
                 Role <span className="text-red-500">*</span>
               </label>
               <select
@@ -183,7 +183,7 @@ const AddUserPage = () => {
                 value={formData.role}
                 onChange={handleInputChange}
                 required
-                className="w-full px-4 py-2.5 border-1.5 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                className="w-full px-4 py-2.5 border-1.5 border-[var(--color-border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] transition"
               >
                 <option value="user">User</option>
                 <option value="hr">HR</option>
@@ -201,7 +201,7 @@ const AddUserPage = () => {
                 name="is_active"
                 checked={formData.is_active}
                 onChange={handleInputChange}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                className="rounded border-[var(--color-border-primary)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
               />
               <span className="ml-2 text-sm text-gray-700">Active</span>
             </label>
@@ -211,17 +211,17 @@ const AddUserPage = () => {
                 name="is_verified"
                 checked={formData.is_verified}
                 onChange={handleInputChange}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                className="rounded border-[var(--color-border-primary)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
               />
-              <span className="ml-2 text-sm text-gray-700">Verified</span>
+              <span className="ml-2 text-sm text-[var(--color-text-primary)]">Verified</span>
             </label>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200">
+          <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-[var(--color-border-primary)]">
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-6 rounded-lg hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 font-semibold transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+              className="flex-1 bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-dark)] text-[var(--color-text-inverse)] py-3 px-6 rounded-lg hover:from-[var(--color-primary-dark)] hover:to-[var(--color-primary-dark)] disabled:opacity-50 font-semibold transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
             >
               {loading ? (
                 <>
@@ -243,7 +243,7 @@ const AddUserPage = () => {
             <button
               type="button"
               onClick={() => navigate('/admin/users')}
-              className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 font-semibold transition-colors"
+              className="px-6 py-3 border border-[var(--color-border-primary)] rounded-lg hover:bg-[var(--color-gray-50)] font-semibold transition-colors"
             >
               Cancel
             </button>

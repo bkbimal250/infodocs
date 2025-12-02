@@ -128,7 +128,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-8 px-4"
+    <div className="min-h-screen bg-[var(--color-bg-secondary)] flex items-center justify-center py-8 px-4"
     
     style={{
       backgroundImage: `url(${backgroundImage})`,
@@ -139,15 +139,15 @@ const Login = () => {
 
 
         {/* Login Card */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-sm border border-[var(--color-border-primary)] p-6">
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+            <div className="mb-4 p-3 bg-[var(--color-error-light)] border border-[var(--color-error-light)] rounded text-sm text-[var(--color-error-dark)]">
               {error}
             </div>
           )}
 
           {/* Login Method Toggle */}
-          <div className="flex gap-2 mb-4 border-b border-gray-200 pb-4">
+          <div className="flex gap-2 mb-4 border-b border-[var(--color-border-primary)] pb-4">
             <button
               onClick={() => {
                 setLoginMethod('password');
@@ -157,8 +157,8 @@ const Login = () => {
               }}
               className={`flex-1 py-2 text-sm font-medium ${
                 loginMethod === 'password'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'text-[var(--color-primary)] border-b-2 border-[var(--color-primary)]'
+                  : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
               }`}
             >
               Password
@@ -172,8 +172,8 @@ const Login = () => {
               }}
               className={`flex-1 py-2 text-sm font-medium ${
                 loginMethod === 'otp'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'text-[var(--color-primary)] border-b-2 border-[var(--color-primary)]'
+                  : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
               }`}
             >
               OTP
@@ -190,7 +190,7 @@ const Login = () => {
                   onChange={handleInputChange}
                   placeholder="Username or email"
                   required
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-2.5 border border-[var(--color-border-primary)] rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
                 />
               </div>
               <div className="relative">
@@ -206,7 +206,7 @@ const Login = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[var(--color-text-secondary)] text-sm"
                 >
                   {showPassword ? 'Hide' : 'Show'}
                 </button>
@@ -214,7 +214,7 @@ const Login = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-blue-600 text-white py-2.5 px-4 rounded-md font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="w-full bg-[var(--color-primary)] text-[var(--color-text-inverse)] py-2.5 px-4 rounded-md font-semibold hover:bg-[var(--color-primary-dark)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {loading ? 'Signing in...' : 'Log In'}
               </button>
@@ -230,7 +230,7 @@ const Login = () => {
                   placeholder="Email address"
                   required
                   disabled={otpSent}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50"
+                  className="w-full px-4 py-2.5 border border-[var(--color-border-primary)] rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] disabled:bg-[var(--color-gray-50)]"
                 />
               </div>
               {otpSent && (
@@ -245,7 +245,7 @@ const Login = () => {
                     maxLength={6}
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-center text-lg tracking-widest"
                   />
-                  <p className="mt-1 text-xs text-gray-500 text-center">
+                  <p className="mt-1 text-xs text-[var(--color-text-secondary)] text-center">
                     OTP sent to {formData.email}
                   </p>
                 </div>
@@ -253,7 +253,7 @@ const Login = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-blue-600 text-white py-2.5 px-4 rounded-md font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="w-full bg-[var(--color-primary)] text-[var(--color-text-inverse)] py-2.5 px-4 rounded-md font-semibold hover:bg-[var(--color-primary-dark)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {loading ? 'Processing...' : otpSent ? 'Verify & Sign In' : 'Send OTP'}
               </button>
@@ -264,7 +264,7 @@ const Login = () => {
                     setOtpSent(false);
                     setFormData({ ...formData, otp: '' });
                   }}
-                  className="w-full text-sm text-gray-600 hover:text-gray-900 py-2"
+                  className="w-full text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] py-2"
                 >
                   Use different email
                 </button>
@@ -273,15 +273,15 @@ const Login = () => {
           )}
 
           {/* Links */}
-          <div className="mt-6 pt-6 border-t border-gray-200 text-center space-y-2">
-            <p className="text-sm text-gray-600">
-              <Link to="/forgot-password" className="text-blue-600 hover:underline font-medium">
+          <div className="mt-6 pt-6 border-t border-[var(--color-border-primary)] text-center space-y-2">
+            <p className="text-sm text-[var(--color-text-secondary)]">
+              <Link to="/forgot-password" className="text-[var(--color-primary)] hover:underline font-medium">
                 Forgot password?
               </Link>
             </p>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-[var(--color-text-secondary)]">
               Don't have an account?{' '}
-              <Link to="/register" className="text-blue-600 hover:underline font-medium">
+              <Link to="/register" className="text-[var(--color-primary)] hover:underline font-medium">
                 Sign up
               </Link>
             </p>

@@ -24,7 +24,7 @@ const PrintApplicationDetails = ({ data = {}, onDownload }) => {
     if (!filePath) return null;
     
     // Get API base URL from environment or use default
-    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://infodocs.api.d0s369.co.in/api';
     
     // Handle different file path formats
     let cleanPath = filePath;

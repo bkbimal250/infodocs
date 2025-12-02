@@ -30,6 +30,15 @@ Client/.vite/
 Client/.eslintcache
 Client/coverage/
 
+.venv/
+venv/
+env/
+ENV/
+.venv/
+venv/
+env/
+ENV/
+
 
 ############################
 # Python backend

@@ -122,8 +122,6 @@ const AdminLayout = ({ children }) => {
         </main>
       </div>
 
-      {/* Footer */}
-      <Footer />
     </div>
   );
 };

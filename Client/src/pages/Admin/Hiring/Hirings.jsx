@@ -22,7 +22,7 @@ const AdminHirings = () => {
     spa: '',
   });
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 20;
+  const itemsPerPage = 15;
 
   // Helper function to filter forms
   const getFilteredForms = (forms) => {
@@ -124,22 +124,22 @@ const AdminHirings = () => {
 
   if (loading && hiringForms.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--color-bg-secondary)] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading hiring forms...</p>
+          <p className="mt-4 text-[var(--color-text-secondary)]">Loading hiring forms...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-[var(--color-bg-secondary)] py-8 px-4">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Hiring Management</h1>
-            <p className="mt-2 text-gray-600">View all hiring forms submitted by users</p>
+            <h1 className="text-3xl font-bold text-[var(--color-text-primary)]">Hiring Management</h1>
+            <p className="mt-2 text-[var(--color-text-secondary)]">View all hiring forms submitted by users</p>
           </div>
         </div>
 
@@ -155,9 +155,9 @@ const AdminHirings = () => {
         )}
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-md p-6 mb-6">
+          <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
+            <svg className="w-5 h-5 text-[var(--color-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
             </svg>
             Filters
@@ -214,7 +214,7 @@ const AdminHirings = () => {
             </div>
           </div>
           <div className="mt-4 flex items-center justify-between">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-[var(--color-text-secondary)]">
               Showing <span className="font-semibold">{hiringForms.length}</span> of{' '}
               <span className="font-semibold">{getFilteredForms(allHiringForms).length}</span> hiring forms
             </p>
@@ -224,7 +224,7 @@ const AdminHirings = () => {
                   setFilter({ search: '', role: '', spa: '' });
                   setCurrentPage(1);
                 }}
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                className="text-sm text-[var(--color-primary)] hover:text-blue-700 font-medium"
               >
                 Clear Filters
               </button>
@@ -233,7 +233,7 @@ const AdminHirings = () => {
         </div>
 
         {/* Hiring Forms Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-[var(--color-bg-primary)] rounded-lg shadow overflow-hidden">
           <HiringDataTable
             hiringForms={hiringForms}
             onEdit={handleEdit}

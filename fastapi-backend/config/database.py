@@ -6,7 +6,7 @@ Handles database connection and sessions using SQLAlchemy Async
 import asyncio
 import logging
 from urllib.parse import quote_plus
-from sqlalchemy import text
+from sqlalchemy import text, event
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.ext.asyncio import (
@@ -89,6 +89,18 @@ async def connect_to_db():
                 "connect_timeout": 10,
             },
         )
+        
+        # Set MySQL timezone to UTC on connection for async engine
+        # This ensures all datetime operations use UTC
+        @event.listens_for(engine.sync_engine, "connect")
+        def set_timezone(dbapi_conn, connection_record):
+            cursor = dbapi_conn.cursor()
+            try:
+                cursor.execute("SET time_zone = '+00:00'")
+            except Exception:
+                pass  # Ignore if timezone setting fails
+            finally:
+                cursor.close()
 
         async_session_maker = async_sessionmaker(
             engine,

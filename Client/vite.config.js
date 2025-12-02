@@ -12,7 +12,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'http://localhost:8009 ',
         changeOrigin: true,
         secure: false, // Disable SSL verification for local development
         rewrite: (path) => path.replace(/^\/api/, '/api'),

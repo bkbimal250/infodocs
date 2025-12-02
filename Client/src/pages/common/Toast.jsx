@@ -17,8 +17,8 @@ const Toast = () => {
         className: '',
         duration: 4000,
         style: {
-          background: '#fff',
-          color: '#363636',
+          background: 'var(--color-bg-primary)',
+          color: 'var(--color-text-primary)',
           padding: '16px',
           borderRadius: '8px',
           boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
@@ -27,33 +27,33 @@ const Toast = () => {
         success: {
           duration: 3000,
           iconTheme: {
-            primary: '#10b981',
-            secondary: '#fff',
+            primary: 'var(--color-success)',
+            secondary: 'var(--color-text-inverse)',
           },
           style: {
-            background: '#f0fdf4',
-            color: '#166534',
-            border: '1px solid #86efac',
+            background: 'var(--color-success-light)',
+            color: 'var(--color-success-dark)',
+            border: '1px solid var(--color-success)',
           },
         },
         // Error toast options
         error: {
           duration: 4000,
           iconTheme: {
-            primary: '#ef4444',
-            secondary: '#fff',
+            primary: 'var(--color-error)',
+            secondary: 'var(--color-text-inverse)',
           },
           style: {
-            background: '#fef2f2',
-            color: '#991b1b',
-            border: '1px solid #fca5a5',
+            background: 'var(--color-error-light)',
+            color: 'var(--color-error-dark)',
+            border: '1px solid var(--color-error)',
           },
         },
         // Loading toast options
         loading: {
           iconTheme: {
-            primary: '#6366f1',
-            secondary: '#fff',
+            primary: 'var(--color-primary)',
+            secondary: 'var(--color-text-inverse)',
           },
         },
       }}

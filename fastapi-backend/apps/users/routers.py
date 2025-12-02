@@ -114,7 +114,7 @@ async def login(
     
     # Track successful login
     try:
-        from apps.notifications.services.activity_service import log_login_activity
+        from apps.notifications.services.activity_service import log_login_activity, log_activity
         from apps.notifications.services.notification_service import create_login_notification
         
         ip_address = request.client.host if request.client else None
@@ -135,12 +135,24 @@ async def login(
             status="success"
         )
         
-        # Create login notification
+        # Log password login activity
+        await log_activity(
+            db=db,
+            user_id=user.id,
+            activity_type="password_login_success",
+            activity_description=f"Password login successful for {user.email}",
+            entity_type="login",
+            ip_address=ip_address,
+            user_agent=user_agent
+        )
+        
+        # Create login notification (with admin email)
         await create_login_notification(
             db=db,
             user_id=user.id,
             ip_address=ip_address,
-            user_agent=user_agent
+            user_agent=user_agent,
+            send_admin_email=True  # Send email to admin
         )
     except Exception as e:
         import logging
@@ -186,7 +198,7 @@ async def login_with_email(
     
     # Track successful login
     try:
-        from apps.notifications.services.activity_service import log_login_activity
+        from apps.notifications.services.activity_service import log_login_activity, log_activity
         from apps.notifications.services.notification_service import create_login_notification
         from datetime import datetime, timezone
         
@@ -207,12 +219,24 @@ async def login_with_email(
             status="success"
         )
         
-        # Create login notification
+        # Log password login activity
+        await log_activity(
+            db=db,
+            user_id=user.id,
+            activity_type="password_login_success",
+            activity_description=f"Password login successful for {user.email}",
+            entity_type="login",
+            ip_address=ip_address,
+            user_agent=user_agent
+        )
+        
+        # Create login notification (with admin email)
         await create_login_notification(
             db=db,
             user_id=user.id,
             ip_address=ip_address,
-            user_agent=user_agent
+            user_agent=user_agent,
+            send_admin_email=True  # Send email to admin
         )
     except Exception:
         pass
@@ -227,7 +251,11 @@ async def login_with_email(
 
 
 @auth_router.post("/request_login_otp", response_model=MessageResponseSchema)
-async def request_login_otp(otp_request: OTPRequestSchema, db: AsyncSession = Depends(get_db)):
+async def request_login_otp(
+    otp_request: OTPRequestSchema, 
+    request: Request,
+    db: AsyncSession = Depends(get_db)
+):
     """Request OTP for login"""
     user = await get_user_by_email(db, otp_request.email)
     if not user:
@@ -235,6 +263,26 @@ async def request_login_otp(otp_request: OTPRequestSchema, db: AsyncSession = De
     
     try:
         code = await generate_otp(db, user.id, "login")
+        
+        # Log activity and create notification
+        try:
+            from apps.notifications.services.activity_service import log_activity
+            from apps.notifications.services.notification_service import create_otp_notification
+            ip_address = request.client.host if request.client else None
+            
+            await log_activity(
+                db=db,
+                user_id=user.id,
+                activity_type="otp_requested",
+                activity_description=f"Login OTP requested by {user.email}",
+                entity_type="otp",
+                ip_address=ip_address,
+                user_agent=request.headers.get("user-agent")
+            )
+            await create_otp_notification(db=db, user_id=user.id, purpose="login", status="requested", ip_address=ip_address)
+        except Exception:
+            pass  # Don't fail if activity logging fails
+        
         return MessageResponseSchema(message="OTP sent to email")
     except ValidationError as e:
         error_detail = getattr(e, 'message', str(e))
@@ -257,7 +305,8 @@ async def login_with_otp(
     if not await verify_otp(db, user.id, otp_data.otp, "login"):
         # Track failed login attempt
         try:
-            from apps.notifications.services.activity_service import log_login_activity
+            from apps.notifications.services.activity_service import log_login_activity, log_activity
+            from apps.notifications.services.notification_service import create_otp_notification
             ip_address = request.client.host if request.client else None
             user_agent = request.headers.get("user-agent")
             await log_login_activity(
@@ -268,6 +317,16 @@ async def login_with_otp(
                 status="failed",
                 failure_reason="Invalid or expired OTP"
             )
+            await log_activity(
+                db=db,
+                user_id=user.id,
+                activity_type="otp_verification_failed",
+                activity_description=f"Login OTP verification failed for {user.email}",
+                entity_type="otp",
+                ip_address=ip_address,
+                user_agent=user_agent
+            )
+            await create_otp_notification(db=db, user_id=user.id, purpose="login", status="failed", ip_address=ip_address)
         except Exception:
             pass
         
@@ -318,6 +377,7 @@ async def login_with_otp(
 @auth_router.post("/request_password_reset", response_model=MessageResponseSchema)
 async def request_password_reset(
     payload: PasswordResetRequestSchema,
+    request: Request,
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -354,6 +414,28 @@ async def request_password_reset(
             try:
                 otp_code = await generate_otp(db, user.id, "password_reset")
                 logger.info(f"OTP generated successfully for user {user.id}: {otp_code}")
+                
+                # Log activity and create notification
+                try:
+                    from apps.notifications.services.activity_service import log_activity
+                    from apps.notifications.services.notification_service import create_password_reset_notification, create_otp_notification
+                    
+                    ip_address = request.client.host if request.client else None
+                    user_agent = request.headers.get("user-agent")
+                    
+                    await log_activity(
+                        db=db,
+                        user_id=user.id,
+                        activity_type="password_reset_requested",
+                        activity_description=f"Password reset OTP requested by {user.email}",
+                        entity_type="password_reset",
+                        ip_address=ip_address,
+                        user_agent=user_agent
+                    )
+                    await create_password_reset_notification(db=db, user_id=user.id, status="requested", ip_address=ip_address)
+                    await create_otp_notification(db=db, user_id=user.id, purpose="password_reset", status="requested", ip_address=ip_address)
+                except Exception as e:
+                    logger.warning(f"Failed to log password reset activity: {e}")
             except ValidationError as e:
                 logger.error(f"OTP generation failed for user {user.id}: {e}", exc_info=True)
             except Exception as e:
@@ -380,6 +462,7 @@ async def request_password_reset(
 @auth_router.post("/reset_password", response_model=MessageResponseSchema)
 async def reset_password(
     payload: PasswordResetConfirmSchema,
+    request: Request,
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -398,11 +481,45 @@ async def reset_password(
         # Verify OTP
         is_valid = await verify_otp(db, user.id, payload.otp, "password_reset")
         if not is_valid:
+            # Log failed attempt
+            try:
+                from apps.notifications.services.activity_service import log_activity
+                from apps.notifications.services.notification_service import create_otp_notification
+                ip_address = request.client.host if request.client else None
+                await log_activity(
+                    db=db,
+                    user_id=user.id,
+                    activity_type="password_reset_failed",
+                    activity_description=f"Password reset failed - invalid OTP for {user.email}",
+                    entity_type="password_reset",
+                    ip_address=ip_address
+                )
+                await create_otp_notification(db=db, user_id=user.id, purpose="password_reset", status="failed", ip_address=ip_address)
+            except Exception:
+                pass
             raise HTTPException(status_code=400, detail="Invalid or expired OTP")
 
         # Update password using existing service (handles hashing)
         try:
             await update_user(db, user.id, {"password": payload.new_password})
+            
+            # Log successful password reset
+            try:
+                from apps.notifications.services.activity_service import log_activity
+                from apps.notifications.services.notification_service import create_password_reset_notification, create_otp_notification
+                ip_address = request.client.host if request.client else None
+                await log_activity(
+                    db=db,
+                    user_id=user.id,
+                    activity_type="password_reset_completed",
+                    activity_description=f"Password reset completed successfully for {user.email}",
+                    entity_type="password_reset",
+                    ip_address=ip_address
+                )
+                await create_password_reset_notification(db=db, user_id=user.id, status="completed", ip_address=ip_address)
+                await create_otp_notification(db=db, user_id=user.id, purpose="password_reset", status="verified", ip_address=ip_address)
+            except Exception:
+                pass
         except ValidationError as e:
             error_detail = getattr(e, "message", str(e))
             raise HTTPException(status_code=422, detail=error_detail)

@@ -39,3 +39,7 @@ export {
   HiringFormsData,
 } from './FormsData';
 
+// Admin Notifications & Activities
+export { RecentNotification } from './RecentNotification';
+export { RecentActivity } from './RecentActivity';
+

@@ -28,7 +28,7 @@ const HiringPage = () => {
     experience: '',
   });
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 20;
+  const itemsPerPage = 15;
 
   useEffect(() => {
     loadHiringForms();
@@ -156,25 +156,25 @@ const HiringPage = () => {
 
   if (loading && hiringForms.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--color-bg-secondary)] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading job openings...</p>
+          <p className="mt-4 text-[var(--color-text-secondary)]">Loading job openings...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-[var(--color-bg-secondary)] py-8 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <HiBriefcase className="w-8 h-8 text-blue-600" />
-            <h1 className="text-3xl font-bold text-gray-900">My Hiring Forms</h1>
+            <HiBriefcase className="w-8 h-8 text-[var(--color-primary)]" />
+            <h1 className="text-3xl font-bold text-[var(--color-text-primary)]">My Hiring Forms</h1>
           </div>
-          <p className="text-gray-600 ml-11">
+          <p className="text-[var(--color-text-secondary)] ml-11">
             View and manage your submitted hiring requirements
           </p>
         </div>
@@ -197,23 +197,23 @@ const HiringPage = () => {
         {/* Stats Cards */}
         {!error && hiringForms.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-md p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total Submissions</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{hiringForms.length}</p>
+                  <p className="text-sm font-medium text-[var(--color-text-secondary)]">Total Submissions</p>
+                  <p className="text-2xl font-bold text-[var(--color-text-primary)] mt-1">{hiringForms.length}</p>
                 </div>
                 <div className="bg-blue-100 rounded-full p-3">
-                  <HiBriefcase className="w-6 h-6 text-blue-600" />
+                  <HiBriefcase className="w-6 h-6 text-[var(--color-primary)]" />
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-md p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Different Roles</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">
+                  <p className="text-sm font-medium text-[var(--color-text-secondary)]">Different Roles</p>
+                  <p className="text-2xl font-bold text-[var(--color-text-primary)] mt-1">
                     {new Set(hiringForms.map((f) => f.for_role).filter(Boolean)).size}
                   </p>
                 </div>
@@ -223,11 +223,11 @@ const HiringPage = () => {
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-md p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">SPA Locations</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">
+                  <p className="text-sm font-medium text-[var(--color-text-secondary)]">SPA Locations</p>
+                  <p className="text-2xl font-bold text-[var(--color-text-primary)] mt-1">
                     {new Set(hiringForms.map((f) => f.spa?.name || f.spa_name_text).filter(Boolean)).size}
                   </p>
                 </div>
@@ -247,7 +247,7 @@ const HiringPage = () => {
         />
 
         {/* Hiring Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-[var(--color-bg-primary)] rounded-lg shadow overflow-hidden">
           <HiringTable 
             hiringForms={displayedForms} 
             loading={loading}

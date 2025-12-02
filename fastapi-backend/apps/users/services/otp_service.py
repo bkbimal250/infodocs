@@ -13,6 +13,16 @@ from core.exceptions import ValidationError
 from core.utils import send_email
 
 
+def _ensure_timezone_aware(dt: datetime) -> datetime:
+    """
+    Ensure a datetime is timezone-aware (UTC).
+    If it's timezone-naive, assume it's UTC and make it aware.
+    """
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
 async def generate_otp(db: AsyncSession, user_id: int, purpose: str) -> str:
     """Generate and store OTP"""
     # Validate user exists
@@ -58,19 +68,21 @@ async def generate_otp(db: AsyncSession, user_id: int, purpose: str) -> str:
         return code
     
     try:
-        send_email(subject, body, user.email, html_body=html_body)
+        await send_email(subject, body, user.email, html_body=html_body)
         logger.info(f"OTP email sent successfully to {user.email}")
     except Exception as e:
         # Log the error but don't fail - OTP is still generated and stored
-        logger.warning(
-            f"Failed to send OTP email to {user.email}: {str(e)}. "
+        error_msg = str(e)
+        logger.error(
+            f"Failed to send OTP email to {user.email}: {error_msg}. "
             f"OTP code {code} is still valid and stored in database. "
-            f"User can verify using the OTP code directly."
+            f"User can verify using the OTP code directly.",
+            exc_info=True
         )
-        # Only raise error for critical purposes like login OTP
+        # Only raise error for critical purposes like login OTP and password reset
         # For email verification, allow registration to succeed
-        if purpose == "login":
-            raise ValidationError(f"Failed to send OTP email: {str(e)}")
+        if purpose in ("login", "password_reset"):
+            raise ValidationError(f"Failed to send OTP email: {error_msg}")
         # For other purposes (like email_verification), just log and continue
         logger.info(f"Registration/OTP generation succeeded despite email failure. OTP: {code}")
     
@@ -102,8 +114,9 @@ def _build_otp_html_template(full_name: str, code: str, purpose: str) -> str:
     """
     Create the OTP email HTML template.
 
-    Prefer loading from template file `apps/users/templates/otp_email.html`,
-    falling back to the previous inline HTML if file is missing.
+    For login OTPs, uses `apps/users/templates/email_login_otp.html`.
+    For other purposes, uses `apps/users/templates/otp_email.html`.
+    Falls back to inline HTML if template files are missing.
     """
     purpose_text = purpose.replace('_', ' ').title()
 
@@ -119,7 +132,18 @@ def _build_otp_html_template(full_name: str, code: str, purpose: str) -> str:
     # Try to load external HTML template
     try:
         base_dir = Path(__file__).resolve().parent.parent  # apps/users/
-        template_path = base_dir / "templates" / "otp_email.html"
+        
+        # Use login-specific template for login OTPs
+        # Try both "Templates" (capital) and "templates" (lowercase) for compatibility
+        if purpose == "login":
+            template_path = base_dir / "Templates" / "email_login_otp.html"
+            if not template_path.exists():
+                template_path = base_dir / "templates" / "email_login_otp.html"
+        else:
+            template_path = base_dir / "Templates" / "otp_email.html"
+            if not template_path.exists():
+                template_path = base_dir / "templates" / "otp_email.html"
+        
         if template_path.exists():
             template_str = template_path.read_text(encoding="utf-8")
             # Very simple placeholder replacement (not full Jinja)
@@ -224,8 +248,11 @@ async def verify_otp(db: AsyncSession, user_id: int, code: str, purpose: str) ->
     if not otp:
         return False
     
-    # Check expiration
-    if datetime.now(timezone.utc) > otp.expires_at:
+    # Check expiration - ensure both datetimes are timezone-aware
+    now = datetime.now(timezone.utc)
+    expires_at = _ensure_timezone_aware(otp.expires_at)
+    
+    if now > expires_at:
         return False
     
     # Mark as used

@@ -11,6 +11,7 @@ import DocumentUpload from './compoenents/DocumentUpload';
 const CandidateForm = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [spas, setSpas] = useState([]);
+  const [spaSearch, setSpaSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     spa_id: '',
@@ -44,6 +45,17 @@ const CandidateForm = () => {
   useEffect(() => {
     loadSpas();
   }, []);
+
+  const filteredSpas = spas.filter((spa) => {
+    if (!spaSearch) return true;
+    const term = spaSearch.toLowerCase();
+    return (
+      spa.name?.toLowerCase().includes(term) ||
+      (spa.code !== null && spa.code !== undefined && String(spa.code).includes(term)) ||
+      spa.area?.toLowerCase().includes(term) ||
+      spa.city?.toLowerCase().includes(term)
+    );
+  });
 
   const loadSpas = async () => {
     try {
@@ -320,25 +332,69 @@ const CandidateForm = () => {
                   <label className="block text-xs font-medium text-gray-700 mb-1">
                     SPA Location <span className="text-red-500">*</span>
                   </label>
+
+                  {/* SPA Search */}
+                  <div className="relative mb-2">
+                    <input
+                      type="text"
+                      value={spaSearch}
+                      onChange={(e) => {
+                        setSpaSearch(e.target.value);
+                        // Clear selection if search changes and selected SPA is not in filtered results
+                        if (formData.spa_id) {
+                          const selectedSpa = filteredSpas.find(s => s.id === parseInt(formData.spa_id));
+                          if (!selectedSpa) {
+                            setFormData(prev => ({ ...prev, spa_id: '' }));
+                          }
+                        }
+                      }}
+                      placeholder="Search by name, code, area, or city"
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    {spaSearch && (
+                      <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs text-gray-500">
+                        {filteredSpas.length} {filteredSpas.length === 1 ? 'result' : 'results'}
+                      </span>
+                    )}
+                  </div>
+
                   <select
                     name="spa_id"
                     value={formData.spa_id}
                     onChange={handleInputChange}
                     required
+                    size={spaSearch ? Math.min(filteredSpas.length + 1, 8) : 1}
                     className={`w-full px-2 py-1.5 text-sm border rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent ${
                       !formData.spa_id 
                         ? 'border-red-300' 
                         : 'border-gray-300'
-                    }`}
+                    } ${spaSearch ? 'overflow-y-auto' : ''}`}
                   >
-                    <option value="">-- Select SPA --</option>
-                    {spas.map((spa) => (
-                      <option key={spa.id} value={spa.id}>
-                        {spa.name}
-                      </option>
-                    ))}
+                    <option value="">-- Select SPA {spaSearch && filteredSpas.length > 0 ? `(${filteredSpas.length} found)` : ''} --</option>
+                    {filteredSpas.length > 0 ? (
+                      filteredSpas.map((spa) => (
+                        <option key={spa.id} value={spa.id}>
+                          {spa.code ? `[${spa.code}] ` : ''}{spa.name}
+                          {spa.area ? ` - ${spa.area}` : ''}
+                          {spa.city ? `, ${spa.city}` : ''}
+                        </option>
+                      ))
+                    ) : spaSearch ? (
+                      <option value="" disabled>No SPAs found matching "{spaSearch}"</option>
+                    ) : (
+                      spas.map((spa) => (
+                        <option key={spa.id} value={spa.id}>
+                          {spa.code ? `[${spa.code}] ` : ''}{spa.name}
+                          {spa.area ? ` - ${spa.area}` : ''}
+                          {spa.city ? `, ${spa.city}` : ''}
+                        </option>
+                      ))
+                    )}
                   </select>
-                  {!formData.spa_id && (
+                  {spaSearch && filteredSpas.length === 0 && (
+                    <p className="mt-1 text-xs text-amber-600">No SPAs found. Try a different search term.</p>
+                  )}
+                  {!formData.spa_id && !spaSearch && (
                     <p className="mt-1 text-xs text-red-600">Please select a SPA location from the list</p>
                   )}
                 </div>

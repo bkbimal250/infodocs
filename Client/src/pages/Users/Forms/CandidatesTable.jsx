@@ -12,9 +12,10 @@ import Pagination from '../../common/Pagination';
  * Users Candidates Table Component
  * View user's own candidate forms
  */
-const CandidatesTable = ({ onEdit, onDelete }) => {
+const CandidatesTable = ({ onEdit, onDelete, filter = {} }) => {
   const [candidates, setCandidates] = useState([]);
   const [allCandidates, setAllCandidates] = useState([]);
+  const [filteredCandidates, setFilteredCandidates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showPrintModal, setShowPrintModal] = useState(false);
@@ -24,7 +25,7 @@ const CandidatesTable = ({ onEdit, onDelete }) => {
   const [editingCandidate, setEditingCandidate] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 20;
+  const itemsPerPage = 15;
   const printContentRef = useRef(null);
 
   useEffect(() => {
@@ -47,11 +48,42 @@ const CandidatesTable = ({ onEdit, onDelete }) => {
   };
 
   useEffect(() => {
+    // Apply filters
+    let filtered = allCandidates.filter((candidate) => {
+      // Search filter
+      if (filter.search) {
+        const searchLower = filter.search.toLowerCase();
+        const fullName = `${candidate.first_name} ${candidate.middle_name || ''} ${candidate.last_name}`.toLowerCase();
+        const phone = candidate.phone_number?.toLowerCase() || '';
+        const position = candidate.position_applied_for?.toLowerCase() || '';
+        
+        if (!fullName.includes(searchLower) && 
+            !phone.includes(searchLower) && 
+            !position.includes(searchLower)) {
+          return false;
+        }
+      }
+
+      // Position filter
+      if (filter.position && candidate.position_applied_for !== filter.position) {
+        return false;
+      }
+
+      return true;
+    });
+
+    setFilteredCandidates(filtered);
+    
+    // Reset to first page when filter changes
+    setCurrentPage(1);
+  }, [allCandidates, filter]);
+
+  useEffect(() => {
     // Apply pagination
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    setCandidates(allCandidates.slice(startIndex, endIndex));
-  }, [allCandidates, currentPage]);
+    setCandidates(filteredCandidates.slice(startIndex, endIndex));
+  }, [filteredCandidates, currentPage]);
 
   const handlePrint = (candidate, type) => {
     setSelectedCandidate(candidate);
@@ -185,7 +217,7 @@ const CandidatesTable = ({ onEdit, onDelete }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--color-bg-secondary)] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading candidates...</p>
@@ -195,10 +227,10 @@ const CandidatesTable = ({ onEdit, onDelete }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-[var(--color-bg-secondary)] py-8 px-4">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">My Candidate Forms</h1>
+          <h1 className="text-3xl font-bold text-[var(--color-text-primary)]">My Candidate Forms</h1>
           <p className="mt-2 text-gray-600">View candidate forms you have submitted</p>
         </div>
 
@@ -214,7 +246,7 @@ const CandidatesTable = ({ onEdit, onDelete }) => {
         )}
 
         {candidates.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-md p-12 text-center">
+          <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-md p-12 text-center">
             <svg
               className="mx-auto h-12 w-12 text-gray-400"
               fill="none"
@@ -228,60 +260,76 @@ const CandidatesTable = ({ onEdit, onDelete }) => {
                 d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
               />
             </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No candidate forms</h3>
-            <p className="mt-1 text-sm text-gray-500">You haven't submitted any candidate forms yet.</p>
+            <h3 className="mt-2 text-sm font-medium text-[var(--color-text-primary)]">No candidate forms</h3>
+            <p className="mt-1 text-sm text-[var(--color-text-secondary)]">You haven't submitted any candidate forms yet.</p>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-md overflow-hidden">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-[var(--color-bg-secondary)]">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
                       Name
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
                       Position
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
                       Phone
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
                       SPA Location
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
                       Submitted Date
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+                      Created By
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-[var(--color-bg-primary)] divide-y divide-gray-200">
                   {candidates.map((candidate) => (
-                    <tr key={candidate.id} className="hover:bg-gray-50">
+                    <tr key={candidate.id} className="hover:bg-[var(--color-bg-secondary)]">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-medium text-[var(--color-text-primary)]">
                           {candidate.first_name} {candidate.middle_name || ''} {candidate.last_name}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--color-text-secondary)]">
                         {candidate.position_applied_for || 'N/A'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--color-text-secondary)]">
                         {candidate.phone_number || 'N/A'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--color-text-secondary)]">
                         {candidate.spa?.name || candidate.spa_name_text || 'N/A'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(candidate.created_at).toLocaleDateString()}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--color-text-secondary)]">
+                        {new Date(candidate.created_at).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        })}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {candidate.created_by ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            User #{candidate.created_by}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">N/A</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex items-center gap-2 flex-wrap">
                           <Link
                             to={`/user/forms/candidates/${candidate.id}`}
-                            className="text-blue-600 hover:text-blue-900 font-medium inline-flex items-center gap-1 px-2 py-1 rounded hover:bg-blue-50"
+                            className="text-[var(--color-primary)] hover:text-blue-900 font-medium inline-flex items-center gap-1 px-2 py-1 rounded hover:bg-blue-50"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -337,12 +385,12 @@ const CandidatesTable = ({ onEdit, onDelete }) => {
                 </tbody>
               </table>
             </div>
-            {allCandidates.length > itemsPerPage && (
+            {filteredCandidates.length > itemsPerPage && (
               <Pagination
                 currentPage={currentPage}
-                totalPages={Math.ceil(allCandidates.length / itemsPerPage)}
+                totalPages={Math.ceil(filteredCandidates.length / itemsPerPage)}
                 onPageChange={setCurrentPage}
-                totalItems={allCandidates.length}
+                totalItems={filteredCandidates.length}
                 itemsPerPage={itemsPerPage}
               />
             )}
@@ -353,10 +401,10 @@ const CandidatesTable = ({ onEdit, onDelete }) => {
         {showPrintModal && selectedCandidate && (
           <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 print:hidden">
             <div className="flex items-center justify-center min-h-screen p-4">
-              <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+              <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
                 {/* Modal Header */}
-                <div className="flex items-center justify-between p-4 border-b bg-gray-50 print:hidden">
-                  <h3 className="text-lg font-semibold text-gray-900">
+                <div className="flex items-center justify-between p-4 border-b bg-[var(--color-bg-secondary)] print:hidden">
+                  <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
                     {printType === 'application' ? 'Job Application Form' : 'Undertaking Form'}
                   </h3>
                   <div className="flex items-center gap-2">
@@ -392,7 +440,7 @@ const CandidatesTable = ({ onEdit, onDelete }) => {
                 </div>
 
                 {/* Modal Content */}
-                <div className="overflow-y-auto flex-1 bg-white" ref={printContentRef}>
+                <div className="overflow-y-auto flex-1 bg-[var(--color-bg-primary)]" ref={printContentRef}>
                   {printType === 'application' ? (
                     <PrintApplicationDetails 
                       data={{ candidate: selectedCandidate }} 

@@ -141,37 +141,37 @@ const EditSpaPage = () => {
 
   if (loadingData) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--color-bg-secondary)] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading SPA...</p>
+          <p className="mt-4 text-[var(--color-text-secondary)]">Loading SPA...</p>
         </div>
       </div>
     );
   }
 
-  const fileBase = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api') + '/forms/files/';
+  const fileBase = (import.meta.env.VITE_API_BASE_URL || 'https://infodocs.api.d0s369.co.in/api') + '/forms/files/';
   const logoUrl = formData.logo && typeof formData.logo === "string" ? fileBase + formData.logo : null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
-      <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-8">
+      <div className="max-w-4xl mx-auto bg-[var(--color-bg-primary)] rounded-xl shadow-lg p-8">
         <button 
           onClick={() => navigate(-1)} 
-          className="text-blue-600 hover:text-blue-800 mb-6 flex items-center gap-2 font-medium transition-colors"
+          className="text-[var(--color-primary)] hover:text-blue-800 mb-6 flex items-center gap-2 font-medium transition-colors"
         >
           <FaArrowLeft className="mr-1" /> Back
         </button>
 
-        <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
+        <div className="flex justify-between items-center mb-6 pb-4 border-b border-[var(--color-border-primary)]">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Edit SPA</h2>
-            <p className="text-sm text-gray-500 mt-1">Update SPA information</p>
+            <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">Edit SPA</h2>
+            <p className="text-sm text-[var(--color-text-secondary)] mt-1">Update SPA information</p>
           </div>
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-800 rounded-lg flex items-center gap-2">
+          <div className="mb-6 p-4 bg-[var(--color-error-light)] border-l-4 border-[var(--color-error)] text-red-800 rounded-lg flex items-center gap-2">
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
             </svg>
@@ -212,31 +212,31 @@ const EditSpaPage = () => {
 
           {/* Logo upload */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Logo</label>
+            <label className="block text-sm font-semibold text-[var(--color-text-primary)] mb-2">Logo</label>
             <input
               type="file"
               accept="image/*"
               onChange={handleFileChange}
-              className="w-full px-4 py-2.5 border-1.5 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              className="w-full px-4 py-2.5 border-1.5 border-[var(--color-border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-blue-500 transition"
             />
 
             {logoUrl && (
               <div className="mt-3">
-                <p className="text-sm text-gray-600 mb-2">Current Logo:</p>
+                <p className="text-sm text-[var(--color-text-secondary)] mb-2">Current Logo:</p>
                 <img
                   src={logoUrl}
                   alt="Logo"
-                  className="h-20 w-20 object-cover rounded-lg border border-gray-300"
+                  className="h-20 w-20 object-cover rounded-lg border border-[var(--color-border-primary)]"
                 />
               </div>
             )}
             {formData.logo && formData.logo instanceof File && (
               <div className="mt-3">
-                <p className="text-sm text-gray-600 mb-2">New Logo Selected:</p>
+                <p className="text-sm text-[var(--color-text-secondary)] mb-2">New Logo Selected:</p>
                 <img
                   src={URL.createObjectURL(formData.logo)}
                   alt="New Logo Preview"
-                  className="h-20 w-20 object-cover rounded-lg border border-gray-300"
+                  className="h-20 w-20 object-cover rounded-lg border border-[var(--color-border-primary)]"
                 />
               </div>
             )}
@@ -249,12 +249,12 @@ const EditSpaPage = () => {
               name="is_active"
               checked={formData.is_active}
               onChange={handleInputChange}
-              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              className="rounded border-[var(--color-border-primary)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
             />
-            <span className="ml-2 text-sm text-gray-700">Active</span>
+            <span className="ml-2 text-sm text-[var(--color-text-primary)]">Active</span>
           </label>
 
-          <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200">
+          <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-[var(--color-border-primary)]">
             <button
               type="submit"
               disabled={loading}
@@ -280,7 +280,7 @@ const EditSpaPage = () => {
             <button
               type="button"
               onClick={() => navigate(-1)}
-              className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 font-semibold transition-colors"
+              className="px-6 py-3 border border-[var(--color-border-primary)] rounded-lg hover:bg-[var(--color-bg-secondary)] font-semibold transition-colors"
             >
               Cancel
             </button>
@@ -294,10 +294,10 @@ const EditSpaPage = () => {
 /* Reusable Input Component */
 const Input = ({ label, ...props }) => (
   <div>
-    <label className="block text-sm font-semibold text-gray-700 mb-2">{label}</label>
+    <label className="block text-sm font-semibold text-[var(--color-text-primary)] mb-2">{label}</label>
     <input
       {...props}
-      className="w-full px-4 py-2.5 border-1.5 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+      className="w-full px-4 py-2.5 border-1.5 border-[var(--color-border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-blue-500 transition"
     />
   </div>
 );
@@ -305,11 +305,11 @@ const Input = ({ label, ...props }) => (
 /* Reusable Textarea Component */
 const Textarea = ({ label, ...props }) => (
   <div>
-    <label className="block text-sm font-semibold text-gray-700 mb-2">{label}</label>
+    <label className="block text-sm font-semibold text-[var(--color-text-primary)] mb-2">{label}</label>
     <textarea
       {...props}
       rows={3}
-      className="w-full px-4 py-2.5 border-1.5 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+      className="w-full px-4 py-2.5 border-1.5 border-[var(--color-border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-blue-500 transition"
     />
   </div>
 );

@@ -254,23 +254,6 @@ const InvoiceCertificateForm = ({
           </div>
         </div>
       </div>
-
-      {/* Optional Notes Section */}
-      <div className="bg-red-50 p-6 rounded-lg border border-red-100">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-          <span className="w-2 h-2 bg-red-600 rounded-full mr-2"></span>
-          Additional Notes
-        </h3>
-
-        <textarea
-          name="notes"
-          value={formData.notes || ''}
-          onChange={handleInputChange}
-          placeholder="Payment terms, additional remarks, etc."
-          rows="3"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600"
-        />
-      </div>
     </div>
   );
 };

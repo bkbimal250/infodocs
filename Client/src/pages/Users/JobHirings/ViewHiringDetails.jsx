@@ -35,10 +35,10 @@ const ViewHiringDetails = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--color-bg-secondary)] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading hiring form details...</p>
+          <p className="mt-4 text-[var(--color-text-secondary)]">Loading hiring form details...</p>
         </div>
       </div>
     );
@@ -46,15 +46,15 @@ const ViewHiringDetails = () => {
 
   if (error || !hiringForm) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8 px-4">
+      <div className="min-h-screen bg-[var(--color-bg-secondary)] py-8 px-4">
         <div className="max-w-4xl mx-auto">
           <button
             onClick={() => navigate('/user/job-hirings')}
-            className="text-blue-600 hover:text-blue-800 mb-4"
+            className="text-[var(--color-primary)] hover:text-blue-800 mb-4"
           >
             <HiArrowLeft className="inline mr-1" /> Back to My Hiring Forms
           </button>
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-md p-6">
             <p className="text-red-600">{error || 'Hiring form not found'}</p>
           </div>
         </div>
@@ -63,35 +63,35 @@ const ViewHiringDetails = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-[var(--color-bg-secondary)] py-8 px-4">
       <div className="max-w-4xl mx-auto">
         <button
           onClick={() => navigate('/user/job-hirings')}
-          className="text-blue-600 hover:text-blue-800 mb-4"
+          className="text-[var(--color-primary)] hover:text-blue-800 mb-4"
         >
           <HiArrowLeft className="inline mr-1" /> Back to My Hiring Forms
         </button>
 
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h1 className="text-xl font-bold text-gray-900 mb-4">Hiring Form Details</h1>
+        <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-md p-6">
+          <h1 className="text-xl font-bold text-[var(--color-text-primary)] mb-4">Hiring Form Details</h1>
 
           {/* Data Table */}
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <tbody className="bg-white divide-y divide-gray-200">
-                <tr className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm font-medium text-gray-700 bg-gray-50 w-1/4">
+              <tbody className="bg-[var(--color-bg-primary)] divide-y divide-gray-200">
+                <tr className="hover:bg-[var(--color-bg-secondary)]">
+                  <td className="px-4 py-3 text-sm font-medium text-gray-700 bg-[var(--color-bg-secondary)] w-1/4">
                     Form ID
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-900">
+                  <td className="px-4 py-3 text-sm text-[var(--color-text-primary)]">
                     #{hiringForm.id}
                   </td>
                 </tr>
-                <tr className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm font-medium text-gray-700 bg-gray-50">
+                <tr className="hover:bg-[var(--color-bg-secondary)]">
+                  <td className="px-4 py-3 text-sm font-medium text-gray-700 bg-[var(--color-bg-secondary)]">
                     SPA Location
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-900">
+                  <td className="px-4 py-3 text-sm text-[var(--color-text-primary)]">
                     {hiringForm.spa?.name || hiringForm.spa_name_text || 'N/A'}
                     {hiringForm.spa?.city && hiringForm.spa?.state && (
                       <span className="text-gray-500 ml-2">
@@ -100,60 +100,60 @@ const ViewHiringDetails = () => {
                     )}
                   </td>
                 </tr>
-                <tr className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm font-medium text-gray-700 bg-gray-50">
+                <tr className="hover:bg-[var(--color-bg-secondary)]">
+                  <td className="px-4 py-3 text-sm font-medium text-gray-700 bg-[var(--color-bg-secondary)]">
                     Role/Position
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-900 font-semibold">
+                  <td className="px-4 py-3 text-sm text-[var(--color-text-primary)] font-semibold">
                     {hiringForm.for_role}
                   </td>
                 </tr>
-                <tr className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm font-medium text-gray-700 bg-gray-50">
+                <tr className="hover:bg-[var(--color-bg-secondary)]">
+                  <td className="px-4 py-3 text-sm font-medium text-gray-700 bg-[var(--color-bg-secondary)]">
                     Job Description
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-900 whitespace-pre-wrap">
+                  <td className="px-4 py-3 text-sm text-[var(--color-text-primary)] whitespace-pre-wrap">
                     {hiringForm.description}
                   </td>
                 </tr>
-                <tr className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm font-medium text-gray-700 bg-gray-50">
+                <tr className="hover:bg-[var(--color-bg-secondary)]">
+                  <td className="px-4 py-3 text-sm font-medium text-gray-700 bg-[var(--color-bg-secondary)]">
                     Required Experience
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-900">
+                  <td className="px-4 py-3 text-sm text-[var(--color-text-primary)]">
                     {hiringForm.required_experience}
                   </td>
                 </tr>
-                <tr className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm font-medium text-gray-700 bg-gray-50">
+                <tr className="hover:bg-[var(--color-bg-secondary)]">
+                  <td className="px-4 py-3 text-sm font-medium text-gray-700 bg-[var(--color-bg-secondary)]">
                     Required Education
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-900">
+                  <td className="px-4 py-3 text-sm text-[var(--color-text-primary)]">
                     {hiringForm.required_education}
                   </td>
                 </tr>
-                <tr className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm font-medium text-gray-700 bg-gray-50">
+                <tr className="hover:bg-[var(--color-bg-secondary)]">
+                  <td className="px-4 py-3 text-sm font-medium text-gray-700 bg-[var(--color-bg-secondary)]">
                     Required Skills
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-900">
+                  <td className="px-4 py-3 text-sm text-[var(--color-text-primary)]">
                     {hiringForm.required_skills}
                   </td>
                 </tr>
-                <tr className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm font-medium text-gray-700 bg-gray-50">
+                <tr className="hover:bg-[var(--color-bg-secondary)]">
+                  <td className="px-4 py-3 text-sm font-medium text-gray-700 bg-[var(--color-bg-secondary)]">
                     Created At
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-900">
+                  <td className="px-4 py-3 text-sm text-[var(--color-text-primary)]">
                     {new Date(hiringForm.created_at).toLocaleString()}
                   </td>
                 </tr>
                 {hiringForm.updated_at && (
-                  <tr className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm font-medium text-gray-700 bg-gray-50">
+                  <tr className="hover:bg-[var(--color-bg-secondary)]">
+                    <td className="px-4 py-3 text-sm font-medium text-gray-700 bg-[var(--color-bg-secondary)]">
                       Last Updated
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-900">
+                    <td className="px-4 py-3 text-sm text-[var(--color-text-primary)]">
                       {new Date(hiringForm.updated_at).toLocaleString()}
                     </td>
                   </tr>

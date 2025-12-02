@@ -11,7 +11,7 @@ from apps.forms_app.schemas import SPACreate, SPAUpdate
 from core.exceptions import NotFoundError, ValidationError
 
 
-async def create_spa(db: AsyncSession, spa_data: SPACreate) -> SPA:
+async def create_spa(db: AsyncSession, spa_data: SPACreate, created_by: Optional[int] = None) -> SPA:
     """Create a new SPA location"""
 
     # Check duplicate name (case-insensitive)
@@ -34,7 +34,11 @@ async def create_spa(db: AsyncSession, spa_data: SPACreate) -> SPA:
         if result.scalar_one_or_none():
             raise ValidationError(f"Email '{spa_data.email}' already exists")
 
-    spa = SPA(**spa_data.model_dump())
+    spa_dict = spa_data.model_dump()
+    if created_by:
+        spa_dict['created_by'] = created_by
+    
+    spa = SPA(**spa_dict)
     db.add(spa)
     await db.commit()
     await db.refresh(spa)

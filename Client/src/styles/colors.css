@@ -1,0 +1,72 @@
+/**
+ * Centralized Color System
+ * Professional color palette for the entire application
+ * 
+ * Usage in CSS/Tailwind:
+ * - Use CSS variables: var(--color-primary)
+ * - Use Tailwind classes: bg-primary, text-primary, border-primary
+ */
+
+:root {
+  /* Primary Colors - Main brand colors */
+  --color-primary: #6366f1;        /* Indigo - Primary actions, buttons */
+  --color-primary-dark: #4f46e5;   /* Darker indigo for hover states */
+  --color-primary-light: #818cf8;  /* Lighter indigo for backgrounds */
+  
+  /* Secondary Colors - Supporting colors */
+  --color-secondary: #ec4899;      /* Pink - Secondary actions, accents */
+  --color-secondary-dark: #db2777; /* Darker pink for hover states */
+  --color-secondary-light: #f472b6; /* Lighter pink for backgrounds */
+  
+  /* Success Colors - Success states, confirmations */
+  --color-success: #10b981;        /* Green - Success messages, positive actions */
+  --color-success-dark: #059669;   /* Darker green */
+  --color-success-light: #34d399;  /* Lighter green */
+  
+  /* Warning Colors - Warnings, cautions */
+  --color-warning: #f59e0b;        /* Amber - Warning messages */
+  --color-warning-dark: #d97706;  /* Darker amber */
+  --color-warning-light: #fbbf24; /* Lighter amber */
+  
+  /* Error/Danger Colors - Errors, destructive actions */
+  --color-error: #ef4444;         /* Red - Error messages, delete actions */
+  --color-error-dark: #dc2626;    /* Darker red */
+  --color-error-light: #f87171;    /* Lighter red */
+  
+  /* Info Colors - Information, notifications */
+  --color-info: #3b82f6;          /* Blue - Info messages, links */
+  --color-info-dark: #2563eb;     /* Darker blue */
+  --color-info-light: #60a5fa;    /* Lighter blue */
+  
+  /* Neutral Colors - Text, backgrounds, borders */
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-400: #9ca3af;
+  --color-gray-500: #6b7280;
+  --color-gray-600: #4b5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1f2937;
+  --color-gray-900: #111827;
+  
+  /* Background Colors */
+  --color-bg-primary: #ffffff;     /* Main background */
+  --color-bg-secondary: #f9fafb;   /* Secondary background */
+  --color-bg-tertiary: #f3f4f6;    /* Tertiary background */
+  
+  /* Text Colors */
+  --color-text-primary: #111827;   /* Main text */
+  --color-text-secondary: #6b7280; /* Secondary text */
+  --color-text-tertiary: #9ca3af;  /* Tertiary text */
+  --color-text-inverse: #ffffff;    /* Text on dark backgrounds */
+  
+  /* Border Colors */
+  --color-border-primary: #e5e7eb;  /* Main borders */
+  --color-border-secondary: #d1d5db; /* Secondary borders */
+  --color-border-focus: #6366f1;     /* Focus borders */
+}
+
+/* Tailwind CSS Color Extensions */
+/* These can be used with Tailwind's arbitrary value syntax: bg-[var(--color-primary)] */
+

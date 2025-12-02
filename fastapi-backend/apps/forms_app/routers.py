@@ -427,7 +427,7 @@ async def create_spa_location(
             is_active=is_active_bool,
         )
 
-        spa = await create_spa(db, spa_data)
+        spa = await create_spa(db, spa_data, created_by=current_user.id)
         return spa
         
     except HTTPException:

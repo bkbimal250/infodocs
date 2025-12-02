@@ -159,25 +159,25 @@ const Certificates = () => {
 
   if (loading && !user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--color-bg-secondary)] flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-[var(--color-bg-secondary)] py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">My Certificates</h1>
-          <p className="mt-2 text-gray-600">
+          <h1 className="text-3xl font-bold text-[var(--color-text-primary)]">My Certificates</h1>
+          <p className="mt-2 text-[var(--color-text-secondary)]">
             View and manage certificates you've created
           </p>
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <div className="bg-[var(--color-bg-primary)] rounded-lg shadow p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -234,17 +234,17 @@ const Certificates = () => {
         </div>
 
         {/* Certificates List */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-[var(--color-bg-primary)] rounded-lg shadow overflow-hidden">
           {loading ? (
             <div className="p-12 text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-4 text-gray-600">Loading certificates...</p>
+              <p className="mt-4 text-[var(--color-text-secondary)]">Loading certificates...</p>
             </div>
           ) : certificates.length === 0 ? (
             <div className="p-12 text-center">
               <HiOutlineDocumentText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No certificates found</h3>
-              <p className="text-gray-600 mb-6">You haven't created any certificates yet.</p>
+              <h3 className="text-lg font-medium text-[var(--color-text-primary)] mb-2">No certificates found</h3>
+              <p className="text-[var(--color-text-secondary)] mb-6">You haven't created any certificates yet.</p>
 
               
               <Link
@@ -259,7 +259,7 @@ const Certificates = () => {
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-[var(--color-bg-secondary)]">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Certificate
@@ -278,13 +278,13 @@ const Certificates = () => {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-[var(--color-bg-primary)] divide-y divide-gray-200">
                   {certificates.map((certificate) => (
-                    <tr key={certificate.id} className="hover:bg-gray-50">
+                    <tr key={certificate.id} className="hover:bg-[var(--color-bg-secondary)]">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <HiOutlineDocumentText className="h-5 w-5 text-blue-600 mr-2" />
-                          <span className="text-sm font-medium text-gray-900">
+                          <HiOutlineDocumentText className="h-5 w-5 text-[var(--color-primary)] mr-2" />
+                          <span className="text-sm font-medium text-[var(--color-text-primary)]">
                             Certificate #{certificate.id}
                           </span>
                         </div>
@@ -297,7 +297,7 @@ const Certificates = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <HiOutlineUser className="h-4 w-4 text-gray-400 mr-2" />
-                          <span className="text-sm text-gray-900">
+                          <span className="text-sm text-[var(--color-text-primary)]">
                             {getCandidateName(certificate)}
                           </span>
                         </div>
@@ -312,7 +312,7 @@ const Certificates = () => {
                         <div className="flex items-center justify-end space-x-2">
                           <Link
                             to={`/certificate/${certificate.id}`}
-                            className="text-blue-600 hover:text-blue-900"
+                            className="text-[var(--color-primary)] hover:text-blue-900"
                             title="View"
                           >
                             <HiOutlineEye className="h-5 w-5" />

@@ -23,7 +23,7 @@ const Hiringpages = () => {
     spa: '',
   });
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 20;
+  const itemsPerPage = 15;
 
   // Helper function to filter forms
   const getFilteredForms = (forms) => {
@@ -128,17 +128,17 @@ const Hiringpages = () => {
 
   if (loading && hiringForms.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--color-bg-secondary)] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading hiring forms...</p>
+          <p className="mt-4 text-[var(--color-text-secondary)]">Loading hiring forms...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-[var(--color-bg-secondary)] py-8 px-4">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg shadow-xl p-8">
@@ -185,7 +185,7 @@ const Hiringpages = () => {
 
         {/* Hiring Form - Removed as HR should not create hiring posts here */}
         {false && (
-          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-md p-6 mb-6">
             <h2 className="text-xl font-semibold mb-4">
               {editingForm ? 'Edit Hiring Post' : 'Create New Hiring Post'}
             </h2>
@@ -287,7 +287,7 @@ const Hiringpages = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  className="px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                 >
                   {loading ? 'Saving...' : editingForm ? 'Update' : 'Create'}
                 </button>
@@ -298,7 +298,7 @@ const Hiringpages = () => {
                     setEditingForm(null);
                     resetForm();
                   }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-[var(--color-bg-secondary)]"
                 >
                   Cancel
                 </button>
@@ -308,7 +308,7 @@ const Hiringpages = () => {
         )}
 
         {/* Hiring Forms Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-[var(--color-bg-primary)] rounded-lg shadow overflow-hidden">
           <HiringDataTable
             hiringForms={hiringForms}
             onEdit={handleEdit}

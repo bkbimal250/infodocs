@@ -36,10 +36,10 @@ const CandidateViewDetails = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--color-bg-secondary)] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading candidate details...</p>
+          <p className="mt-4 text-[var(--color-text-secondary)]">Loading candidate details...</p>
         </div>
       </div>
     );
@@ -47,12 +47,12 @@ const CandidateViewDetails = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--color-bg-secondary)] flex items-center justify-center">
         <div className="text-center">
           <div className="text-red-600 text-xl mb-4">{error}</div>
           <button
             onClick={() => navigate('/admin/forms-data/candidates')}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+            className="bg-[var(--color-primary)] text-white px-6 py-2 rounded-lg hover:bg-blue-700"
           >
             Back to Candidates
           </button>
@@ -69,7 +69,7 @@ const CandidateViewDetails = () => {
     if (!filePath) return null;
     
     // Get API base URL from environment or use default
-    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://infodocs.api.d0s369.co.in/api';
     
     // Handle different file path formats
     // Files are stored as "uploads/candidate_forms/uuid.jpg" or "candidate_forms/uuid.jpg"
@@ -94,18 +94,18 @@ const CandidateViewDetails = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-[var(--color-bg-secondary)] py-8 px-4">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Candidate Details</h1>
-              <p className="text-gray-600 mt-1">Form ID: #{candidate.id}</p>
+              <h1 className="text-3xl font-bold text-[var(--color-text-primary)]">Candidate Details</h1>
+              <p className="text-[var(--color-text-secondary)] mt-1">Form ID: #{candidate.id}</p>
             </div>
             <Link
               to="/admin/forms-data/candidates"
-              className="text-blue-600 hover:text-blue-700 font-semibold flex items-center gap-2"
+              className="text-[var(--color-primary)] hover:text-blue-700 font-semibold flex items-center gap-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -115,34 +115,34 @@ const CandidateViewDetails = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-xl p-8 space-y-8">
+        <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-xl p-8 space-y-8">
           {/* Personal Information */}
           <div>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
+              <svg className="w-6 h-6 text-[var(--color-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
               Personal Information
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="bg-[var(--color-bg-secondary)] p-4 rounded-lg">
                 <label className="text-sm font-medium text-gray-500 block mb-1">Full Name</label>
-                <p className="text-lg font-semibold text-gray-900">
+                <p className="text-lg font-semibold text-[var(--color-text-primary)]">
                   {candidate.first_name} {candidate.middle_name || ''} {candidate.last_name}
                 </p>
               </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="bg-[var(--color-bg-secondary)] p-4 rounded-lg">
                 <label className="text-sm font-medium text-gray-500 block mb-1">Age</label>
-                <p className="text-lg font-semibold text-gray-900">{candidate.age} years</p>
+                <p className="text-lg font-semibold text-[var(--color-text-primary)]">{candidate.age} years</p>
               </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="bg-[var(--color-bg-secondary)] p-4 rounded-lg">
                 <label className="text-sm font-medium text-gray-500 block mb-1">Phone Number</label>
-                <p className="text-lg font-semibold text-gray-900">{candidate.phone_number}</p>
+                <p className="text-lg font-semibold text-[var(--color-text-primary)]">{candidate.phone_number}</p>
               </div>
               {candidate.alternate_number && (
-                <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="bg-[var(--color-bg-secondary)] p-4 rounded-lg">
                   <label className="text-sm font-medium text-gray-500 block mb-1">Alternate Number</label>
-                  <p className="text-lg font-semibold text-gray-900">{candidate.alternate_number}</p>
+                  <p className="text-lg font-semibold text-[var(--color-text-primary)]">{candidate.alternate_number}</p>
                 </div>
               )}
             </div>
@@ -150,74 +150,74 @@ const CandidateViewDetails = () => {
 
           {/* Address Information */}
           <div>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
+              <svg className="w-6 h-6 text-[var(--color-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
               Address Information
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-gray-50 p-4 rounded-lg md:col-span-2">
+              <div className="bg-[var(--color-bg-secondary)] p-4 rounded-lg md:col-span-2">
                 <label className="text-sm font-medium text-gray-500 block mb-1">Current Address</label>
-                <p className="text-gray-900">{candidate.current_address}</p>
+                <p className="text-[var(--color-text-primary)]">{candidate.current_address}</p>
               </div>
               {candidate.aadhar_address && (
-                <div className="bg-gray-50 p-4 rounded-lg md:col-span-2">
+                <div className="bg-[var(--color-bg-secondary)] p-4 rounded-lg md:col-span-2">
                   <label className="text-sm font-medium text-gray-500 block mb-1">Aadhar Address</label>
-                  <p className="text-gray-900">{candidate.aadhar_address}</p>
+                  <p className="text-[var(--color-text-primary)]">{candidate.aadhar_address}</p>
                 </div>
               )}
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="bg-[var(--color-bg-secondary)] p-4 rounded-lg">
                 <label className="text-sm font-medium text-gray-500 block mb-1">City</label>
-                <p className="text-gray-900">{candidate.city}</p>
+                <p className="text-[var(--color-text-primary)]">{candidate.city}</p>
               </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="bg-[var(--color-bg-secondary)] p-4 rounded-lg">
                 <label className="text-sm font-medium text-gray-500 block mb-1">State</label>
-                <p className="text-gray-900">{candidate.state}</p>
+                <p className="text-[var(--color-text-primary)]">{candidate.state}</p>
               </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="bg-[var(--color-bg-secondary)] p-4 rounded-lg">
                 <label className="text-sm font-medium text-gray-500 block mb-1">Zip Code</label>
-                <p className="text-gray-900">{candidate.zip_code}</p>
+                <p className="text-[var(--color-text-primary)]">{candidate.zip_code}</p>
               </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="bg-[var(--color-bg-secondary)] p-4 rounded-lg">
                 <label className="text-sm font-medium text-gray-500 block mb-1">Country</label>
-                <p className="text-gray-900">{candidate.country}</p>
+                <p className="text-[var(--color-text-primary)]">{candidate.country}</p>
               </div>
             </div>
           </div>
 
           {/* Professional Information */}
           <div>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
+              <svg className="w-6 h-6 text-[var(--color-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
               Professional Information
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="bg-[var(--color-bg-secondary)] p-4 rounded-lg">
                 <label className="text-sm font-medium text-gray-500 block mb-1">Position Applied For</label>
-                <p className="text-lg font-semibold text-gray-900">{candidate.position_applied_for}</p>
+                <p className="text-lg font-semibold text-[var(--color-text-primary)]">{candidate.position_applied_for}</p>
               </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="bg-[var(--color-bg-secondary)] p-4 rounded-lg">
                 <label className="text-sm font-medium text-gray-500 block mb-1">SPA Location</label>
-                <p className="text-lg font-semibold text-gray-900">
+                <p className="text-lg font-semibold text-[var(--color-text-primary)]">
                   {candidate.spa?.name || candidate.spa_name_text || 'N/A'}
                 </p>
               </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="bg-[var(--color-bg-secondary)] p-4 rounded-lg">
                 <label className="text-sm font-medium text-gray-500 block mb-1">Work Experience</label>
-                <p className="text-gray-900">{candidate.work_experience}</p>
+                <p className="text-[var(--color-text-primary)]">{candidate.work_experience}</p>
               </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="bg-[var(--color-bg-secondary)] p-4 rounded-lg">
                 <label className="text-sm font-medium text-gray-500 block mb-1">Therapist Experience</label>
-                <p className="text-gray-900">{candidate.Therapist_experience}</p>
+                <p className="text-[var(--color-text-primary)]">{candidate.Therapist_experience}</p>
               </div>
               {candidate.education_certificate_courses && (
-                <div className="bg-gray-50 p-4 rounded-lg md:col-span-2">
+                <div className="bg-[var(--color-bg-secondary)] p-4 rounded-lg md:col-span-2">
                   <label className="text-sm font-medium text-gray-500 block mb-1">Education & Certificates</label>
-                  <p className="text-gray-900">{candidate.education_certificate_courses}</p>
+                  <p className="text-[var(--color-text-primary)]">{candidate.education_certificate_courses}</p>
                 </div>
               )}
             </div>
@@ -227,21 +227,21 @@ const CandidateViewDetails = () => {
           {(candidate.passport_size_photo || candidate.age_proof_document || candidate.aadhar_card_front || 
             candidate.aadhar_card_back || candidate.pan_card || candidate.signature) && (
             <div>
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
+                <svg className="w-6 h-6 text-[var(--color-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 Documents
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {candidate.passport_size_photo && (
-                  <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="bg-[var(--color-bg-secondary)] p-4 rounded-lg">
                     <label className="text-sm font-medium text-gray-500 block mb-2">Passport Size Photo</label>
                     <div className="relative">
                       <img
                         src={getFileUrl(candidate.passport_size_photo)}
                         alt="Passport Photo"
-                        className="w-full h-48 object-contain rounded-lg border border-gray-300 bg-white"
+                        className="w-full h-48 object-contain rounded-lg border border-gray-300 bg-[var(--color-bg-primary)]"
                         onError={(e) => {
                           e.target.style.display = 'none';
                           const errorMsg = e.target.nextElementSibling;
@@ -256,7 +256,7 @@ const CandidateViewDetails = () => {
                       href={getFileUrl(candidate.passport_size_photo)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-2 text-sm text-blue-600 hover:text-blue-700 inline-flex items-center gap-1"
+                      className="mt-2 text-sm text-[var(--color-primary)] hover:text-blue-700 inline-flex items-center gap-1"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -266,13 +266,13 @@ const CandidateViewDetails = () => {
                   </div>
                 )}
                 {candidate.signature && (
-                  <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="bg-[var(--color-bg-secondary)] p-4 rounded-lg">
                     <label className="text-sm font-medium text-gray-500 block mb-2">Signature</label>
                     <div className="relative">
                       <img
                         src={getFileUrl(candidate.signature)}
                         alt="Signature"
-                        className="w-full h-48 object-contain rounded-lg border border-gray-300 bg-white"
+                        className="w-full h-48 object-contain rounded-lg border border-gray-300 bg-[var(--color-bg-primary)]"
                         onError={(e) => {
                           e.target.style.display = 'none';
                           const errorMsg = e.target.nextElementSibling;
@@ -287,7 +287,7 @@ const CandidateViewDetails = () => {
                       href={getFileUrl(candidate.signature)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-2 text-sm text-blue-600 hover:text-blue-700 inline-flex items-center gap-1"
+                      className="mt-2 text-sm text-[var(--color-primary)] hover:text-blue-700 inline-flex items-center gap-1"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -297,13 +297,13 @@ const CandidateViewDetails = () => {
                   </div>
                 )}
                 {candidate.aadhar_card_front && (
-                  <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="bg-[var(--color-bg-secondary)] p-4 rounded-lg">
                     <label className="text-sm font-medium text-gray-500 block mb-2">Aadhar Card (Front)</label>
                     <div className="relative">
                       <img
                         src={getFileUrl(candidate.aadhar_card_front)}
                         alt="Aadhar Front"
-                        className="w-full h-48 object-contain rounded-lg border border-gray-300 bg-white"
+                        className="w-full h-48 object-contain rounded-lg border border-gray-300 bg-[var(--color-bg-primary)]"
                         onError={(e) => {
                           e.target.style.display = 'none';
                           const errorMsg = e.target.nextElementSibling;
@@ -318,7 +318,7 @@ const CandidateViewDetails = () => {
                       href={getFileUrl(candidate.aadhar_card_front)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-2 text-sm text-blue-600 hover:text-blue-700 inline-flex items-center gap-1"
+                      className="mt-2 text-sm text-[var(--color-primary)] hover:text-blue-700 inline-flex items-center gap-1"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -328,13 +328,13 @@ const CandidateViewDetails = () => {
                   </div>
                 )}
                 {candidate.aadhar_card_back && (
-                  <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="bg-[var(--color-bg-secondary)] p-4 rounded-lg">
                     <label className="text-sm font-medium text-gray-500 block mb-2">Aadhar Card (Back)</label>
                     <div className="relative">
                       <img
                         src={getFileUrl(candidate.aadhar_card_back)}
                         alt="Aadhar Back"
-                        className="w-full h-48 object-contain rounded-lg border border-gray-300 bg-white"
+                        className="w-full h-48 object-contain rounded-lg border border-gray-300 bg-[var(--color-bg-primary)]"
                         onError={(e) => {
                           e.target.style.display = 'none';
                           const errorMsg = e.target.nextElementSibling;
@@ -349,7 +349,7 @@ const CandidateViewDetails = () => {
                       href={getFileUrl(candidate.aadhar_card_back)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-2 text-sm text-blue-600 hover:text-blue-700 inline-flex items-center gap-1"
+                      className="mt-2 text-sm text-[var(--color-primary)] hover:text-blue-700 inline-flex items-center gap-1"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -359,13 +359,13 @@ const CandidateViewDetails = () => {
                   </div>
                 )}
                 {candidate.pan_card && (
-                  <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="bg-[var(--color-bg-secondary)] p-4 rounded-lg">
                     <label className="text-sm font-medium text-gray-500 block mb-2">PAN Card</label>
                     <div className="relative">
                       <img
                         src={getFileUrl(candidate.pan_card)}
                         alt="PAN Card"
-                        className="w-full h-48 object-contain rounded-lg border border-gray-300 bg-white"
+                        className="w-full h-48 object-contain rounded-lg border border-gray-300 bg-[var(--color-bg-primary)]"
                         onError={(e) => {
                           e.target.style.display = 'none';
                           const errorMsg = e.target.nextElementSibling;
@@ -380,7 +380,7 @@ const CandidateViewDetails = () => {
                       href={getFileUrl(candidate.pan_card)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-2 text-sm text-blue-600 hover:text-blue-700 inline-flex items-center gap-1"
+                      className="mt-2 text-sm text-[var(--color-primary)] hover:text-blue-700 inline-flex items-center gap-1"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -390,13 +390,13 @@ const CandidateViewDetails = () => {
                   </div>
                 )}
                 {candidate.age_proof_document && (
-                  <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="bg-[var(--color-bg-secondary)] p-4 rounded-lg">
                     <label className="text-sm font-medium text-gray-500 block mb-2">Age Proof Document</label>
                     <div className="relative">
                       <img
                         src={getFileUrl(candidate.age_proof_document)}
                         alt="Age Proof"
-                        className="w-full h-48 object-contain rounded-lg border border-gray-300 bg-white"
+                        className="w-full h-48 object-contain rounded-lg border border-gray-300 bg-[var(--color-bg-primary)]"
                         onError={(e) => {
                           e.target.style.display = 'none';
                           const errorMsg = e.target.nextElementSibling;
@@ -411,7 +411,7 @@ const CandidateViewDetails = () => {
                       href={getFileUrl(candidate.age_proof_document)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-2 text-sm text-blue-600 hover:text-blue-700 inline-flex items-center gap-1"
+                      className="mt-2 text-sm text-[var(--color-primary)] hover:text-blue-700 inline-flex items-center gap-1"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -427,13 +427,13 @@ const CandidateViewDetails = () => {
           {/* Submission Info */}
           <div className="border-t pt-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="bg-[var(--color-bg-secondary)] p-4 rounded-lg">
                 <label className="text-sm font-medium text-gray-500 block mb-1">Submitted On</label>
-                <p className="text-gray-900">{new Date(candidate.created_at).toLocaleString()}</p>
+                <p className="text-[var(--color-text-primary)]">{new Date(candidate.created_at).toLocaleString()}</p>
               </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="bg-[var(--color-bg-secondary)] p-4 rounded-lg">
                 <label className="text-sm font-medium text-gray-500 block mb-1">Last Updated</label>
-                <p className="text-gray-900">{new Date(candidate.updated_at).toLocaleString()}</p>
+                <p className="text-[var(--color-text-primary)]">{new Date(candidate.updated_at).toLocaleString()}</p>
               </div>
             </div>
           </div>

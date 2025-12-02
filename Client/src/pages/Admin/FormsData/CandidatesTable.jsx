@@ -145,10 +145,10 @@ const CandidatesTable = ({ candidates, loading, onEdit, onDelete }) => {
   };
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-md p-6">
         <div className="animate-pulse space-y-4">
           {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-16 bg-gray-200 rounded"></div>
+            <div key={i} className="h-16 bg-[var(--color-gray-200)] rounded"></div>
           ))}
         </div>
       </div>
@@ -157,9 +157,9 @@ const CandidatesTable = ({ candidates, loading, onEdit, onDelete }) => {
 
   if (!candidates || candidates.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-12 text-center">
+      <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-md p-12 text-center">
         <svg
-          className="w-24 h-24 mx-auto text-gray-400 mb-4"
+          className="w-24 h-24 mx-auto text-[var(--color-text-tertiary)] mb-4"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -171,19 +171,19 @@ const CandidatesTable = ({ candidates, loading, onEdit, onDelete }) => {
             d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
           />
         </svg>
-        <p className="text-gray-500 text-lg">No candidate forms found</p>
-        <p className="text-gray-400 text-sm mt-2">Candidates will appear here when they submit forms</p>
+        <p className="text-[var(--color-text-secondary)] text-lg">No candidate forms found</p>
+        <p className="text-[var(--color-text-tertiary)] text-sm mt-2">Candidates will appear here when they submit forms</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden">
+    <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-md overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+        <table className="min-w-full divide-y divide-[var(--color-border-primary)]">
+          <thead className="bg-[var(--color-gray-50)]">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
                 Name
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -206,46 +206,46 @@ const CandidatesTable = ({ candidates, loading, onEdit, onDelete }) => {
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-[var(--color-bg-primary)] divide-y divide-[var(--color-border-primary)]">
             {candidates.map((candidate) => (
-              <tr key={candidate.id} className="hover:bg-gray-50">
+              <tr key={candidate.id} className="hover:bg-[var(--color-gray-50)]">
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">
+                  <div className="text-sm font-medium text-[var(--color-text-primary)]">
                     {candidate.first_name} {candidate.middle_name || ''} {candidate.last_name}
                   </div>
-                  <div className="text-sm text-gray-500">Age: {candidate.age}</div>
+                  <div className="text-sm text-[var(--color-text-secondary)]">Age: {candidate.age}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{candidate.phone_number}</div>
+                  <div className="text-sm text-[var(--color-text-primary)]">{candidate.phone_number}</div>
                   {candidate.alternate_number && (
-                    <div className="text-sm text-gray-500">{candidate.alternate_number}</div>
+                    <div className="text-sm text-[var(--color-text-secondary)]">{candidate.alternate_number}</div>
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{candidate.position_applied_for}</div>
+                  <div className="text-sm text-[var(--color-text-primary)]">{candidate.position_applied_for}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">
+                  <div className="text-sm text-[var(--color-text-primary)]">
                     {candidate.spa?.name || candidate.spa_name_text || 'N/A'}
                   </div>
                   {(candidate.spa?.city || candidate.city) && (
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-[var(--color-text-secondary)]">
                       {candidate.spa?.city || candidate.city}, {candidate.spa?.state || candidate.state}
                     </div>
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{candidate.work_experience}</div>
-                  <div className="text-sm text-gray-500">Therapist: {candidate.Therapist_experience}</div>
+                  <div className="text-sm text-[var(--color-text-primary)]">{candidate.work_experience}</div>
+                  <div className="text-sm text-[var(--color-text-secondary)]">Therapist: {candidate.Therapist_experience}</div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--color-text-secondary)]">
                   {new Date(candidate.created_at).toLocaleDateString()}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <div className="flex items-center gap-2 flex-wrap">
                     <Link
                       to={`/admin/forms-data/candidates/${candidate.id}`}
-                      className="text-blue-600 hover:text-blue-900 font-medium inline-flex items-center gap-1 px-2 py-1 rounded hover:bg-blue-50"
+                      className="text-[var(--color-primary)] hover:text-[var(--color-primary-dark)] font-medium inline-flex items-center gap-1 px-2 py-1 rounded hover:bg-[var(--color-primary-light)]"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -255,7 +255,7 @@ const CandidatesTable = ({ candidates, loading, onEdit, onDelete }) => {
                     </Link>
                     <button
                       onClick={() => handlePrint(candidate, 'application')}
-                      className="text-green-600 hover:text-green-900 font-medium inline-flex items-center gap-1 px-2 py-1 rounded hover:bg-green-50"
+                      className="text-[var(--color-success)] hover:text-[var(--color-success-dark)] font-medium inline-flex items-center gap-1 px-2 py-1 rounded hover:bg-[var(--color-success-light)]"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
@@ -264,7 +264,7 @@ const CandidatesTable = ({ candidates, loading, onEdit, onDelete }) => {
                     </button>
                     <button
                       onClick={() => handlePrint(candidate, 'undertaking')}
-                      className="text-purple-600 hover:text-purple-900 font-medium inline-flex items-center gap-1 px-2 py-1 rounded hover:bg-purple-50"
+                      className="text-[var(--color-secondary)] hover:text-[var(--color-secondary-dark)] font-medium inline-flex items-center gap-1 px-2 py-1 rounded hover:bg-[var(--color-secondary-light)]"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
@@ -274,7 +274,7 @@ const CandidatesTable = ({ candidates, loading, onEdit, onDelete }) => {
                     {onEdit && (
                       <button
                         onClick={() => onEdit(candidate)}
-                        className="text-indigo-600 hover:text-indigo-900 font-medium inline-flex items-center gap-1 px-2 py-1 rounded hover:bg-indigo-50"
+                        className="text-[var(--color-info)] hover:text-[var(--color-info-dark)] font-medium inline-flex items-center gap-1 px-2 py-1 rounded hover:bg-[var(--color-info-light)]"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -285,7 +285,7 @@ const CandidatesTable = ({ candidates, loading, onEdit, onDelete }) => {
                     {onDelete && (
                       <button
                         onClick={() => onDelete(candidate.id)}
-                        className="text-red-600 hover:text-red-900 font-medium inline-flex items-center gap-1 px-2 py-1 rounded hover:bg-red-50"
+                        className="text-[var(--color-error)] hover:text-[var(--color-error-dark)] font-medium inline-flex items-center gap-1 px-2 py-1 rounded hover:bg-[var(--color-error-light)]"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -305,10 +305,10 @@ const CandidatesTable = ({ candidates, loading, onEdit, onDelete }) => {
       {showPrintModal && selectedCandidate && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 print:hidden">
           <div className="flex items-center justify-center min-h-screen p-4">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
               {/* Modal Header */}
-              <div className="flex items-center justify-between p-4 border-b bg-gray-50 print:hidden">
-                <h3 className="text-lg font-semibold text-gray-900">
+              <div className="flex items-center justify-between p-4 border-b bg-[var(--color-gray-50)] print:hidden">
+                <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
                   {printType === 'application' ? 'Job Application Form' : 'Undertaking Form'}
                 </h3>
                 <div className="flex items-center gap-2">
@@ -318,7 +318,7 @@ const CandidatesTable = ({ candidates, loading, onEdit, onDelete }) => {
                       if (element) handleDownloadPDF(element);
                     }}
                     disabled={downloading}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 bg-[var(--color-success)] text-[var(--color-text-inverse)] rounded-lg hover:bg-[var(--color-success-dark)] flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -327,7 +327,7 @@ const CandidatesTable = ({ candidates, loading, onEdit, onDelete }) => {
                   </button>
                   <button
                     onClick={handlePrintPage}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                    className="px-4 py-2 bg-[var(--color-primary)] text-[var(--color-text-inverse)] rounded-lg hover:bg-[var(--color-primary-dark)] flex items-center gap-2"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
@@ -336,7 +336,7 @@ const CandidatesTable = ({ candidates, loading, onEdit, onDelete }) => {
                   </button>
                   <button
                     onClick={handleClosePrintModal}
-                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                    className="px-4 py-2 bg-[var(--color-gray-200)] text-[var(--color-text-primary)] rounded-lg hover:bg-[var(--color-gray-300)]"
                   >
                     Close
                   </button>
@@ -344,7 +344,7 @@ const CandidatesTable = ({ candidates, loading, onEdit, onDelete }) => {
               </div>
 
               {/* Modal Content */}
-              <div className="overflow-y-auto flex-1 bg-white" ref={printContentRef}>
+              <div className="overflow-y-auto flex-1 bg-[var(--color-bg-primary)]" ref={printContentRef}>
                 {printType === 'application' ? (
                   <PrintApplicationDetails 
                     data={{ candidate: selectedCandidate }} 

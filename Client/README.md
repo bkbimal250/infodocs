@@ -40,7 +40,7 @@ npm install
 
 2. Create `.env` file:
 ```env
-VITE_API_BASE_URL=http://localhost:8000/api
+VITE_API_BASE_URL=https://infodocs.api.d0s369.co.in/api
 ```
 
 3. Start development server:

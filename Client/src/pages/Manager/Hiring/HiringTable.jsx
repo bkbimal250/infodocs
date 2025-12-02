@@ -9,17 +9,17 @@ const HiringTable = ({ hiringForms, loading, onView, onEdit, onDelete }) => {
     return (
       <div className="text-center py-12">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-        <p className="mt-4 text-gray-500">Loading your hiring forms...</p>
+        <p className="mt-4 text-[var(--color-text-secondary)]">Loading your hiring forms...</p>
       </div>
     );
   }
 
   if (!hiringForms || hiringForms.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-12 text-center">
+      <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-md p-12 text-center">
         <HiBriefcase className="w-16 h-16 text-gray-400 mx-auto mb-4" />
         <h3 className="text-xl font-semibold text-gray-900 mb-2">No Hiring Forms Submitted</h3>
-        <p className="text-gray-500 mb-4">
+        <p className="text-[var(--color-text-secondary)] mb-4">
           You haven't submitted any hiring forms yet.
         </p>
         <a
@@ -33,46 +33,42 @@ const HiringTable = ({ hiringForms, loading, onView, onEdit, onDelete }) => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden">
+    <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-md overflow-hidden">
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+          <thead className="bg-[var(--color-bg-secondary)]">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
                 SPA Location
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
                 Role
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Description
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+           
+              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
                 Experience Required
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Education Required
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+           
+              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
                 Skills Required
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
                 Submitted Date
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-[var(--color-bg-primary)] divide-y divide-gray-200">
             {hiringForms.map((form) => (
-              <tr key={form.id} className="hover:bg-gray-50">
+              <tr key={form.id} className="hover:bg-[var(--color-bg-secondary)]">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm font-medium text-gray-900">
                     {form.spa?.name || form.spa_name_text || 'N/A'}
                   </div>
                   {form.spa?.city && form.spa?.state && (
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-[var(--color-text-secondary)]">
                       {form.spa.city}, {form.spa.state}
                     </div>
                   )}
@@ -80,24 +76,17 @@ const HiringTable = ({ hiringForms, loading, onView, onEdit, onDelete }) => {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm font-medium text-gray-900">{form.for_role || 'N/A'}</div>
                 </td>
-                <td className="px-6 py-4">
-                  <div className="text-sm text-gray-900 max-w-xs truncate" title={form.description}>
-                    {form.description || 'N/A'}
-                  </div>
+             
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-[var(--color-text-secondary)]">{form.required_experience || 'N/A'}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-500">{form.required_experience || 'N/A'}</div>
+                  <div className="text-sm text-[var(--color-text-secondary)]">{form.required_education || 'N/A'}</div>
                 </td>
+             
+                
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-500">{form.required_education || 'N/A'}</div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="text-sm text-gray-500 max-w-xs truncate" title={form.required_skills}>
-                    {form.required_skills || 'N/A'}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-[var(--color-text-secondary)]">
                     {form.created_at ? new Date(form.created_at).toLocaleDateString() : 'N/A'}
                   </div>
                 </td>
@@ -106,7 +95,7 @@ const HiringTable = ({ hiringForms, loading, onView, onEdit, onDelete }) => {
                     {onView && (
                       <button
                         onClick={() => onView(form.id)}
-                        className="text-blue-600 hover:text-blue-900 flex items-center gap-1 px-2 py-1 rounded hover:bg-blue-50 transition-colors"
+                        className="text-[var(--color-primary)] hover:text-blue-900 flex items-center gap-1 px-2 py-1 rounded hover:bg-blue-50 transition-colors"
                         title="View Details"
                       >
                         <HiEye className="w-4 h-4" />

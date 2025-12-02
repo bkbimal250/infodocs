@@ -53,6 +53,7 @@ class SPAUpdate(BaseModel):
 class SPAResponse(SPABase):
     id: int
     is_active: bool
+    created_by: Optional[int] = None
     created_at: datetime
     updated_at: datetime
 

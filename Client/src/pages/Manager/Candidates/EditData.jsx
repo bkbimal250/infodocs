@@ -131,15 +131,15 @@ const EditData = ({ candidate, isOpen, onSuccess, onCancel }) => {
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
         <div
-          className="relative bg-white rounded-lg shadow-2xl max-w-4xl w-full p-6 transform transition-all border-2 border-gray-200 max-h-[90vh] overflow-y-auto"
+          className="relative bg-[var(--color-bg-primary)] rounded-lg shadow-2xl max-w-4xl w-full p-6 transform transition-all border-2 border-[var(--color-border-primary)] max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
-            <h2 className="text-2xl font-bold text-gray-900">Edit Candidate Form</h2>
+          <div className="flex justify-between items-center mb-6 pb-4 border-b border-[var(--color-border-primary)]">
+            <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">Edit Candidate Form</h2>
             <button
               onClick={onCancel}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-gray-400 hover:text-[var(--color-text-secondary)] transition-colors"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -396,11 +396,11 @@ const EditData = ({ candidate, isOpen, onSuccess, onCancel }) => {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3 pt-6 border-t border-gray-200">
+            <div className="flex gap-3 pt-6 border-t border-[var(--color-border-primary)]">
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold shadow-md hover:shadow-lg transition-all"
+                className="flex-1 bg-[var(--color-primary)] text-white py-3 px-6 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold shadow-md hover:shadow-lg transition-all"
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
@@ -415,7 +415,7 @@ const EditData = ({ candidate, isOpen, onSuccess, onCancel }) => {
                 type="button"
                 onClick={onCancel}
                 disabled={loading}
-                className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 font-semibold transition-colors"
+                className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-[var(--color-bg-secondary)] disabled:opacity-50 font-semibold transition-colors"
               >
                 Cancel
               </button>

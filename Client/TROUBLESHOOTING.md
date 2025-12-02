@@ -6,11 +6,11 @@
 
 If you're getting SSL protocol errors when connecting to the backend:
 
-1. **Check Backend URL**: Ensure your backend is running on `http://localhost:8000` (not `https://`)
+1. **Check Backend URL**: Ensure your backend is running on `http://localhost:8009` (not `https://`)
 
 2. **Check Environment Variables**: 
    - Create a `.env` file in the `Client` folder
-   - Set: `VITE_API_BASE_URL=http://localhost:8000/api`
+   - Set: `VITE_API_BASE_URL=https://infodocs.api.d0s369.co.in/api`
    - Make sure it's `http://` not `https://`
 
 3. **Use Vite Proxy**: The `vite.config.js` is configured with a proxy that automatically handles CORS and SSL issues. The API will use relative paths in development mode.
@@ -25,8 +25,8 @@ If you're getting SSL protocol errors when connecting to the backend:
 If you're getting network errors:
 
 1. **Check if Backend is Running**: 
-   - Make sure the Django backend is running on `http://localhost:8000`
-   - Test by visiting `http://localhost:8000/api/users/` in your browser
+   - Make sure the Django backend is running on `http://localhost:8009`
+   - Test by visiting `https://infodocs.api.d0s369.co.in/api/users/` in your browser
 
 2. **Check CORS Settings**: 
    - Ensure Django CORS settings allow `http://localhost:5173`

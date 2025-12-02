@@ -79,12 +79,12 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-[var(--color-bg-secondary)] py-8 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="mt-2 text-gray-600">Overview of your system statistics and recent activity</p>
+          <h1 className="text-3xl font-bold text-[var(--color-text-primary)]">Admin Dashboard</h1>
+          <p className="mt-2 text-[var(--color-text-secondary)]">Overview of your system statistics and recent activity</p>
         </div>
 
         {/* Statistics Cards */}
@@ -95,9 +95,9 @@ const AdminDashboard = () => {
         {/* Notifications and Activities */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Recent Notifications */}
-          <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+          <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">Recent Notifications</h2>
+              <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">Recent Notifications</h2>
               <Link
                 to="/admin/notifications"
                 className="text-sm text-blue-600 hover:text-blue-800 font-medium"

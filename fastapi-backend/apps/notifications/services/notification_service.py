@@ -39,14 +39,18 @@ async def create_login_notification(
     db: AsyncSession,
     user_id: int,
     ip_address: Optional[str] = None,
-    user_agent: Optional[str] = None
+    user_agent: Optional[str] = None,
+    send_admin_email: bool = True
 ) -> Notification:
-    """Create a login notification"""
+    """Create a login notification and optionally send email to admin"""
     user = await db.get(User, user_id)
     # Get user name safely - don't use property that might trigger lazy loading
     user_name = f"{user.first_name} {user.last_name}" if user else "User"
+    user_email = user.email if user else "Unknown"
+    user_role = user.role if user else "Unknown"
     
-    return await create_notification(
+    # Create notification for the user
+    notification = await create_notification(
         db=db,
         user_id=user_id,
         title="Login Successful",
@@ -55,9 +59,96 @@ async def create_login_notification(
         metadata={
             "ip_address": ip_address,
             "user_agent": user_agent,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
     )
+    
+    # Send email to admin if enabled
+    if send_admin_email:
+        try:
+            # Find all admin users
+            from sqlalchemy import select
+            stmt = select(User).where(User.role.in_(["admin", "super_admin"]))
+            result = await db.execute(stmt)
+            admin_users = result.scalars().all()
+            
+            if admin_users:
+                from core.utils import send_email
+                from config.settings import settings
+                
+                # Don't send email if SKIP_EMAIL is enabled
+                if not settings.SKIP_EMAIL:
+                    login_time = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+                    subject = f"User Login Alert: {user_name}"
+                    body = f"""
+A user has logged into the system:
+
+User Details:
+- Name: {user_name}
+- Email: {user_email}
+- Role: {user_role}
+- Login Time: {login_time}
+- IP Address: {ip_address or 'Unknown'}
+- User Agent: {user_agent or 'Unknown'}
+
+This is an automated notification from SPADocs system.
+"""
+                    html_body = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; }}
+        .content {{ background: #f9f9f9; padding: 20px; border-radius: 0 0 8px 8px; }}
+        .info-row {{ margin: 10px 0; padding: 10px; background: white; border-radius: 4px; }}
+        .label {{ font-weight: bold; color: #667eea; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>User Login Alert</h2>
+        </div>
+        <div class="content">
+            <p>A user has logged into the SPADocs system:</p>
+            <div class="info-row">
+                <span class="label">Name:</span> {user_name}
+            </div>
+            <div class="info-row">
+                <span class="label">Email:</span> {user_email}
+            </div>
+            <div class="info-row">
+                <span class="label">Role:</span> {user_role}
+            </div>
+            <div class="info-row">
+                <span class="label">Login Time:</span> {login_time}
+            </div>
+            <div class="info-row">
+                <span class="label">IP Address:</span> {ip_address or 'Unknown'}
+            </div>
+            <div class="info-row">
+                <span class="label">User Agent:</span> {user_agent or 'Unknown'}
+            </div>
+            <p style="margin-top: 20px; font-size: 12px; color: #666;">
+                This is an automated notification from SPADocs system.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+"""
+                    # Send email to all admins
+                    admin_emails = [admin.email for admin in admin_users if admin.email]
+                    if admin_emails:
+                        await send_email(subject, body, admin_emails, html_body=html_body)
+                        logger.info(f"Login notification email sent to {len(admin_emails)} admin(s)")
+        except Exception as e:
+            logger.error(f"Failed to send login notification email to admin: {e}", exc_info=True)
+            # Don't fail the login if email fails
+    
+    return notification
 
 
 async def create_certificate_notification(
@@ -81,7 +172,85 @@ async def create_certificate_notification(
         metadata={
             "certificate_id": certificate_id,
             "certificate_type": certificate_type,
-            "candidate_name": candidate_name
+            "candidate_name": candidate_name,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    )
+
+
+async def create_otp_notification(
+    db: AsyncSession,
+    user_id: int,
+    purpose: str,
+    status: str = "requested",  # requested, verified, failed
+    ip_address: Optional[str] = None
+) -> Notification:
+    """Create an OTP-related notification"""
+    user = await db.get(User, user_id)
+    user_name = f"{user.first_name} {user.last_name}" if user else "User"
+    
+    purpose_map = {
+        "login": "Login",
+        "password_reset": "Password Reset",
+        "email_verification": "Email Verification"
+    }
+    purpose_display = purpose_map.get(purpose, purpose.replace("_", " ").title())
+    
+    if status == "requested":
+        title = f"{purpose_display} OTP Requested"
+        message = f"{user_name} requested an OTP for {purpose_display.lower()}"
+    elif status == "verified":
+        title = f"{purpose_display} OTP Verified"
+        message = f"{user_name} successfully verified OTP for {purpose_display.lower()}"
+    else:  # failed
+        title = f"{purpose_display} OTP Failed"
+        message = f"{user_name} failed to verify OTP for {purpose_display.lower()}"
+    
+    return await create_notification(
+        db=db,
+        user_id=user_id,
+        title=title,
+        message=message,
+        notification_type=f"otp_{purpose}",
+        metadata={
+            "purpose": purpose,
+            "status": status,
+            "ip_address": ip_address,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    )
+
+
+async def create_password_reset_notification(
+    db: AsyncSession,
+    user_id: int,
+    status: str = "requested",  # requested, completed, failed
+    ip_address: Optional[str] = None
+) -> Notification:
+    """Create a password reset notification"""
+    user = await db.get(User, user_id)
+    user_name = f"{user.first_name} {user.last_name}" if user else "User"
+    
+    if status == "requested":
+        title = "Password Reset Requested"
+        message = f"{user_name} requested a password reset"
+    elif status == "completed":
+        title = "Password Reset Completed"
+        message = f"{user_name} successfully reset their password"
+    else:  # failed
+        title = "Password Reset Failed"
+        message = f"{user_name} failed to reset password"
+    
+    return await create_notification(
+        db=db,
+        user_id=user_id,
+        title=title,
+        message=message,
+        notification_type="password_reset",
+        metadata={
+            "status": status,
+            "ip_address": ip_address,
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
     )
 

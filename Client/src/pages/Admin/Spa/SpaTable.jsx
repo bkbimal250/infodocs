@@ -1,15 +1,26 @@
 /**
  * SPA Table Component
- * Displays SPAs in a table format
+ * Displays SPAs in a table format with pagination
  */
 import { Link } from 'react-router-dom';
+import Pagination from '../../common/Pagination';
 
-const SpaTable = ({ spas, onEdit, onDelete, loading }) => {
+const SpaTable = ({
+  spas,
+  onEdit,
+  onDelete,
+  loading,
+  currentPage = 1,
+  totalPages = 1,
+  onPageChange,
+  totalItems = 0,
+  itemsPerPage = 15
+}) => {
   if (loading) {
     return (
       <div className="p-8 text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-        <p className="mt-4 text-gray-600">Loading...</p>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--color-primary)] mx-auto"></div>
+        <p className="mt-4 text-[var(--color-text-secondary)]">Loading...</p>
       </div>
     );
   }
@@ -17,7 +28,7 @@ const SpaTable = ({ spas, onEdit, onDelete, loading }) => {
   if (spas.length === 0) {
     return (
       <div className="p-12 text-center">
-        <div className="text-gray-400 mb-4">
+        <div className="text-[var(--color-text-tertiary)] mb-4">
           <svg
             className="w-16 h-16 mx-auto"
             fill="none"
@@ -38,23 +49,24 @@ const SpaTable = ({ spas, onEdit, onDelete, loading }) => {
             />
           </svg>
         </div>
-        <p className="text-gray-600 text-lg">No SPAs found</p>
-        <p className="text-gray-500 text-sm mt-2">Add a new SPA to get started</p>
+        <p className="text-[var(--color-text-secondary)] text-lg">No SPAs found</p>
+        <p className="text-[var(--color-text-secondary)] text-sm mt-2">Add a new SPA to get started</p>
       </div>
     );
   }
 
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+      <table className="min-w-full divide-y divide-[var(--color-border-primary)]">
+        <thead className="bg-gradient-to-r from-[var(--color-gray-50)] to-[var(--color-gray-100)]">
           <tr>
-            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+            <th className="px-6 py-4 text-left text-xs font-semibold text-[var(--color-text-primary)] uppercase tracking-wider">
               Name
             </th>
             <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-              Address
+              Area
             </th>
+
             <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
               City
             </th>
@@ -67,61 +79,75 @@ const SpaTable = ({ spas, onEdit, onDelete, loading }) => {
             <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
               Created
             </th>
+            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              Created By
+            </th>
             <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
               Actions
             </th>
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="bg-[var(--color-bg-primary)] divide-y divide-[var(--color-border-primary)]">
           {spas.map((spa) => (
-            <tr key={spa.id} className="hover:bg-blue-50 transition-colors duration-150">
+            <tr key={spa.id} className="hover:bg-[var(--color-primary-light)] transition-colors duration-150">
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="flex items-center">
-                  <div className="text-sm font-semibold text-gray-900">{spa.name}</div>
+                  <div className="text-sm font-semibold text-[var(--color-text-primary)]">{spa.name}</div>
                   {spa.code && (
-                    <span className="ml-2 px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">
+                    <span className="ml-2 px-2 py-0.5 text-xs bg-[var(--color-gray-100)] text-[var(--color-text-secondary)] rounded">
                       {spa.code}
                     </span>
                   )}
                 </div>
               </td>
-              <td className="px-6 py-4">
-                <div className="text-sm text-gray-600 max-w-xs truncate" title={spa.address || '-'}>
-                  {spa.address || '-'}
-                </div>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="text-sm text-[var(--color-text-secondary)]">{spa.area || '-'}</div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-600">{spa.city || '-'}</div>
+                <div className="text-sm text-[var(--color-text-secondary)]">{spa.city || '-'}</div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-600">{spa.state || '-'}</div>
+                <div className="text-sm text-[var(--color-text-secondary)]">{spa.state || '-'}</div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <span
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    spa.is_active
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-gray-100 text-gray-800'
-                  }`}
+                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${spa.is_active
+                      ? 'bg-[var(--color-success-light)] text-[var(--color-success-dark)]'
+                      : 'bg-[var(--color-gray-100)] text-[var(--color-gray-800)]'
+                    }`}
                 >
-                  <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${spa.is_active ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                  <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${spa.is_active ? 'bg-[var(--color-success)]' : 'bg-[var(--color-gray-400)]'}`}></span>
                   {spa.is_active ? 'Active' : 'Inactive'}
                 </span>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--color-text-secondary)]">
                 {spa.created_at
-                  ? new Date(spa.created_at).toLocaleDateString('en-US', { 
-                      year: 'numeric', 
-                      month: 'short', 
-                      day: 'numeric' 
-                    })
+                  ? new Date(spa.created_at).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                  })
                   : '-'}
+                <br />
+
+                {spa.updated_at
+                  ? new Date(spa.updated_at).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                  })
+                  : '-'}
+
+
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--color-text-secondary)]">
+                {spa.created_by ? `User #${spa.created_by}` : '-'}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <div className="flex items-center justify-end gap-2">
                   <Link
                     to={`/admin/spas/${spa.id}`}
-                    className="p-2 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-lg transition-colors"
+                    className="p-2 text-[var(--color-info)] hover:text-[var(--color-info-dark)] hover:bg-[var(--color-info-light)] rounded-lg transition-colors"
                     title="View Details"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -131,7 +157,7 @@ const SpaTable = ({ spas, onEdit, onDelete, loading }) => {
                   </Link>
                   <Link
                     to={`/admin/spas/${spa.id}/edit`}
-                    className="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg transition-colors"
+                    className="p-2 text-[var(--color-primary)] hover:text-[var(--color-primary-dark)] hover:bg-[var(--color-primary-light)] rounded-lg transition-colors"
                     title="Edit"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -140,7 +166,7 @@ const SpaTable = ({ spas, onEdit, onDelete, loading }) => {
                   </Link>
                   <button
                     onClick={() => onDelete(spa.id)}
-                    className="p-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-lg transition-colors"
+                    className="p-2 text-[var(--color-error)] hover:text-[var(--color-error-dark)] hover:bg-[var(--color-error-light)] rounded-lg transition-colors"
                     title="Delete"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -153,6 +179,18 @@ const SpaTable = ({ spas, onEdit, onDelete, loading }) => {
           ))}
         </tbody>
       </table>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={onPageChange}
+          totalItems={totalItems}
+          itemsPerPage={itemsPerPage}
+          showInfo={true}
+        />
+      )}
     </div>
   );
 };

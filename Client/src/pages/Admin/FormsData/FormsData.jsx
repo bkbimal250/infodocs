@@ -50,10 +50,10 @@ const FormsData = () => {
 
   if (loading && !statistics) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--color-bg-secondary)] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading forms data...</p>
+          <p className="mt-4 text-[var(--color-text-secondary)]">Loading forms data...</p>
         </div>
       </div>
     );
@@ -62,7 +62,7 @@ const FormsData = () => {
   const totalForms = candidateForms.length + hiringForms.length;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-[var(--color-bg-secondary)] py-8 px-4">
       <div className="max-w-7xl mx-auto">
   
 
@@ -73,14 +73,14 @@ const FormsData = () => {
         )}
 
         {/* Tabs */}
-        <div className="bg-white rounded-lg shadow-sm mb-6">
-          <div className="border-b border-gray-200">
+        <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-sm mb-6">
+          <div className="border-b border-[var(--color-border-primary)]">
             <nav className="flex -mb-px">
               <button
                 onClick={() => setActiveTab('statistics')}
                 className={`px-6 py-3 text-sm font-medium border-b-2 ${
                   activeTab === 'statistics'
-                    ? 'border-blue-500 text-blue-600'
+                    ? 'border-blue-500 text-[var(--color-primary)]'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
@@ -90,7 +90,7 @@ const FormsData = () => {
                 onClick={() => setActiveTab('by-spa')}
                 className={`px-6 py-3 text-sm font-medium border-b-2 ${
                   activeTab === 'by-spa'
-                    ? 'border-blue-500 text-blue-600'
+                    ? 'border-blue-500 text-[var(--color-primary)]'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
@@ -100,7 +100,7 @@ const FormsData = () => {
                 onClick={() => setActiveTab('by-user')}
                 className={`px-6 py-3 text-sm font-medium border-b-2 ${
                   activeTab === 'by-user'
-                    ? 'border-blue-500 text-blue-600'
+                    ? 'border-blue-500 text-[var(--color-primary)]'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
@@ -110,7 +110,7 @@ const FormsData = () => {
                 onClick={() => setActiveTab('all-forms')}
                 className={`px-6 py-3 text-sm font-medium border-b-2 ${
                   activeTab === 'all-forms'
-                    ? 'border-blue-500 text-blue-600'
+                    ? 'border-blue-500 text-[var(--color-primary)]'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >

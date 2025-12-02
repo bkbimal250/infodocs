@@ -18,7 +18,7 @@ const PreviewCertificate = ({ html, onClose }) => {
       if (iframeDoc) {
         setIsLoading(true);
         // Get API base URL (without /api suffix)
-        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://infodocs.api.d0s369.co.in/api';
         const baseUrl = apiBaseUrl.replace('/api', '');
         
         // Replace file:// URLs with HTTP URLs for browser compatibility

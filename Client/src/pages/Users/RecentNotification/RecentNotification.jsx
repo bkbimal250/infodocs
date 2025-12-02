@@ -16,7 +16,7 @@ const RecentNotification = () => {
   const [filter, setFilter] = useState('all'); // 'all', 'unread', 'read'
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const itemsPerPage = 20;
+  const itemsPerPage = 15;
 
   useEffect(() => {
     loadNotifications();
@@ -120,17 +120,17 @@ const RecentNotification = () => {
 
   if (loading && notifications.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--color-bg-secondary)] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading notifications...</p>
+          <p className="mt-4 text-[var(--color-text-secondary)]">Loading notifications...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-[var(--color-bg-secondary)] py-8 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -138,8 +138,8 @@ const RecentNotification = () => {
             <div className="flex items-center gap-3">
               <HiBell className="w-8 h-8 text-blue-600" />
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Notifications</h1>
-                <p className="mt-2 text-gray-600">View and manage your notifications</p>
+                <h1 className="text-3xl font-bold text-[var(--color-text-primary)]">Notifications</h1>
+                <p className="mt-2 text-[var(--color-text-secondary)]">View and manage your notifications</p>
               </div>
             </div>
             {unreadCount > 0 && (
@@ -156,11 +156,11 @@ const RecentNotification = () => {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-md p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Notifications</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{notifications.length}</p>
+                <p className="text-sm font-medium text-[var(--color-text-secondary)]">Total Notifications</p>
+                <p className="text-2xl font-bold text-[var(--color-text-primary)] mt-1">{notifications.length}</p>
               </div>
               <div className="bg-blue-100 rounded-full p-3">
                 <HiBell className="w-6 h-6 text-blue-600" />
@@ -168,11 +168,11 @@ const RecentNotification = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-md p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Unread</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{unreadCount}</p>
+                <p className="text-sm font-medium text-[var(--color-text-secondary)]">Unread</p>
+                <p className="text-2xl font-bold text-[var(--color-text-primary)] mt-1">{unreadCount}</p>
               </div>
               <div className="bg-red-100 rounded-full p-3">
                 <HiBell className="w-6 h-6 text-red-600" />
@@ -180,11 +180,11 @@ const RecentNotification = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-md p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Read</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{notifications.length - unreadCount}</p>
+                <p className="text-sm font-medium text-[var(--color-text-secondary)]">Read</p>
+                <p className="text-2xl font-bold text-[var(--color-text-primary)] mt-1">{notifications.length - unreadCount}</p>
               </div>
               <div className="bg-green-100 rounded-full p-3">
                 <HiCheckCircle className="w-6 h-6 text-green-600" />
@@ -194,7 +194,7 @@ const RecentNotification = () => {
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+        <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-md p-4 mb-6">
           <div className="flex items-center gap-4">
             <span className="text-sm font-medium text-gray-700">Filter:</span>
             <button
@@ -245,9 +245,9 @@ const RecentNotification = () => {
 
         {/* Notifications List */}
         {filteredNotifications.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-md p-12 text-center">
+          <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-md p-12 text-center">
             <HiBell className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No Notifications</h3>
+            <h3 className="text-xl font-semibold text-[var(--color-text-primary)] mb-2">No Notifications</h3>
             <p className="text-gray-500">
               {filter === 'unread' 
                 ? 'You have no unread notifications.' 
@@ -257,12 +257,12 @@ const RecentNotification = () => {
             </p>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-md overflow-hidden">
             <div className="divide-y divide-gray-200">
               {filteredNotifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className={`p-6 hover:bg-gray-50 transition-colors ${
+                  className={`p-6 hover:bg-[var(--color-bg-secondary)] transition-colors ${
                     !notification.is_read ? 'bg-blue-50' : ''
                   }`}
                 >
@@ -273,7 +273,7 @@ const RecentNotification = () => {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <h3 className="text-lg font-semibold text-gray-900">
+                          <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
                             {notification.title || 'Notification'}
                           </h3>
                           {!notification.is_read && (
@@ -295,7 +295,7 @@ const RecentNotification = () => {
                               : 'Unknown date'}
                           </span>
                           {notification.notification_type && (
-                            <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
+                            <span className="px-2 py-0.5 bg-gray-100 text-[var(--color-text-secondary)] rounded">
                               {notification.notification_type}
                             </span>
                           )}

@@ -33,6 +33,8 @@ import {
   CreateUser,
   UsersDetails,
   LastLoginHistory,
+  RecentNotification,
+  RecentActivity,
 } from '../pages/Admin';
 
 // Manager Pages
@@ -439,9 +441,9 @@ const AppRouter = () => {
         <Route
           path="/admin/notifications"
           element={
-            <ProtectedRoute allowedRoles={['admin', 'super_admin', 'spa_manager', 'hr']}>
+            <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
               <AdminLayout>
-                <UserRecentNotification />
+                <RecentNotification />
               </AdminLayout>
             </ProtectedRoute>
           }
@@ -449,9 +451,9 @@ const AppRouter = () => {
         <Route
           path="/admin/activities"
           element={
-            <ProtectedRoute allowedRoles={['admin', 'super_admin', 'spa_manager', 'hr']}>
+            <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
               <AdminLayout>
-                <UserRecentActivity />
+                <RecentActivity />
               </AdminLayout>
             </ProtectedRoute>
           }

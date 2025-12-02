@@ -114,15 +114,15 @@ const EditCandidates = ({ candidate, isOpen, onSuccess, onCancel }) => {
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
         <div
-          className="relative bg-white rounded-lg shadow-2xl max-w-4xl w-full p-6 transform transition-all border-2 border-gray-200 max-h-[90vh] overflow-y-auto"
+          className="relative bg-[var(--color-bg-primary)] rounded-lg shadow-2xl max-w-4xl w-full p-6 transform transition-all border-2 border-[var(--color-border-primary)] max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
-            <h2 className="text-2xl font-bold text-gray-900">Edit Candidate Form</h2>
+          <div className="flex justify-between items-center mb-6 pb-4 border-b border-[var(--color-border-primary)]">
+            <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">Edit Candidate Form</h2>
             <button
               onClick={onCancel}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-gray-400 hover:text-[var(--color-text-secondary)] transition-colors"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -155,42 +155,42 @@ const EditCandidates = ({ candidate, isOpen, onSuccess, onCancel }) => {
             {/* Personal Information */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">First Name *</label>
                 <input
                   type="text"
                   name="first_name"
                   value={formData.first_name}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-[var(--color-border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Middle Name</label>
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">Middle Name</label>
                 <input
                   type="text"
                   name="middle_name"
                   value={formData.middle_name}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-[var(--color-border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">Last Name *</label>
                 <input
                   type="text"
                   name="last_name"
                   value={formData.last_name}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-[var(--color-border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Age *</label>
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">Age *</label>
                 <input
                   type="number"
                   name="age"
@@ -199,148 +199,148 @@ const EditCandidates = ({ candidate, isOpen, onSuccess, onCancel }) => {
                   required
                   min="18"
                   max="100"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-[var(--color-border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">Phone Number *</label>
                 <input
                   type="tel"
                   name="phone_number"
                   value={formData.phone_number}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-[var(--color-border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Alternate Number</label>
+              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">Alternate Number</label>
               <input
                 type="tel"
                 name="alternate_number"
                 value={formData.alternate_number}
                 onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-[var(--color-border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
               />
             </div>
 
             {/* Address Information */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Current Address *</label>
+              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">Current Address *</label>
               <textarea
                 name="current_address"
                 value={formData.current_address}
                 onChange={handleInputChange}
                 rows={2}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-[var(--color-border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Aadhar Address</label>
+              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">Aadhar Address</label>
               <textarea
                 name="aadhar_address"
                 value={formData.aadhar_address}
                 onChange={handleInputChange}
                 rows={2}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-[var(--color-border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">City *</label>
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">City *</label>
                 <input
                   type="text"
                   name="city"
                   value={formData.city}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-[var(--color-border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">State *</label>
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">State *</label>
                 <input
                   type="text"
                   name="state"
                   value={formData.state}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-[var(--color-border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Zip Code *</label>
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">Zip Code *</label>
                 <input
                   type="text"
                   name="zip_code"
                   value={formData.zip_code}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-[var(--color-border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
                 />
               </div>
             </div>
 
             {/* Professional Information */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Position Applied For *</label>
+              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">Position Applied For *</label>
               <input
                 type="text"
                 name="position_applied_for"
                 value={formData.position_applied_for}
                 onChange={handleInputChange}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-[var(--color-border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Work Experience *</label>
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">Work Experience *</label>
                 <input
                   type="text"
                   name="work_experience"
                   value={formData.work_experience}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-[var(--color-border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Therapist Experience *</label>
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">Therapist Experience *</label>
                 <input
                   type="text"
                   name="Therapist_experience"
                   value={formData.Therapist_experience}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-[var(--color-border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Education & Certificates</label>
+              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">Education & Certificates</label>
               <textarea
                 name="education_certificate_courses"
                 value={formData.education_certificate_courses}
                 onChange={handleInputChange}
                 rows={3}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-[var(--color-border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
               />
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3 pt-6 border-t border-gray-200">
+            <div className="flex gap-3 pt-6 border-t border-[var(--color-border-primary)]">
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold shadow-md hover:shadow-lg transition-all"
+                className="flex-1 bg-[var(--color-primary)] text-white py-3 px-6 rounded-lg hover:bg-[var(--color-primary-dark)] disabled:opacity-50 disabled:cursor-not-allowed font-semibold shadow-md hover:shadow-lg transition-all"
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
@@ -355,7 +355,7 @@ const EditCandidates = ({ candidate, isOpen, onSuccess, onCancel }) => {
                 type="button"
                 onClick={onCancel}
                 disabled={loading}
-                className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 font-semibold transition-colors"
+                className="px-6 py-3 border border-[var(--color-border-primary)] rounded-lg hover:bg-[var(--color-bg-secondary)] disabled:opacity-50 font-semibold transition-colors"
               >
                 Cancel
               </button>

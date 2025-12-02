@@ -22,7 +22,7 @@ const PrintApplicationDetails = ({ data = {}, onDownload }) => {
 
   const getFileUrl = (filePath) => {
     if (!filePath) return null;
-    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://infodocs.api.d0s369.co.in/api';
     let cleanPath = filePath;
     if (filePath.startsWith('uploads/')) {
       cleanPath = filePath.replace('uploads/', '');

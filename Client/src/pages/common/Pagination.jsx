@@ -9,7 +9,7 @@ const Pagination = ({
   totalPages = 1, 
   onPageChange, 
   totalItems = 0,
-  itemsPerPage = 10,
+  itemsPerPage = 15,
   showInfo = true 
 }) => {
   const startItem = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
@@ -58,8 +58,8 @@ const Pagination = ({
 
   if (totalPages <= 1) {
     return showInfo ? (
-      <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 bg-white">
-        <div className="text-sm text-gray-700">
+      <div className="flex items-center justify-between px-4 py-3 border-t border-[var(--color-border-primary)] bg-[var(--color-bg-primary)]">
+        <div className="text-sm text-[var(--color-text-primary)]">
           Showing <span className="font-medium">{startItem}</span> to <span className="font-medium">{endItem}</span> of{' '}
           <span className="font-medium">{totalItems}</span> results
         </div>
@@ -68,13 +68,13 @@ const Pagination = ({
   }
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 bg-white sm:px-6">
+    <div className="flex items-center justify-between px-4 py-3 border-t border-[var(--color-border-primary)] bg-[var(--color-bg-primary)] sm:px-6">
       {showInfo && (
         <div className="flex-1 flex justify-between sm:hidden">
           <button
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="relative inline-flex items-center px-4 py-2 border border-[var(--color-border-primary)] text-sm font-medium rounded-md text-[var(--color-text-primary)] bg-[var(--color-bg-primary)] hover:bg-[var(--color-gray-50)] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Previous
           </button>
@@ -90,7 +90,7 @@ const Pagination = ({
       <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
         {showInfo && (
           <div>
-            <p className="text-sm text-gray-700">
+            <p className="text-sm text-[var(--color-text-primary)]">
               Showing <span className="font-medium">{startItem}</span> to <span className="font-medium">{endItem}</span> of{' '}
               <span className="font-medium">{totalItems}</span> results
             </p>
@@ -101,7 +101,7 @@ const Pagination = ({
             <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
-              className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-[var(--color-border-primary)] bg-[var(--color-bg-primary)] text-sm font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-gray-50)] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <HiChevronLeft className="h-5 w-5" />
             </button>
@@ -112,10 +112,10 @@ const Pagination = ({
                 disabled={page === '...'}
                 className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
                   page === currentPage
-                    ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                    ? 'z-10 bg-[var(--color-primary-light)] border-[var(--color-primary)] text-[var(--color-primary)]'
                     : page === '...'
-                    ? 'bg-white border-gray-300 text-gray-700 cursor-default'
-                    : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                    ? 'bg-[var(--color-bg-primary)] border-[var(--color-border-primary)] text-[var(--color-text-primary)] cursor-default'
+                    : 'bg-[var(--color-bg-primary)] border-[var(--color-border-primary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-gray-50)]'
                 }`}
               >
                 {page}
@@ -124,7 +124,7 @@ const Pagination = ({
             <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-[var(--color-border-primary)] bg-[var(--color-bg-primary)] text-sm font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-gray-50)] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <HiChevronRight className="h-5 w-5" />
             </button>

@@ -16,7 +16,7 @@ const RecentActivity = () => {
   const [activeTab, setActiveTab] = useState('activities'); // 'activities' or 'login'
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const itemsPerPage = 20;
+  const itemsPerPage = 15;
 
   useEffect(() => {
     if (activeTab === 'activities') {
@@ -110,32 +110,32 @@ const RecentActivity = () => {
 
   if (loading && activities.length === 0 && loginHistory.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--color-bg-secondary)] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading activities...</p>
+          <p className="mt-4 text-[var(--color-text-secondary)]">Loading activities...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-[var(--color-bg-secondary)] py-8 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3">
             <HiClock className="w-8 h-8 text-blue-600" />
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Recent Activity</h1>
-              <p className="mt-2 text-gray-600">View your activity history and login records</p>
+              <h1 className="text-3xl font-bold text-[var(--color-text-primary)]">Recent Activity</h1>
+              <p className="mt-2 text-[var(--color-text-secondary)]">View your activity history and login records</p>
             </div>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="bg-white rounded-lg shadow-md mb-6">
-          <div className="border-b border-gray-200">
+        <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-md mb-6">
+          <div className="border-b border-[var(--color-border-primary)]">
             <nav className="flex -mb-px">
               <button
                 onClick={() => {
@@ -184,18 +184,18 @@ const RecentActivity = () => {
         {activeTab === 'activities' && (
           <>
             {activities.length === 0 ? (
-              <div className="bg-white rounded-lg shadow-md p-12 text-center">
+              <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-md p-12 text-center">
                 <HiClock className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No Activities</h3>
+                <h3 className="text-xl font-semibold text-[var(--color-text-primary)] mb-2">No Activities</h3>
                 <p className="text-gray-500">You have no activity records yet.</p>
               </div>
             ) : (
-              <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-md overflow-hidden">
                 <div className="divide-y divide-gray-200">
                   {activities.map((activity) => (
                     <div
                       key={activity.id}
-                      className="p-6 hover:bg-gray-50 transition-colors"
+                      className="p-6 hover:bg-[var(--color-bg-secondary)] transition-colors"
                     >
                       <div className="flex items-start gap-4">
                         <div className="flex-shrink-0 mt-1">
@@ -203,11 +203,11 @@ const RecentActivity = () => {
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <h3 className="text-lg font-semibold text-gray-900">
+                            <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
                               {formatActivityType(activity.activity_type)}
                             </h3>
                             {activity.entity_type && (
-                              <span className="px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-600 rounded">
+                              <span className="px-2 py-0.5 text-xs font-medium bg-gray-100 text-[var(--color-text-secondary)] rounded">
                                 {activity.entity_type}
                               </span>
                             )}
@@ -275,16 +275,16 @@ const RecentActivity = () => {
         {activeTab === 'login' && (
           <>
             {loginHistory.length === 0 ? (
-              <div className="bg-white rounded-lg shadow-md p-12 text-center">
+              <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-md p-12 text-center">
                 <HiDesktopComputer className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No Login History</h3>
+                <h3 className="text-xl font-semibold text-[var(--color-text-primary)] mb-2">No Login History</h3>
                 <p className="text-gray-500">You have no login history records yet.</p>
               </div>
             ) : (
-              <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-md overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+                    <thead className="bg-[var(--color-bg-secondary)]">
                       <tr>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Date & Time
@@ -303,10 +303,10 @@ const RecentActivity = () => {
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
+                    <tbody className="bg-[var(--color-bg-primary)] divide-y divide-gray-200">
                       {loginHistory.map((login) => (
-                        <tr key={login.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <tr key={login.id} className="hover:bg-[var(--color-bg-secondary)]">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--color-text-primary)]">
                             {login.created_at
                               ? new Date(login.created_at).toLocaleString()
                               : 'Unknown'}

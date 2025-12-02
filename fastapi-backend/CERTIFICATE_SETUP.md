@@ -125,12 +125,12 @@ See `fastapi-backend/apps/certificates/CERTIFICATE_FIELDS.md` for complete field
 
 1. **Test Template Listing**:
    ```bash
-   curl http://localhost:8000/api/certificates/templates
+   curl https://infodocs.api.d0s369.co.in/api/certificates/templates
    ```
 
 2. **Test Certificate Generation**:
    ```bash
-   curl -X POST http://localhost:8000/api/certificates/generated \
+   curl -X POST https://infodocs.api.d0s369.co.in/api/certificates/generated \
      -H "Content-Type: application/json" \
      -d '{
        "template_id": 1,
@@ -143,5 +143,5 @@ See `fastapi-backend/apps/certificates/CERTIFICATE_FIELDS.md` for complete field
    ```
 
 3. **Test Download**:
-   - Visit: `http://localhost:8000/api/certificates/generated/{id}/download/pdf`
+   - Visit: `https://infodocs.api.d0s369.co.in/api/certificates/generated/{id}/download/pdf`
 

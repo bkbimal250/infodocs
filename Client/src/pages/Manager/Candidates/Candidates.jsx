@@ -40,14 +40,14 @@ const ManagerCandidates = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-[var(--color-bg-secondary)] py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">My Forms</h1>
-              <p className="mt-2 text-gray-600">
+              <h1 className="text-3xl font-bold text-[var(--color-text-primary)]">My Forms</h1>
+              <p className="mt-2 text-[var(--color-text-secondary)]">
                 View and manage your submitted candidate forms
               </p>
             </div>
@@ -75,21 +75,21 @@ const ManagerCandidates = () => {
           {/* Candidate Form Card */}
           <Link
             to="/candidate-form"
-            className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow border border-gray-200"
+            className="bg-[var(--color-bg-primary)] rounded-lg shadow p-6 hover:shadow-lg transition-shadow border border-[var(--color-border-primary)]"
           >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
                 <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
-                  <HiOutlineUserGroup className="h-6 w-6 text-blue-600" />
+                  <HiOutlineUserGroup className="h-6 w-6 text-[var(--color-primary)]" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-semibold text-gray-900">Candidate Form</h2>
-                  <p className="text-sm text-gray-600">Apply for a position</p>
+                  <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">Candidate Form</h2>
+                  <p className="text-sm text-[var(--color-text-secondary)]">Apply for a position</p>
                 </div>
               </div>
               <HiArrowRight className="h-6 w-6 text-gray-400" />
             </div>
-            <p className="text-gray-600 text-sm">
+            <p className="text-[var(--color-text-secondary)] text-sm">
               Submit your candidate information, documents, and application details
             </p>
           </Link>
@@ -97,7 +97,7 @@ const ManagerCandidates = () => {
           {/* Hiring Form Card */}
           <Link
             to="/hiring-forms"
-            className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow border border-gray-200"
+            className="bg-[var(--color-bg-primary)] rounded-lg shadow p-6 hover:shadow-lg transition-shadow border border-[var(--color-border-primary)]"
           >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center">
@@ -105,13 +105,13 @@ const ManagerCandidates = () => {
                   <HiOutlineBriefcase className="h-6 w-6 text-green-600" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-semibold text-gray-900">Hiring Form</h2>
-                  <p className="text-sm text-gray-600">Post job requirements</p>
+                  <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">Hiring Form</h2>
+                  <p className="text-sm text-[var(--color-text-secondary)]">Post job requirements</p>
                 </div>
               </div>
               <HiArrowRight className="h-6 w-6 text-gray-400" />
             </div>
-            <p className="text-gray-600 text-sm">
+            <p className="text-[var(--color-text-secondary)] text-sm">
               Submit hiring requirements for positions you need to fill
             </p>
           </Link>
@@ -119,16 +119,16 @@ const ManagerCandidates = () => {
 
         {/* Submitted Forms Table */}
         <div className="mb-8">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-4">My Submitted Candidate Forms</h2>
+          <h2 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-4">My Submitted Candidate Forms</h2>
           <CandidatesTable onEdit={handleEdit} onDelete={handleDelete} />
         </div>
 
         {/* Info Section */}
         <div className="mt-8 bg-blue-50 rounded-lg p-6 border border-blue-200">
           <div className="flex items-start">
-            <HiOutlineClipboardList className="h-6 w-6 text-blue-600 mr-3 mt-1 flex-shrink-0" />
+            <HiOutlineClipboardList className="h-6 w-6 text-[var(--color-primary)] mr-3 mt-1 flex-shrink-0" />
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-2">
                 Form Submission Guidelines
               </h3>
               <ul className="list-disc list-inside text-gray-700 space-y-1">

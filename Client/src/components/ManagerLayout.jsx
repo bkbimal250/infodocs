@@ -122,8 +122,6 @@ const ManagerLayout = ({ children }) => {
         </main>
       </div>
 
-      {/* Footer */}
-      <Footer />
     </div>
   );
 };

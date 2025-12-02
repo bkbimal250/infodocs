@@ -19,7 +19,7 @@ const HiringFormsData = () => {
     spa: '',
   });
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 20;
+  const itemsPerPage = 15;
 
   useEffect(() => {
     loadHiringForms();
@@ -90,17 +90,17 @@ const HiringFormsData = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--color-bg-secondary)] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading hiring forms...</p>
+          <p className="mt-4 text-[var(--color-text-secondary)]">Loading hiring forms...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-[var(--color-bg-secondary)] py-8 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -124,8 +124,8 @@ const HiringFormsData = () => {
         )}
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+        <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-md p-6 mb-6">
+          <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
             <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
             </svg>
@@ -174,7 +174,7 @@ const HiringFormsData = () => {
             </div>
           </div>
           <div className="mt-4 flex items-center justify-between">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-[var(--color-text-secondary)]">
               Showing <span className="font-semibold">{hiringForms.length}</span> of{' '}
               <span className="font-semibold">{filteredForms.length}</span> hiring forms
             </p>
@@ -191,7 +191,7 @@ const HiringFormsData = () => {
 
         {/* Hiring Forms List */}
         {filteredForms.length === 0 && !loading ? (
-          <div className="bg-white rounded-lg shadow-md p-12 text-center">
+          <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-md p-12 text-center">
             <svg
               className="w-24 h-24 mx-auto text-gray-400 mb-4"
               fill="none"
@@ -213,12 +213,12 @@ const HiringFormsData = () => {
             {filteredForms.map((form) => (
               <div
                 key={form.id}
-                className="bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-200 p-6 border border-gray-100"
+                className="bg-[var(--color-bg-primary)] rounded-lg shadow-md hover:shadow-xl transition-all duration-200 p-6 border border-gray-100"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-1">{form.for_role}</h3>
-                    <p className="text-sm text-gray-600">
+                    <h3 className="text-xl font-semibold text-[var(--color-text-primary)] mb-1">{form.for_role}</h3>
+                    <p className="text-sm text-[var(--color-text-secondary)]">
                       {form.spa?.name || form.spa_name_text || 'N/A'}
                     </p>
                   </div>
@@ -230,21 +230,21 @@ const HiringFormsData = () => {
                 <div className="space-y-3 mb-4">
                   <div>
                     <label className="text-xs font-medium text-gray-500 block mb-1">Description</label>
-                    <p className="text-sm text-gray-900 line-clamp-3">{form.description}</p>
+                    <p className="text-sm text-[var(--color-text-primary)] line-clamp-3">{form.description}</p>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="text-xs font-medium text-gray-500 block mb-1">Experience</label>
-                      <p className="text-sm text-gray-900">{form.required_experience}</p>
+                      <p className="text-sm text-[var(--color-text-primary)]">{form.required_experience}</p>
                     </div>
                     <div>
                       <label className="text-xs font-medium text-gray-500 block mb-1">Education</label>
-                      <p className="text-sm text-gray-900">{form.required_education}</p>
+                      <p className="text-sm text-[var(--color-text-primary)]">{form.required_education}</p>
                     </div>
                   </div>
                   <div>
                     <label className="text-xs font-medium text-gray-500 block mb-1">Required Skills</label>
-                    <p className="text-sm text-gray-900">{form.required_skills}</p>
+                    <p className="text-sm text-[var(--color-text-primary)]">{form.required_skills}</p>
                   </div>
                 </div>
 

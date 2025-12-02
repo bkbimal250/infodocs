@@ -21,7 +21,7 @@ const CandidatesData = () => {
   const [editingCandidate, setEditingCandidate] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 20;
+  const itemsPerPage = 15;
 
   useEffect(() => {
     loadCandidates();
@@ -124,11 +124,11 @@ const CandidatesData = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-[var(--color-bg-secondary)] py-8 px-4">
       <div className="max-w-7xl mx-auto">
 
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border-2 border-red-200 text-red-700 rounded-lg">
+          <div className="mb-6 p-4 bg-[var(--color-error-light)] border-2 border-[var(--color-error-light)] text-[var(--color-error-dark)] rounded-lg">
             <div className="flex items-center gap-2">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -139,30 +139,30 @@ const CandidatesData = () => {
         )}
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-md p-6 mb-6">
+          <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
+            <svg className="w-5 h-5 text-[var(--color-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
             </svg>
             Filters
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">Search</label>
               <input
                 type="text"
                 placeholder="Search by name, phone, or position..."
                 value={filter.search}
                 onChange={(e) => setFilter({ ...filter, search: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-[var(--color-border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Position</label>
+              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">Position</label>
               <select
                 value={filter.position}
                 onChange={(e) => setFilter({ ...filter, position: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-[var(--color-border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
               >
                 <option value="">All Positions</option>
                 {uniquePositions.map((position) => (
@@ -173,11 +173,11 @@ const CandidatesData = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">SPA Location</label>
+              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">SPA Location</label>
               <select
                 value={filter.spa}
                 onChange={(e) => setFilter({ ...filter, spa: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-[var(--color-border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
               >
                 <option value="">All SPAs</option>
                 {uniqueSpas.map((spa) => (
@@ -189,14 +189,14 @@ const CandidatesData = () => {
             </div>
           </div>
           <div className="mt-4 flex items-center justify-between">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-[var(--color-text-secondary)]">
               Showing <span className="font-semibold">{candidates.length}</span> of{' '}
               <span className="font-semibold">{filteredCandidates.length}</span> candidates
             </p>
             {(filter.search || filter.position || filter.spa) && (
               <button
                 onClick={() => setFilter({ search: '', position: '', spa: '' })}
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                className="text-sm text-[var(--color-primary)] hover:text-[var(--color-primary-dark)] font-medium"
               >
                 Clear Filters
               </button>
@@ -205,7 +205,7 @@ const CandidatesData = () => {
         </div>
 
         {/* Candidates Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-[var(--color-bg-primary)] rounded-lg shadow overflow-hidden">
           <CandidatesTable 
             candidates={candidates} 
             loading={loading}

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://infodocs.api.d0s369.co.in/api';
 
 if (import.meta.env.DEV) {
   console.log('API Base URL:', API_BASE_URL);
@@ -63,7 +63,7 @@ apiClient.interceptors.response.use(
       console.error('SSL Error - Make sure backend is using http:// not https://');
       return Promise.reject({
         ...error,
-        message: 'SSL Protocol Error. Please ensure the backend is running on http://localhost:8000',
+        message: 'SSL Protocol Error. Please ensure the backend is running on http://localhost:8009',
       });
     }
 

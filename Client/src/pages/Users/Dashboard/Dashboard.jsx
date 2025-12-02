@@ -91,7 +91,7 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--color-bg-secondary)] flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
@@ -101,41 +101,41 @@ const Dashboard = () => {
   const recentActivities = activities.slice(0, 5);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-[var(--color-bg-secondary)] py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-3xl font-bold text-[var(--color-text-primary)]">
             Welcome back, {user?.first_name}!
           </h1>
-          <p className="mt-2 text-gray-600">
+          <p className="mt-2 text-[var(--color-text-secondary)]">
             Here's what's happening with your account
           </p>
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-[var(--color-bg-primary)] rounded-lg shadow p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">My Certificates</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{certificates.length}</p>
+                <p className="text-sm font-medium text-[var(--color-text-secondary)]">My Certificates</p>
+                <p className="text-2xl font-bold text-[var(--color-text-primary)] mt-1">{certificates.length}</p>
               </div>
-              <HiOutlineDocumentText className="h-8 w-8 text-blue-600" />
+              <HiOutlineDocumentText className="h-8 w-8 text-[var(--color-primary)]" />
             </div>
             <Link 
               to="/user/certificates" 
-              className="text-sm text-blue-600 hover:text-blue-700 mt-4 inline-flex items-center"
+              className="text-sm text-[var(--color-primary)] hover:text-blue-700 mt-4 inline-flex items-center"
             >
               View all <HiArrowRight className="ml-1 h-4 w-4" />
             </Link>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-[var(--color-bg-primary)] rounded-lg shadow p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Notifications</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">
+                <p className="text-sm font-medium text-[var(--color-text-secondary)]">Notifications</p>
+                <p className="text-2xl font-bold text-[var(--color-text-primary)] mt-1">
                   {unreadNotifications}
                   {unreadNotifications > 0 && (
                     <span className="text-sm font-normal text-gray-500"> unread</span>
@@ -152,11 +152,11 @@ const Dashboard = () => {
             </Link>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-[var(--color-bg-primary)] rounded-lg shadow p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Activities</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{activities.length}</p>
+                <p className="text-sm font-medium text-[var(--color-text-secondary)]">Activities</p>
+                <p className="text-2xl font-bold text-[var(--color-text-primary)] mt-1">{activities.length}</p>
               </div>
               <HiOutlineClock className="h-8 w-8 text-green-600" />
             </div>
@@ -168,11 +168,11 @@ const Dashboard = () => {
             </Link>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-[var(--color-bg-primary)] rounded-lg shadow p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Forms</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">-</p>
+                <p className="text-sm font-medium text-[var(--color-text-secondary)]">Forms</p>
+                <p className="text-2xl font-bold text-[var(--color-text-primary)] mt-1">-</p>
               </div>
               <HiOutlineClipboardList className="h-8 w-8 text-purple-600" />
             </div>
@@ -187,13 +187,13 @@ const Dashboard = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Recent Notifications */}
-          <div className="bg-white rounded-lg shadow">
-            <div className="p-6 border-b border-gray-200">
+          <div className="bg-[var(--color-bg-primary)] rounded-lg shadow">
+            <div className="p-6 border-b border-[var(--color-border-primary)]">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900">Recent Notifications</h2>
+                <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">Recent Notifications</h2>
                 <Link 
                   to="/user/notifications" 
-                  className="text-sm text-blue-600 hover:text-blue-700"
+                  className="text-sm text-[var(--color-primary)] hover:text-blue-700"
                 >
                   View all
                 </Link>
@@ -209,16 +209,16 @@ const Dashboard = () => {
                       key={notification.id}
                       className={`p-4 rounded-lg border ${
                         notification.is_read 
-                          ? 'bg-gray-50 border-gray-200' 
+                          ? 'bg-[var(--color-bg-secondary)] border-[var(--color-border-primary)]' 
                           : 'bg-blue-50 border-blue-200'
                       }`}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <h3 className="text-sm font-medium text-gray-900">
+                          <h3 className="text-sm font-medium text-[var(--color-text-primary)]">
                             {notification.title}
                           </h3>
-                          <p className="text-sm text-gray-600 mt-1">
+                          <p className="text-sm text-[var(--color-text-secondary)] mt-1">
                             {notification.message}
                           </p>
                           <p className="text-xs text-gray-500 mt-2">
@@ -228,7 +228,7 @@ const Dashboard = () => {
                         {!notification.is_read && (
                           <button
                             onClick={() => markNotificationAsRead(notification.id)}
-                            className="ml-4 text-blue-600 hover:text-blue-700"
+                            className="ml-4 text-[var(--color-primary)] hover:text-blue-700"
                           >
                             <HiOutlineCheckCircle className="h-5 w-5" />
                           </button>
@@ -242,13 +242,13 @@ const Dashboard = () => {
           </div>
 
           {/* Recent Activities */}
-          <div className="bg-white rounded-lg shadow">
-            <div className="p-6 border-b border-gray-200">
+          <div className="bg-[var(--color-bg-primary)] rounded-lg shadow">
+            <div className="p-6 border-b border-[var(--color-border-primary)]">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900">Recent Activities</h2>
+                <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">Recent Activities</h2>
                 <Link 
                   to="/user/activities" 
-                  className="text-sm text-blue-600 hover:text-blue-700"
+                  className="text-sm text-[var(--color-primary)] hover:text-blue-700"
                 >
                   View all
                 </Link>
@@ -265,13 +265,13 @@ const Dashboard = () => {
                         {activity.activity_type === 'certificate_created' ? (
                           <HiOutlineCheckCircle className="h-5 w-5 text-green-600" />
                         ) : activity.activity_type === 'form_submitted' ? (
-                          <HiOutlineClipboardList className="h-5 w-5 text-blue-600" />
+                          <HiOutlineClipboardList className="h-5 w-5 text-[var(--color-primary)]" />
                         ) : (
-                          <HiOutlineClock className="h-5 w-5 text-gray-600" />
+                          <HiOutlineClock className="h-5 w-5 text-[var(--color-text-secondary)]" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-gray-900">
+                        <p className="text-sm text-[var(--color-text-primary)]">
                           {activity.activity_description}
                         </p>
                         <p className="text-xs text-gray-500 mt-1">
@@ -287,28 +287,28 @@ const Dashboard = () => {
         </div>
 
         {/* Quick Actions */}
-        <div className="mt-8 bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
+        <div className="mt-8 bg-[var(--color-bg-primary)] rounded-lg shadow p-6">
+          <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Quick Actions</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Link
               to="/certificate-creation"
               className="flex items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors"
             >
-              <HiOutlineDocumentText className="h-6 w-6 text-gray-600 mr-2" />
+              <HiOutlineDocumentText className="h-6 w-6 text-[var(--color-text-secondary)] mr-2" />
               <span className="text-sm font-medium text-gray-700">Create Certificate</span>
             </Link>
             <Link
               to="/candidate-form"
               className="flex items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition-colors"
             >
-              <HiOutlineClipboardList className="h-6 w-6 text-gray-600 mr-2" />
+              <HiOutlineClipboardList className="h-6 w-6 text-[var(--color-text-secondary)] mr-2" />
               <span className="text-sm font-medium text-gray-700">Submit Form</span>
             </Link>
             <Link
               to="/user/profile"
               className="flex items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-colors"
             >
-              <HiOutlineCheckCircle className="h-6 w-6 text-gray-600 mr-2" />
+              <HiOutlineCheckCircle className="h-6 w-6 text-[var(--color-text-secondary)] mr-2" />
               <span className="text-sm font-medium text-gray-700">View Profile</span>
             </Link>
           </div>

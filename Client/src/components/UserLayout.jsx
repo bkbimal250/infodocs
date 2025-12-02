@@ -122,8 +122,7 @@ const UserLayout = ({ children }) => {
         </main>
       </div>
 
-      {/* Footer */}
-      <Footer />
+     
     </div>
   );
 };

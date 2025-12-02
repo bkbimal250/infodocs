@@ -148,18 +148,18 @@ const UsersDetails = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-[var(--color-bg-secondary)] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--color-primary)]"></div>
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--color-bg-secondary)] flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600 mb-4">User not found</p>
-          <Link to="/admin/users" className="text-blue-600 hover:text-blue-800">
+          <p className="text-[var(--color-text-secondary)] mb-4">User not found</p>
+          <Link to="/admin/users" className="text-[var(--color-primary)] hover:text-[var(--color-primary-dark)]">
             Back to Users
           </Link>
         </div>
@@ -168,34 +168,34 @@ const UsersDetails = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-[var(--color-bg-secondary)] py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
           <Link
             to="/admin/users"
-            className="inline-flex items-center text-blue-600 hover:text-blue-800 mb-4"
+            className="inline-flex items-center text-[var(--color-primary)] hover:text-[var(--color-primary-dark)] mb-4"
           >
             <HiArrowLeft className="mr-2" /> Back to Users
           </Link>
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="text-3xl font-bold text-[var(--color-text-primary)]">
                 {user.first_name} {user.last_name}
               </h1>
-              <p className="mt-2 text-gray-600">User Details and Management</p>
+              <p className="mt-2 text-[var(--color-text-secondary)]">User Details and Management</p>
             </div>
             {!editing && (
               <div className="flex gap-2">
                 <button
                   onClick={() => setEditing(true)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
+                  className="px-4 py-2 bg-[var(--color-primary)] text-[var(--color-text-inverse)] rounded-lg hover:bg-[var(--color-primary-dark)] flex items-center"
                 >
                   <HiOutlinePencil className="mr-2" /> Edit
                 </button>
                 <button
                   onClick={handleDelete}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center"
+                  className="px-4 py-2 bg-[var(--color-error)] text-[var(--color-text-inverse)] rounded-lg hover:bg-[var(--color-error-dark)] flex items-center"
                 >
                   <HiOutlineTrash className="mr-2" /> Delete
                 </button>
@@ -206,28 +206,28 @@ const UsersDetails = () => {
 
         {/* Messages */}
         {success && (
-          <div className="mb-6 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
+          <div className="mb-6 bg-[var(--color-success-light)] border border-[var(--color-success-light)] text-[var(--color-success-dark)] px-4 py-3 rounded-lg">
             {success}
           </div>
         )}
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+          <div className="mb-6 bg-[var(--color-error-light)] border border-[var(--color-error-light)] text-[var(--color-error-dark)] px-4 py-3 rounded-lg">
             {error}
           </div>
         )}
 
         {/* User Details Card */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-700">
+        <div className="bg-[var(--color-bg-primary)] rounded-lg shadow overflow-hidden">
+          <div className="px-6 py-4 bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-dark)]">
             <div className="flex items-center">
-              <div className="h-16 w-16 bg-white rounded-full flex items-center justify-center">
-                <HiOutlineUser className="h-8 w-8 text-blue-600" />
+              <div className="h-16 w-16 bg-[var(--color-bg-primary)] rounded-full flex items-center justify-center">
+                <HiOutlineUser className="h-8 w-8 text-[var(--color-primary)]" />
               </div>
               <div className="ml-4">
-                <h2 className="text-xl font-bold text-white">
+                <h2 className="text-xl font-bold text-[var(--color-text-inverse)]">
                   {user.first_name} {user.last_name}
                 </h2>
-                <p className="text-blue-100">{getRoleDisplay(user.role)}</p>
+                <p className="text-[var(--color-primary-light)]">{getRoleDisplay(user.role)}</p>
               </div>
             </div>
           </div>
@@ -236,7 +236,7 @@ const UsersDetails = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Username */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
                   <HiOutlineUser className="inline h-4 w-4 mr-1" />
                   Username
                 </label>
@@ -246,16 +246,16 @@ const UsersDetails = () => {
                     name="username"
                     value={formData.username}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-[var(--color-border-primary)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
                   />
                 ) : (
-                  <p className="text-gray-900">{user.username}</p>
+                  <p className="text-[var(--color-text-primary)]">{user.username}</p>
                 )}
               </div>
 
               {/* Email */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
                   <HiOutlineMail className="inline h-4 w-4 mr-1" />
                   Email
                 </label>
@@ -265,7 +265,7 @@ const UsersDetails = () => {
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-[var(--color-border-primary)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
                   />
                 ) : (
                   <p className="text-gray-900">{user.email}</p>
@@ -274,7 +274,7 @@ const UsersDetails = () => {
 
               {/* First Name */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
                   First Name
                 </label>
                 {editing ? (
@@ -283,7 +283,7 @@ const UsersDetails = () => {
                     name="first_name"
                     value={formData.first_name}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-[var(--color-border-primary)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
                   />
                 ) : (
                   <p className="text-gray-900">{user.first_name}</p>
@@ -292,7 +292,7 @@ const UsersDetails = () => {
 
               {/* Last Name */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
                   Last Name
                 </label>
                 {editing ? (
@@ -301,7 +301,7 @@ const UsersDetails = () => {
                     name="last_name"
                     value={formData.last_name}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-[var(--color-border-primary)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
                   />
                 ) : (
                   <p className="text-gray-900">{user.last_name}</p>
@@ -310,7 +310,7 @@ const UsersDetails = () => {
 
               {/* Phone Number */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
                   <HiOutlinePhone className="inline h-4 w-4 mr-1" />
                   Phone Number
                 </label>
@@ -320,7 +320,7 @@ const UsersDetails = () => {
                     name="phone_number"
                     value={formData.phone_number}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-[var(--color-border-primary)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
                   />
                 ) : (
                   <p className="text-gray-900">{user.phone_number || 'Not provided'}</p>
@@ -329,7 +329,7 @@ const UsersDetails = () => {
 
               {/* Role */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
                   <HiOutlineShieldCheck className="inline h-4 w-4 mr-1" />
                   Role
                 </label>
@@ -338,7 +338,7 @@ const UsersDetails = () => {
                     name="role"
                     value={formData.role}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-[var(--color-border-primary)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
                   >
                     <option value="user">User</option>
                     <option value="hr">HR</option>
@@ -348,9 +348,9 @@ const UsersDetails = () => {
                   </select>
                 ) : (
                   <p className="text-gray-900">
-                    <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                      {getRoleDisplay(user.role)}
-                    </span>
+                      <span className="px-2 py-1 bg-[var(--color-primary-light)] text-[var(--color-primary-dark)] rounded-full text-sm font-medium">
+                        {getRoleDisplay(user.role)}
+                      </span>
                   </p>
                 )}
               </div>
@@ -358,7 +358,7 @@ const UsersDetails = () => {
               {/* Password (only when editing) */}
               {editing && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
                     Password (leave blank to keep current)
                   </label>
                   <input
@@ -366,14 +366,14 @@ const UsersDetails = () => {
                     name="password"
                     value={formData.password}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-[var(--color-border-primary)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
                   />
                 </div>
               )}
 
               {/* Account Status */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
                   Account Status
                 </label>
                 {editing ? (
@@ -384,7 +384,7 @@ const UsersDetails = () => {
                         name="is_active"
                         checked={formData.is_active}
                         onChange={handleInputChange}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded border-[var(--color-border-primary)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
                       />
                       <span className="ml-2 text-sm text-gray-700">Active</span>
                     </label>
@@ -394,22 +394,22 @@ const UsersDetails = () => {
                         name="is_verified"
                         checked={formData.is_verified}
                         onChange={handleInputChange}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded border-[var(--color-border-primary)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
                       />
-                      <span className="ml-2 text-sm text-gray-700">Verified</span>
+                      <span className="ml-2 text-sm text-[var(--color-text-primary)]">Verified</span>
                     </label>
                   </div>
                 ) : (
                   <div className="flex items-center space-x-2">
                     <span className={`px-2 py-1 rounded-full text-sm font-medium ${
                       user.is_active 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
+                        ? 'bg-[var(--color-success-light)] text-[var(--color-success-dark)]' 
+                        : 'bg-[var(--color-error-light)] text-[var(--color-error-dark)]'
                     }`}>
                       {user.is_active ? 'Active' : 'Inactive'}
                     </span>
                     {user.is_verified && (
-                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                      <span className="px-2 py-1 bg-[var(--color-primary-light)] text-[var(--color-primary-dark)] rounded-full text-sm font-medium">
                         Verified
                       </span>
                     )}
@@ -419,11 +419,11 @@ const UsersDetails = () => {
 
               {/* Last Login */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
                   <HiOutlineCalendar className="inline h-4 w-4 mr-1" />
                   Last Login
                 </label>
-                <p className="text-gray-900">
+                <p className="text-[var(--color-text-primary)]">
                   {user.last_login_at 
                     ? new Date(user.last_login_at).toLocaleString()
                     : 'Never'}
@@ -432,11 +432,11 @@ const UsersDetails = () => {
 
               {/* Created At */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
                   <HiOutlineCalendar className="inline h-4 w-4 mr-1" />
                   Member Since
                 </label>
-                <p className="text-gray-900">
+                <p className="text-[var(--color-text-primary)]">
                   {new Date(user.created_at).toLocaleDateString()}
                 </p>
               </div>
@@ -462,14 +462,14 @@ const UsersDetails = () => {
                     setError('');
                     setSuccess('');
                   }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                  className="px-4 py-2 border border-[var(--color-border-primary)] rounded-lg text-[var(--color-text-primary)] hover:bg-[var(--color-gray-50)]"
                   disabled={saving}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSave}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  className="px-4 py-2 bg-[var(--color-primary)] text-[var(--color-text-inverse)] rounded-lg hover:bg-[var(--color-primary-dark)] disabled:opacity-50"
                   disabled={saving}
                 >
                   {saving ? 'Saving...' : 'Save Changes'}
@@ -480,9 +480,9 @@ const UsersDetails = () => {
         </div>
 
         {/* Login History Section */}
-        <div className="mt-8 bg-white rounded-lg shadow overflow-hidden">
-          <div className="px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-700">
-            <h2 className="text-xl font-bold text-white flex items-center">
+        <div className="mt-8 bg-[var(--color-bg-primary)] rounded-lg shadow overflow-hidden">
+          <div className="px-6 py-4 bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-dark)]">
+            <h2 className="text-xl font-bold text-[var(--color-text-inverse)] flex items-center">
               <HiOutlineClock className="mr-2" />
               Login History
             </h2>
@@ -490,20 +490,20 @@ const UsersDetails = () => {
           <div className="px-6 py-4">
             {loadingHistory ? (
               <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="mt-2 text-gray-600 text-sm">Loading login history...</p>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--color-primary)] mx-auto"></div>
+                <p className="mt-2 text-[var(--color-text-secondary)] text-sm">Loading login history...</p>
               </div>
             ) : loginHistory.length === 0 ? (
               <div className="text-center py-8">
-                <HiOutlineClock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">No login history found</p>
+                <HiOutlineClock className="h-12 w-12 text-[var(--color-text-tertiary)] mx-auto mb-4" />
+                <p className="text-[var(--color-text-secondary)]">No login history found</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                <table className="min-w-full divide-y divide-[var(--color-border-primary)]">
+                  <thead className="bg-[var(--color-gray-50)]">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
                         Status
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -520,39 +520,39 @@ const UsersDetails = () => {
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-[var(--color-bg-primary)] divide-y divide-[var(--color-border-primary)]">
                     {loginHistory.map((entry) => (
-                      <tr key={entry.id} className="hover:bg-gray-50">
+                      <tr key={entry.id} className="hover:bg-[var(--color-gray-50)]">
                         <td className="px-4 py-3 whitespace-nowrap">
                           {entry.login_status === 'success' ? (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[var(--color-success-light)] text-[var(--color-success-dark)]">
                               <HiOutlineCheckCircle className="mr-1 h-4 w-4" />
                               Success
                             </span>
                           ) : (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[var(--color-error-light)] text-[var(--color-error-dark)]">
                               <HiOutlineXCircle className="mr-1 h-4 w-4" />
                               Failed
                             </span>
                           )}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
-                          <div className="flex items-center text-sm text-gray-900">
-                            <HiOutlineGlobe className="mr-2 h-4 w-4 text-gray-400" />
+                          <div className="flex items-center text-sm text-[var(--color-text-primary)]">
+                            <HiOutlineGlobe className="mr-2 h-4 w-4 text-[var(--color-text-tertiary)]" />
                             {entry.ip_address || 'N/A'}
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <div className="text-sm text-gray-900 max-w-md truncate" title={entry.user_agent}>
+                          <div className="text-sm text-[var(--color-text-primary)] max-w-md truncate" title={entry.user_agent}>
                             {entry.user_agent || 'N/A'}
                           </div>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
-                          <div className="text-sm text-gray-500">
+                          <div className="text-sm text-[var(--color-text-secondary)]">
                             {entry.failure_reason || '-'}
                           </div>
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-[var(--color-text-secondary)]">
                           {entry.created_at 
                             ? new Date(entry.created_at).toLocaleString()
                             : 'N/A'}

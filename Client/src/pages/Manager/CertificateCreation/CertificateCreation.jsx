@@ -2,11 +2,10 @@ import { Certifications } from '../../../Certificates';
 
 /**
  * Manager Certificate Creation Page
- * Wrapper for the common certificate creation component
+ * Shows certificate templates page for managers to browse and select templates
  */
 const ManagerCertificateCreation = () => {
-  return <CreateCertifications />;
+  return <Certifications />;
 };
 
 export default ManagerCertificateCreation;
-

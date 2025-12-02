@@ -137,7 +137,7 @@ The system supports 6 certificate types:
 import requests
 
 # Generate certificate
-response = requests.post("http://localhost:8000/api/certificates/generated", json={
+response = requests.post("https://infodocs.api.d0s369.co.in/api/certificates/generated", json={
     "template_id": 1,  # Salary Certificate
     "name": "John Doe",
     "email": "john@example.com",
@@ -164,7 +164,7 @@ certificate_id = certificate["certificate_id"]
 
 # Download PDF
 pdf_response = requests.get(
-    f"http://localhost:8000/api/certificates/generated/{certificate_id}/download/pdf"
+    f"https://infodocs.api.d0s369.co.in/api/certificates/generated/{certificate_id}/download/pdf"
 )
 with open("certificate.pdf", "wb") as f:
     f.write(pdf_response.content)

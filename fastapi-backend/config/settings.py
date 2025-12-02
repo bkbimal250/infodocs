@@ -54,8 +54,8 @@ class Settings(BaseSettings):
         """
         Parse CORS origins as comma-separated string OR list.
         Example:
-            "http://localhost:3000,http://localhost:8000"
-            ["http://localhost:3000", "http://localhost:8000"]
+            "http://localhost:5173,http://localhost:8009"
+            ["http://localhost:3000", "http://localhost:8009"]
         """
         if isinstance(value, list):
             return value
@@ -78,10 +78,10 @@ class Settings(BaseSettings):
     SMTP_HOST: str = "smtp.gmail.com"
     SMTP_PORT: int = 587
     SMTP_USE_TLS: Union[bool, str] = True
-    SMTP_USER: str = Field(default="", description="REQUIRED: Set in .env file")
-    SMTP_PASSWORD: str = Field(default="", description="REQUIRED: Set in .env file (use Gmail App Password)")
-    SMTP_FROM_EMAIL: str = Field(default="", description="REQUIRED: Set in .env file")
-    SERVER_EMAIL: str = Field(default="", description="REQUIRED: Set in .env file")
+    SMTP_USER: str = Field(default="info.dishaonlinesoution@gmail.com", description="REQUIRED: Set in .env file")
+    SMTP_PASSWORD: str = Field(default="uxtk jguy lzob vkoq", description="REQUIRED: Set in .env file (use Gmail App Password)")
+    SMTP_FROM_EMAIL: str = Field(default="info.dishaonlinesoution@gmail.com", description="REQUIRED: Set in .env file")
+    SERVER_EMAIL: str = Field(default="info.dishaonlinesoution@gmail.com", description="REQUIRED: Set in .env file")
     SKIP_EMAIL: bool = False  # Set to False in production to enable email sending
 
     @field_validator("SMTP_USE_TLS", mode="before")

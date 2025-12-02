@@ -109,10 +109,10 @@ const ManagerProfile = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--color-bg-secondary)] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading profile...</p>
+          <p className="mt-4 text-[var(--color-text-secondary)]">Loading profile...</p>
         </div>
       </div>
     );
@@ -120,12 +120,12 @@ const ManagerProfile = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--color-bg-secondary)] flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600">Failed to load profile</p>
+          <p className="text-[var(--color-text-secondary)]">Failed to load profile</p>
           <button
             onClick={loadProfile}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="mt-4 px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-blue-700"
           >
             Retry
           </button>
@@ -135,12 +135,12 @@ const ManagerProfile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-[var(--color-bg-secondary)] py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
-          <p className="mt-2 text-gray-600">
+          <h1 className="text-3xl font-bold text-[var(--color-text-primary)]">My Profile</h1>
+          <p className="mt-2 text-[var(--color-text-secondary)]">
             View and manage your account information
           </p>
         </div>
@@ -158,11 +158,11 @@ const ManagerProfile = () => {
         )}
 
         {/* Profile Card */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-[var(--color-bg-primary)] rounded-lg shadow overflow-hidden">
           <div className="px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-700">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <div className="h-16 w-16 bg-white rounded-full flex items-center justify-center">
+                <div className="h-16 w-16 bg-[var(--color-bg-primary)] rounded-full flex items-center justify-center">
                   <HiOutlineUser className="h-8 w-8 text-blue-600" />
                 </div>
                 <div className="ml-4">
@@ -175,7 +175,7 @@ const ManagerProfile = () => {
               {!editing && (
                 <button
                   onClick={() => setEditing(true)}
-                  className="px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 font-medium transition-colors"
+                  className="px-4 py-2 bg-[var(--color-bg-primary)] text-blue-600 rounded-lg hover:bg-blue-50 font-medium transition-colors"
                 >
                   Edit Profile
                 </button>
@@ -200,7 +200,7 @@ const ManagerProfile = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 ) : (
-                  <p className="text-gray-900">{user.username}</p>
+                  <p className="text-[var(--color-text-primary)]">{user.username}</p>
                 )}
               </div>
 
@@ -219,7 +219,7 @@ const ManagerProfile = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 ) : (
-                  <p className="text-gray-900">{user.email}</p>
+                  <p className="text-[var(--color-text-primary)]">{user.email}</p>
                 )}
               </div>
 
@@ -237,7 +237,7 @@ const ManagerProfile = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 ) : (
-                  <p className="text-gray-900">{user.first_name}</p>
+                  <p className="text-[var(--color-text-primary)]">{user.first_name}</p>
                 )}
               </div>
 
@@ -255,7 +255,7 @@ const ManagerProfile = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 ) : (
-                  <p className="text-gray-900">{user.last_name}</p>
+                  <p className="text-[var(--color-text-primary)]">{user.last_name}</p>
                 )}
               </div>
 
@@ -274,7 +274,7 @@ const ManagerProfile = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 ) : (
-                  <p className="text-gray-900">{user.phone_number || 'Not provided'}</p>
+                  <p className="text-[var(--color-text-primary)]">{user.phone_number || 'Not provided'}</p>
                 )}
               </div>
 
@@ -284,7 +284,7 @@ const ManagerProfile = () => {
                   <HiOutlineShieldCheck className="inline h-4 w-4 mr-1" />
                   Role
                 </label>
-                <p className="text-gray-900">
+                <p className="text-[var(--color-text-primary)]">
                   <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
                     {getRoleDisplay(user.role)}
                   </span>
@@ -318,7 +318,7 @@ const ManagerProfile = () => {
                   <HiOutlineCalendar className="inline h-4 w-4 mr-1" />
                   Last Login
                 </label>
-                <p className="text-gray-900">
+                <p className="text-[var(--color-text-primary)]">
                   {user.last_login_at 
                     ? new Date(user.last_login_at).toLocaleString()
                     : 'Never'}
@@ -331,7 +331,7 @@ const ManagerProfile = () => {
                   <HiOutlineCalendar className="inline h-4 w-4 mr-1" />
                   Member Since
                 </label>
-                <p className="text-gray-900">
+                <p className="text-[var(--color-text-primary)]">
                   {new Date(user.created_at).toLocaleDateString()}
                 </p>
               </div>
@@ -342,14 +342,14 @@ const ManagerProfile = () => {
               <div className="mt-6 flex items-center justify-end space-x-4">
                 <button
                   onClick={handleCancel}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-[var(--color-bg-secondary)] transition-colors"
                   disabled={saving}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSave}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                  className="px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
                   disabled={saving}
                 >
                   {saving ? 'Saving...' : 'Save Changes'}
