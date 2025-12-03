@@ -302,16 +302,50 @@ def prepare_certificate_data(template: CertificateTemplate, certificate_data: Di
             # If it's base64 (for preview), keep it as is - it works in HTML
 
     # Category-specific defaults (only set if not already in data)
+
+    # Build salary breakdown HTML for Manager Salary certificates
+    salary_breakdown_html = ""
+    raw_breakdown = certificate_data.get("salary_breakdown")
+
+    # Case 1: salary_breakdown already provided as list of dicts
+    if isinstance(raw_breakdown, list) and raw_breakdown:
+        rows = []
+        for row in raw_breakdown:
+            month = row.get("month", "") if isinstance(row, dict) else ""
+            salary = row.get("salary", "") if isinstance(row, dict) else ""
+            if month or salary:
+                rows.append(f"<tr><td>{month}</td><td>{salary}</td></tr>")
+        salary_breakdown_html = "".join(rows)
+    else:
+        # Case 2: Build from month_year_list + month_salary_list
+        month_year_list = certificate_data.get("month_year_list") or []
+        month_salary_list = certificate_data.get("month_salary_list") or []
+
+        # Support JSON strings from frontend (if any)
+        try:
+            import json
+            if isinstance(month_year_list, str):
+                month_year_list = json.loads(month_year_list)
+            if isinstance(month_salary_list, str):
+                month_salary_list = json.loads(month_salary_list)
+        except Exception:
+            # If parsing fails, keep original values
+            pass
+
+        if isinstance(month_year_list, list) and isinstance(month_salary_list, list):
+            rows = []
+            for month, salary in zip(month_year_list, month_salary_list):
+                if (month or "").strip() or (salary or "").strip():
+                    rows.append(f"<tr><td>{month}</td><td>{salary}</td></tr>")
+            salary_breakdown_html = "".join(rows)
+
     category_defaults = {
         CertificateCategory.MANAGER_SALARY: {
             "position": "Manager",
             "joining_date": "",
             "monthly_salary": "",
             "salary_in_words": "",
-            "salary_breakdown": "".join(
-                f"<tr><td>{m['month']}</td><td>{m['salary']}</td></tr>"
-                for m in certificate_data.get("salary_breakdown", [])
-            ) or "<tr><td>-</td><td>-</td></tr>"
+            "salary_breakdown": salary_breakdown_html or "<tr><td>-</td><td>-</td></tr>"
         },
         CertificateCategory.INVOICE_SPA_BILL: {
             "items_rows": "".join(
