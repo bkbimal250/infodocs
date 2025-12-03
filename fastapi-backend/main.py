@@ -3,9 +3,11 @@ FastAPI Main Application
 Entry point for the FastAPI backend server
 """
 from pathlib import Path
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+from fastapi import HTTPException as FastAPIHTTPException
 from contextlib import asynccontextmanager
 from fastapi.staticfiles import StaticFiles
 
@@ -16,7 +18,7 @@ from apps.certificates.routers import certificates_router
 from apps.forms_app.routers import forms_router
 from apps.analytics.routers import analytics_router
 from apps.notifications.routers import notifications_router
-from core.exceptions import CustomException
+from core.exceptions import CustomException, ValidationError, NotFoundError, AuthenticationError, AuthorizationError
 from core.middleware import ErrorHandlerMiddleware
 
 
@@ -72,12 +74,114 @@ app.add_middleware(
 # Add custom error handler middleware
 app.add_middleware(ErrorHandlerMiddleware)
 
-# Exception handlers
+# Exception handlers - Ensure all errors return proper JSON responses
 @app.exception_handler(CustomException)
-async def custom_exception_handler(request, exc: CustomException):
+async def custom_exception_handler(request: Request, exc: CustomException):
+    """Handle custom exceptions (ValidationError, NotFoundError, etc.)"""
     return JSONResponse(
         status_code=exc.status_code,
-        content={"error": exc.message, "detail": exc.detail}
+        content={
+            "error": exc.message,
+            "detail": exc.detail or exc.message,
+            "status_code": exc.status_code
+        }
+    )
+
+
+@app.exception_handler(ValidationError)
+async def validation_exception_handler(request: Request, exc: ValidationError):
+    """Handle ValidationError exceptions"""
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={
+            "error": exc.message,
+            "detail": exc.detail or exc.message,
+            "status_code": 422
+        }
+    )
+
+
+@app.exception_handler(NotFoundError)
+async def not_found_exception_handler(request: Request, exc: NotFoundError):
+    """Handle NotFoundError exceptions"""
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content={
+            "error": exc.message,
+            "detail": exc.detail or exc.message,
+            "status_code": 404
+        }
+    )
+
+
+@app.exception_handler(AuthenticationError)
+async def authentication_exception_handler(request: Request, exc: AuthenticationError):
+    """Handle AuthenticationError exceptions"""
+    return JSONResponse(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        content={
+            "error": exc.message,
+            "detail": exc.detail or exc.message,
+            "status_code": 401
+        }
+    )
+
+
+@app.exception_handler(AuthorizationError)
+async def authorization_exception_handler(request: Request, exc: AuthorizationError):
+    """Handle AuthorizationError exceptions"""
+    return JSONResponse(
+        status_code=status.HTTP_403_FORBIDDEN,
+        content={
+            "error": exc.message,
+            "detail": exc.detail or exc.message,
+            "status_code": 403
+        }
+    )
+
+
+@app.exception_handler(FastAPIHTTPException)
+async def http_exception_handler(request: Request, exc: FastAPIHTTPException):
+    """Handle FastAPI HTTPException - ensure it returns JSON"""
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "error": exc.detail if isinstance(exc.detail, str) else "An error occurred",
+            "detail": exc.detail if isinstance(exc.detail, str) else str(exc.detail),
+            "status_code": exc.status_code
+        }
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error_handler(request: Request, exc: RequestValidationError):
+    """Handle request validation errors - ensure it returns JSON"""
+    errors = exc.errors()
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={
+            "error": "Validation error",
+            "detail": "Invalid request data",
+            "errors": errors,
+            "status_code": 422
+        }
+    )
+
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    """Handle all other exceptions - ensure it returns JSON"""
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.error(f"Unhandled exception: {str(exc)}", exc_info=True)
+    
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={
+            "error": "Internal server error",
+            "detail": str(exc) if settings.DEBUG else "An unexpected error occurred",
+            "status_code": 500
+        }
     )
 
 

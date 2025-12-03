@@ -14,13 +14,7 @@ from core.exceptions import NotFoundError, ValidationError
 async def create_spa(db: AsyncSession, spa_data: SPACreate, created_by: Optional[int] = None) -> SPA:
     """Create a new SPA location"""
 
-    # Check duplicate name (case-insensitive)
-    stmt = select(SPA).where(func.lower(SPA.name) == spa_data.name.lower())
-    result = await db.execute(stmt)
-    if result.scalar_one_or_none():
-        raise ValidationError(f"SPA with name '{spa_data.name}' already exists")
-
-    # Check duplicate code
+    # Check duplicate code (code must be unique, name can be duplicate)
     if spa_data.code:
         stmt = select(SPA).where(SPA.code == spa_data.code)
         result = await db.execute(stmt)
@@ -66,14 +60,7 @@ async def update_spa(db: AsyncSession, spa_id: int, update_data: SPAUpdate) -> S
     if not spa:
         raise NotFoundError("SPA not found")
 
-    # Duplicate name check
-    if update_data.name and update_data.name.lower() != spa.name.lower():
-        stmt = select(SPA).where(func.lower(SPA.name) == update_data.name.lower())
-        result = await db.execute(stmt)
-        if result.scalar_one_or_none():
-            raise ValidationError(f"SPA with name '{update_data.name}' already exists")
-
-    # Duplicate code check
+    # Duplicate code check (code must be unique, name can be duplicate)
     if update_data.code and update_data.code != spa.code:
         stmt = select(SPA).where(SPA.code == update_data.code)
         result = await db.execute(stmt)

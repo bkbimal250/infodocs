@@ -547,19 +547,25 @@ async def reset_password(
 @auth_router.get("/user", response_model=UserResponseSchema)
 async def get_current_user_info(current_user: User = Depends(get_current_active_user)):
     """Get current authenticated user"""
-    return UserResponseSchema(
-        id=current_user.id,
-        username=current_user.username,
-        email=current_user.email,
-        first_name=current_user.first_name,
-        last_name=current_user.last_name,
-        role=current_user.role,
-        phone_number=current_user.phone_number,
-        is_active=current_user.is_active,
-        is_verified=current_user.is_verified,
-        created_at=current_user.created_at.isoformat(),
-        updated_at=current_user.updated_at.isoformat(),
-    )
+    try:
+        return UserResponseSchema(
+            id=current_user.id,
+            username=current_user.username,
+            email=current_user.email,
+            first_name=current_user.first_name,
+            last_name=current_user.last_name,
+            role=current_user.role,
+            phone_number=current_user.phone_number,
+            is_active=current_user.is_active,
+            is_verified=current_user.is_verified,
+            created_at=current_user.created_at.isoformat(),
+            updated_at=current_user.updated_at.isoformat(),
+        )
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error getting current user info: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve user info: {str(e)}")
 
 
 @auth_router.put("/user", response_model=UserResponseSchema)
@@ -569,40 +575,16 @@ async def update_current_user_profile(
     current_user: User = Depends(get_current_active_user)
 ):
     """Update current user's own profile (any authenticated user can update their own profile)"""
-    # Only allow updating own profile fields, not role, is_active, is_verified
-    allowed_fields = ['username', 'email', 'first_name', 'last_name', 'phone_number', 'password']
-    update_dict = {k: v for k, v in user_data.model_dump(exclude_unset=True).items() if k in allowed_fields}
-    
-    if not update_dict:
-        raise HTTPException(status_code=400, detail="No valid fields to update")
-    
-    user = await update_user(db, current_user.id, update_dict)
-    return UserResponseSchema(
-        id=user.id,
-        username=user.username,
-        email=user.email,
-        first_name=user.first_name,
-        last_name=user.last_name,
-        role=user.role,
-        phone_number=user.phone_number,
-        is_active=user.is_active,
-        is_verified=user.is_verified,
-        created_at=user.created_at.isoformat(),
-        updated_at=user.updated_at.isoformat(),
-    )
-
-
-@users_router.get("", response_model=list[UserResponseSchema])
-async def list_users(
-    skip: int = 0,
-    limit: int = 100,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role("admin", "super_admin"))
-):
-    """List all users (Admin/Super Admin only)"""
-    users = await get_all_users(db, skip=skip, limit=limit)
-    return [
-        UserResponseSchema(
+    try:
+        # Only allow updating own profile fields, not role, is_active, is_verified
+        allowed_fields = ['username', 'email', 'first_name', 'last_name', 'phone_number', 'password']
+        update_dict = {k: v for k, v in user_data.model_dump(exclude_unset=True).items() if k in allowed_fields}
+        
+        if not update_dict:
+            raise HTTPException(status_code=400, detail="No valid fields to update")
+        
+        user = await update_user(db, current_user.id, update_dict)
+        return UserResponseSchema(
             id=user.id,
             username=user.username,
             email=user.email,
@@ -615,8 +597,49 @@ async def list_users(
             created_at=user.created_at.isoformat(),
             updated_at=user.updated_at.isoformat(),
         )
-        for user in users
-    ]
+    except HTTPException:
+        raise
+    except ValidationError as e:
+        error_detail = getattr(e, 'message', str(e))
+        raise HTTPException(status_code=422, detail=error_detail)
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error updating user profile: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to update user profile: {str(e)}")
+
+
+@users_router.get("", response_model=list[UserResponseSchema])
+async def list_users(
+    skip: int = 0,
+    limit: int = 100,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "super_admin"))
+):
+    """List all users (Admin/Super Admin only)"""
+    try:
+        users = await get_all_users(db, skip=skip, limit=limit)
+        return [
+            UserResponseSchema(
+                id=user.id,
+                username=user.username,
+                email=user.email,
+                first_name=user.first_name,
+                last_name=user.last_name,
+                role=user.role,
+                phone_number=user.phone_number,
+                is_active=user.is_active,
+                is_verified=user.is_verified,
+                created_at=user.created_at.isoformat(),
+                updated_at=user.updated_at.isoformat(),
+            )
+            for user in users
+        ]
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error listing users: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve users: {str(e)}")
 
 
 @users_router.post("", response_model=UserResponseSchema, status_code=status.HTTP_201_CREATED)

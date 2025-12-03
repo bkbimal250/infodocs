@@ -46,7 +46,7 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------
     # CORS
     # ------------------------------------------------------------------
-    CORS_ORIGINS: Union[str, List[str]] = "http://localhost:5173"  # Comma-separated list in production
+    CORS_ORIGINS: Union[str, List[str]] = "http://localhost:5173,https://infodocs.api.d0s369.co.in,https://docs.dishaonlinesolution.in"  # Comma-separated list in production
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod

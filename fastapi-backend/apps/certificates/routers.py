@@ -51,16 +51,26 @@ certificates_router = APIRouter()
 @certificates_router.get("/templates", response_model=List[CertificateTemplateResponse])
 async def list_public_templates(db: AsyncSession = Depends(get_db)):
     """List all public certificate templates"""
-    return await get_public_templates(db)
+    try:
+        return await get_public_templates(db)
+    except Exception as e:
+        logger.error(f"Error listing public templates: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve templates: {str(e)}")
 
 
 @certificates_router.get("/templates/{template_id}", response_model=CertificateTemplateResponse)
 async def get_public_template(template_id: int, db: AsyncSession = Depends(get_db)):
     """Get a single public certificate template"""
-    template = await get_template_by_id(db, template_id)
-    if not template or not template.is_public or not template.is_active:
-        raise HTTPException(status_code=404, detail="Template not found or unavailable")
-    return template
+    try:
+        template = await get_template_by_id(db, template_id)
+        if not template or not template.is_public or not template.is_active:
+            raise HTTPException(status_code=404, detail="Template not found or unavailable")
+        return template
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting public template {template_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve template: {str(e)}")
 
 
 @certificates_router.post("/preview")
@@ -207,7 +217,11 @@ async def list_my_certificates(
     current_user: User = Depends(get_current_active_user)
 ):
     """List certificates created by the current user"""
-    return await get_user_certificates(db, user_id=current_user.id, skip=skip, limit=limit)
+    try:
+        return await get_user_certificates(db, user_id=current_user.id, skip=skip, limit=limit)
+    except Exception as e:
+        logger.error(f"Error listing user certificates: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve certificates: {str(e)}")
 
 
 @certificates_router.get("/generated/{certificate_id}", response_model=GeneratedCertificateResponse)
@@ -369,25 +383,33 @@ async def update_template_endpoint(
     current_user: User = Depends(require_role("admin", "super_admin", "spa_manager", "hr"))
 ):
     """Update certificate template"""
-    category_enum = TemplateType(template_data.template_type) if template_data.template_type else None
-    template_enum = CertificateCategory(template_data.category) if template_data.category else None
+    try:
+        category_enum = TemplateType(template_data.template_type) if template_data.template_type else None
+        template_enum = CertificateCategory(template_data.category) if template_data.category else None
 
-    template = await update_template(
-        db=db,
-        template_id=template_id,
-        name=template_data.name,
-        category=template_enum,
-        template_image=template_data.template_image,
-        template_html=template_data.template_html,
-        template_type=category_enum,
-        is_active=template_data.is_active,
-        is_public=template_data.is_public,
-        template_config=template_data.template_config
-    )
+        template = await update_template(
+            db=db,
+            template_id=template_id,
+            name=template_data.name,
+            category=template_enum,
+            template_image=template_data.template_image,
+            template_html=template_data.template_html,
+            template_type=category_enum,
+            is_active=template_data.is_active,
+            is_public=template_data.is_public,
+            template_config=template_data.template_config
+        )
 
-    if not template:
-        raise HTTPException(status_code=404, detail="Template not found")
-    return template
+        if not template:
+            raise HTTPException(status_code=404, detail="Template not found")
+        return template
+    except HTTPException:
+        raise
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        logger.error(f"Error updating template {template_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to update template: {str(e)}")
 
 
 @certificates_router.delete("/templates/{template_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -397,9 +419,15 @@ async def delete_template_endpoint(
     current_user: User = Depends(require_role("admin", "super_admin", "spa_manager", "hr"))
 ):
     """Delete certificate template"""
-    deleted = await delete_template(db, template_id)
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Template not found")
+    try:
+        deleted = await delete_template(db, template_id)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Template not found")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting template {template_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to delete template: {str(e)}")
 
 
 @certificates_router.get("/admin/statistics")
@@ -408,7 +436,11 @@ async def get_certificate_statistics_endpoint(
     current_user: User = Depends(require_role("admin", "super_admin"))
 ):
     """Get certificate statistics for admin dashboard"""
-    return await get_certificate_statistics(db)
+    try:
+        return await get_certificate_statistics(db)
+    except Exception as e:
+        logger.error(f"Error getting certificate statistics: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve statistics: {str(e)}")
 
 
 @certificates_router.get("/admin/all")
@@ -419,5 +451,9 @@ async def get_all_certificates_admin(
     current_user: User = Depends(require_role("admin", "super_admin"))
 ):
     """Get all certificates with user information (admin only)"""
-    certificates = await get_all_certificates_with_users(db, skip=skip, limit=limit)
-    return certificates
+    try:
+        certificates = await get_all_certificates_with_users(db, skip=skip, limit=limit)
+        return certificates
+    except Exception as e:
+        logger.error(f"Error getting all certificates: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve certificates: {str(e)}")

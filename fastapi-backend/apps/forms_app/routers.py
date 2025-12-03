@@ -430,10 +430,22 @@ async def create_spa_location(
         spa = await create_spa(db, spa_data, created_by=current_user.id)
         return spa
         
+    except ValidationError as e:
+        error_detail = getattr(e, 'message', str(e))
+        raise HTTPException(
+            status_code=422,
+            detail=error_detail
+        )
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=422, detail=str(e))
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error creating SPA: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to create SPA: {str(e)}"
+        )
 
 
 @forms_router.get("/spas/all", response_model=List[SPAResponse])
