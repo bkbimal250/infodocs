@@ -135,72 +135,83 @@ async def generate_certificate(
     current_user: User = Depends(get_current_active_user)
 ):
     """Generate a certificate and return PDF for download (Authentication required)"""
-    # Get IP address and user agent for activity tracking
-    ip_address = request.client.host if request.client else None
-    user_agent = request.headers.get("user-agent")
-    
-    certificate = await create_generated_certificate(
-        db=db,
-        template_id=certificate_data.template_id,
-        name=certificate_data.name,
-        certificate_data=certificate_data.certificate_data,
-        created_by=current_user.id,
-        is_public=True,
-        ip_address=ip_address,
-        user_agent=user_agent
-    )
+    try:
+        # Get IP address and user agent for activity tracking
+        ip_address = request.client.host if request.client else None
+        user_agent = request.headers.get("user-agent")
+        
+        certificate = await create_generated_certificate(
+            db=db,
+            template_id=certificate_data.template_id,
+            name=certificate_data.name,
+            certificate_data=certificate_data.certificate_data,
+            created_by=current_user.id,
+            is_public=True,
+            ip_address=ip_address,
+            user_agent=user_agent
+        )
 
-    template = await get_template_by_id(db, certificate.template_id)
-    if not template:
-        raise HTTPException(status_code=404, detail="Template not found")
+        template = await get_template_by_id(db, certificate.template_id)
+        if not template:
+            raise HTTPException(status_code=404, detail="Template not found")
 
-    display_name = getattr(certificate, 'therapist_name', None) \
-                   or getattr(certificate, 'employee_name', None) \
-                   or certificate_data.name
-    
-    # Load SPA data from database if spa_id is provided but spa object is missing
-    cert_data = certificate.certificate_data or {}
-    if certificate_data.spa_id and not cert_data.get("spa"):
-        from apps.forms_app.models import SPA
-        from sqlalchemy import select
-        spa_stmt = select(SPA).where(SPA.id == certificate_data.spa_id)
-        spa_result = await db.execute(spa_stmt)
-        spa_obj = spa_result.scalar_one_or_none()
-        if spa_obj:
-            cert_data["spa"] = {
-                "id": spa_obj.id,
-                "name": spa_obj.name or "",
-                "address": spa_obj.address or "",
-                "area": spa_obj.area or "",
-                "city": spa_obj.city or "",
-                "state": spa_obj.state or "",
-                "country": spa_obj.country or "",
-                "pincode": spa_obj.pincode or "",
-                "phone_number": spa_obj.phone_number or "",
-                "alternate_number": spa_obj.alternate_number or "",
-                "email": spa_obj.email or "",
-                "website": spa_obj.website or "",
-                "logo": spa_obj.logo or "",
-            }
-            cert_data["spa_id"] = spa_obj.id
-    
-    data = prepare_certificate_data(template, cert_data, display_name)
+        display_name = getattr(certificate, 'therapist_name', None) \
+                       or getattr(certificate, 'employee_name', None) \
+                       or certificate_data.name
+        
+        # Load SPA data from database if spa_id is provided but spa object is missing
+        cert_data = certificate.certificate_data or {}
+        if certificate_data.spa_id and not cert_data.get("spa"):
+            from apps.forms_app.models import SPA
+            from sqlalchemy import select
+            spa_stmt = select(SPA).where(SPA.id == certificate_data.spa_id)
+            spa_result = await db.execute(spa_stmt)
+            spa_obj = spa_result.scalar_one_or_none()
+            if spa_obj:
+                cert_data["spa"] = {
+                    "id": spa_obj.id,
+                    "name": spa_obj.name or "",
+                    "address": spa_obj.address or "",
+                    "area": spa_obj.area or "",
+                    "city": spa_obj.city or "",
+                    "state": spa_obj.state or "",
+                    "country": spa_obj.country or "",
+                    "pincode": spa_obj.pincode or "",
+                    "phone_number": spa_obj.phone_number or "",
+                    "alternate_number": spa_obj.alternate_number or "",
+                    "email": spa_obj.email or "",
+                    "website": spa_obj.website or "",
+                    "logo": spa_obj.logo or "",
+                }
+                cert_data["spa_id"] = spa_obj.id
+        
+        data = prepare_certificate_data(template, cert_data, display_name)
 
-    if template.template_type != TemplateType.HTML:
-        raise HTTPException(status_code=400, detail="PDF generation not available for this template type")
+        if template.template_type != TemplateType.HTML:
+            raise HTTPException(status_code=400, detail="PDF generation not available for this template type")
 
-    if not template.template_html:
-        raise HTTPException(status_code=400, detail="HTML template requires template_html content. Please provide HTML in the template.")
-    
-    html_content = template.template_html
-    rendered_html = render_html_template(html_content, data)
-    pdf_bytes = html_to_pdf(rendered_html)
+        if not template.template_html:
+            raise HTTPException(status_code=400, detail="HTML template requires template_html content. Please provide HTML in the template.")
+        
+        html_content = template.template_html
+        rendered_html = render_html_template(html_content, data)
+        pdf_bytes = html_to_pdf(rendered_html)
 
-    return StreamingResponse(
-        io.BytesIO(pdf_bytes),
-        media_type="application/pdf",
-        headers={"Content-Disposition": f"attachment; filename=certificate_{certificate.id}.pdf"}
-    )
+        return StreamingResponse(
+            io.BytesIO(pdf_bytes),
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename=certificate_{certificate.id}.pdf"}
+        )
+    except HTTPException:
+        raise
+    except ValidationError as e:
+        error_detail = getattr(e, 'message', str(e))
+        raise HTTPException(status_code=422, detail=error_detail)
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error generating certificate: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to generate certificate: {str(e)}")
 
 
 @certificates_router.get("/generated/public", response_model=List[GeneratedCertificateResponse])

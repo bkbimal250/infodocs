@@ -63,12 +63,19 @@ if media_dir.exists():
     app.mount("/media", StaticFiles(directory=str(media_dir)), name="media")
 
 # CORS Middleware
+# Ensure CORS_ORIGINS is a list (validator handles string to list conversion)
+cors_origins = settings.CORS_ORIGINS
+if isinstance(cors_origins, str):
+    cors_origins = [origin.strip() for origin in cors_origins.split(",") if origin.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=3600,
 )
 
 # Add custom error handler middleware
