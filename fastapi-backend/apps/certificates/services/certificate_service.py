@@ -208,6 +208,33 @@ def prepare_certificate_data(template: CertificateTemplate, certificate_data: Di
         stamp_image = certificate_data.get("certificate_stamp_image") or f"file:///{static_base_path_str}/images/Spa Certificate Stamp.png"
         signatory_image = certificate_data.get("certificate_signatory_image") or f"file:///{static_base_path_str}/images/Spa Certificate Signatory.png"
     
+    # Handle SPA logo path conversion
+    from config.settings import settings
+    base_url = certificate_data.get("base_url", "http://localhost:8009")
+    media_base_path = Path(settings.UPLOAD_DIR).resolve()
+    media_base_path_str = str(media_base_path).replace("\\", "/")
+    
+    spa_logo = spa.get("logo", "")
+    if spa_logo and spa_logo.strip():
+        # If logo is a relative path (spa_logos/filename.jpg), convert to appropriate URL
+        if not spa_logo.startswith("http") and not spa_logo.startswith("file://") and not spa_logo.startswith("/"):
+            # For PDF generation, use file:// path
+            if use_http_urls:
+                # For preview: use HTTP URL
+                spa_logo = f"{base_url}/media/{spa_logo}"
+            else:
+                # For PDF: use file:// path (absolute path)
+                # Ensure the path exists, if not, still try to use it
+                logo_path = Path(media_base_path) / spa_logo
+                if logo_path.exists():
+                    spa_logo = f"file:///{media_base_path_str}/{spa_logo}"
+                else:
+                    # Try anyway - might work if path is correct
+                    spa_logo = f"file:///{media_base_path_str}/{spa_logo}"
+        # If it's already a full URL or file:// path, keep it as is
+    else:
+        spa_logo = ""  # Empty string if no logo
+    
     data = {
         "date": certificate_data.get("date", datetime.now().strftime("%d/%m/%Y")),
         "candidate_name": candidate_name,
@@ -223,6 +250,7 @@ def prepare_certificate_data(template: CertificateTemplate, certificate_data: Di
         "spa_phone1": spa.get("alternate_number", ""),
         "spa_email": spa.get("email", ""),
         "spa_website": spa.get("website", ""),
+        "spa_logo": spa_logo,  # Logo with proper path conversion
         
         # Static image paths
         "certificate_background_image": background_image,

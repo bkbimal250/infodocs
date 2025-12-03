@@ -185,7 +185,8 @@ async def generate_certificate(
                 }
                 cert_data["spa_id"] = spa_obj.id
         
-        data = prepare_certificate_data(template, cert_data, display_name)
+        # For PDF generation, use file:// paths (not HTTP URLs)
+        data = prepare_certificate_data(template, cert_data, display_name, use_http_urls=False)
 
         if template.template_type != TemplateType.HTML:
             raise HTTPException(status_code=400, detail="PDF generation not available for this template type")
@@ -195,7 +196,18 @@ async def generate_certificate(
         
         html_content = template.template_html
         rendered_html = render_html_template(html_content, data)
-        pdf_bytes = html_to_pdf(rendered_html)
+        
+        # Generate PDF with detailed error logging
+        try:
+            logger.info(f"Generating PDF for certificate {certificate.id}")
+            pdf_bytes = html_to_pdf(rendered_html)
+            logger.info(f"PDF generated successfully: {len(pdf_bytes)} bytes")
+        except Exception as pdf_error:
+            logger.error(f"PDF generation failed: {pdf_error}", exc_info=True)
+            raise HTTPException(
+                status_code=500,
+                detail=f"PDF generation failed: {str(pdf_error)}. Please check server logs and ensure WeasyPrint dependencies are installed."
+            )
 
         return StreamingResponse(
             io.BytesIO(pdf_bytes),
