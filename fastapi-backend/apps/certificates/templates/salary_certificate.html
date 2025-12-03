@@ -140,7 +140,7 @@
     <div class="certificate-container">
 
         <!-- Header -->
-        <div class="header-title">{{ spa_name or 'Spa / Company Name' }}</div>
+        <div class="header-title">{{#if spa_name}}{{ spa_name }}{{else}}Spa / Company Name{{/if}}</div>
         <div class="header-subtitle">SALARY CERTIFICATE</div>
 
         <div class="date-text">DATE: <strong>{{ date }}</strong></div>
@@ -151,9 +151,9 @@
         <div class="certificate-body">
             <p>
                 This is to certify <strong>{{ manager_name }}</strong> is working as
-                <strong>{{ position }}</strong> at <strong>{{ spa_name or 'our organization' }}</strong>,
+                <strong>{{ position }}</strong> at <strong>{{#if spa_name}}{{ spa_name }}{{else}}our organization{{/if}}</strong>,
                 located at {{ spa_address }}. The Monthly Net Salary is
-                <strong>Rs. {{ monthly_salary }}{% if monthly_salary_in_words %} ({{ monthly_salary_in_words }}){% elif salary_in_words %} ({{ salary_in_words }}){% endif %}</strong>.
+                <strong>Rs. {{ monthly_salary }}{{#if monthly_salary_in_words}} ({{ monthly_salary_in_words }}){{else}}{{#if salary_in_words}} ({{ salary_in_words }}){{/if}}{{/if}}</strong>.
                 Joining date: <strong>{{ joining_date }}</strong>.
             </p>
         </div>
@@ -168,14 +168,14 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% if salary_breakdown %}
-                        {{ salary_breakdown | safe }}
-                    {% else %}
+                    {{#if salary_breakdown}}
+                        {{ salary_breakdown }}
+                    {{else}}
                         <tr>
                             <td>—</td>
                             <td>—</td>
                         </tr>
-                    {% endif %}
+                    {{/if}}
                 </tbody>
 
             </table>
@@ -189,8 +189,20 @@
         <!-- Signature -->
         <div class="signature-block">
             <div>Best regards,</div>
-            <img src="{{ manager_signature or signatory_signature or '/Bhim Sir signature.png' }}" alt="Signature" class="signature-image">
-            <div class="signature-name">{{ signatory_name or manager_name or 'Authorized Signatory' }}</div>
+            {{#if manager_signature}}
+            <img src="{{ manager_signature }}" alt="Signature" class="signature-image">
+            {{else}}
+            {{#if signatory_signature}}
+            <img src="{{ signatory_signature }}" alt="Signature" class="signature-image">
+            {{else}}
+            {{#if default_signature_image}}
+            <img src="{{ default_signature_image }}" alt="Signature" class="signature-image">
+            {{else}}
+            <img src="/Bhim Sir signature.png" alt="Signature" class="signature-image">
+            {{/if}}
+            {{/if}}
+            {{/if}}
+            <div class="signature-name">{{#if signatory_name}}{{ signatory_name }}{{else}}BhimaSingh Naik{{/if}}</div>
         </div>
 
         <!-- Contact box -->
@@ -198,7 +210,7 @@
             <div class="contact-item">
                 <i class="bi bi-telephone-fill contact-icon"></i>
                 <!-- spa phone and alternate number -->
-                <div><strong>{{ spa_phone }}{% if spa_phone1 %} | {{ spa_phone1 }}{% endif %}</strong></div>
+                <div><strong>{{ spa_phone }}{{#if spa_phone1}} | {{ spa_phone1 }}{{/if}}</strong></div>
             </div>
 
             <div class="contact-item">

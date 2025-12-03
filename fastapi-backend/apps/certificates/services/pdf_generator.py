@@ -409,7 +409,7 @@ def _render_variables(template: str, data: Dict[str, Any]) -> str:
 
 
 def _render_conditionals(template: str, data: Dict[str, Any]) -> str:
-    """Handle {{#if variable}}...{{/if}} blocks"""
+    """Handle {{#if variable}}...{{else}}...{{/if}} blocks"""
     
     def replace_conditional(match):
         var_name = match.group(1).strip()
@@ -418,12 +418,16 @@ def _render_conditionals(template: str, data: Dict[str, Any]) -> str:
         # Get variable value
         value = _get_nested_value(data, var_name)
         
-        # Render content if value is truthy
-        if value:
-            return content
-        return ''
+        # Check if content has {{else}} clause
+        if '{{else}}' in content:
+            if_content, else_content = content.split('{{else}}', 1)
+            # Render if content if value is truthy, else render else content
+            return if_content if value else else_content
+        else:
+            # Render content if value is truthy
+            return content if value else ''
     
-    # Match {{#if variable}}...{{/if}}
+    # Match {{#if variable}}...{{/if}} (with optional {{else}})
     pattern = r'\{\{#if\s+([^}]+)\}\}(.*?)\{\{/if\}\}'
     return re.sub(pattern, replace_conditional, template, flags=re.DOTALL)
 

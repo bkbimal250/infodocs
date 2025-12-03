@@ -256,6 +256,8 @@ def prepare_certificate_data(template: CertificateTemplate, certificate_data: Di
         "certificate_background_image": background_image,
         "certificate_stamp_image": stamp_image,
         "certificate_signatory_image": signatory_image,
+        # Default signature image path
+        "default_signature_image": f"{base_url}/static/images/Bhim Sir signature.png" if use_http_urls else f"file:///{static_base_path_str}/images/Bhim Sir signature.png",
     }
 
     # Merge additional certificate_data without overwriting existing keys
