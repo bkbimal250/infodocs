@@ -33,6 +33,7 @@ const HiringForms = () => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     spa_id: '',
+    staff_required: '',
     for_role: '',
     description: '',
     required_experience: '',
@@ -87,6 +88,7 @@ const HiringForms = () => {
       const submitData = {
         ...formData,
         spa_id: parseInt(formData.spa_id),
+        staff_required: parseInt(formData.staff_required),
       };
 
       const response = await apiClient.post('/forms/hiring-forms', submitData);
@@ -96,6 +98,7 @@ const HiringForms = () => {
       // Reset form
       setFormData({
         spa_id: '',
+        staff_required: '',
         for_role: '',
         description: '',
         required_experience: '',
@@ -233,10 +236,32 @@ const HiringForms = () => {
               <span>Position Details</span>
             </h2>
             <div className="space-y-5">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Role/Position Required <span className="text-red-500">*</span>
-                </label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Number of Staff Required <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    name="staff_required"
+                    value={formData.staff_required}
+                    onChange={handleInputChange}
+                    required
+                    min="1"
+                    placeholder="e.g., 2, 5, 10"
+                    className="w-full px-4 py-3 text-sm border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all hover:border-purple-300"
+                  />
+                  <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Enter the number of staff members needed for this position
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Role/Position Required <span className="text-red-500">*</span>
+                  </label>
                 <select 
                   value={formData.for_role} 
                   name="for_role" 
@@ -249,6 +274,7 @@ const HiringForms = () => {
                     <option key={role} value={role}>{role}</option>
                   ))}
                 </select>
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">

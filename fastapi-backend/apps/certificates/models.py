@@ -27,6 +27,7 @@ class CertificateCategory(str, PyEnum):
     EXPERIENCE_LETTER = "experience_letter"
     APPOINTMENT_LETTER = "appointment_letter"
     INVOICE_SPA_BILL = "invoice_spa_bill"
+    ID_CARD = "id_card"
 
 
 class TemplateType(str, PyEnum):
@@ -71,6 +72,9 @@ class CertificateTemplate(Base):
     )
     invoice_spa_bill_certificates = relationship(
         "InvoiceSpaBillCertificate", back_populates="template", cascade="all, delete-orphan"
+    )
+    id_card_certificates = relationship(
+        "IDCardCertificate", back_populates="template", cascade="all, delete-orphan"
     )
     generated_certificates = relationship(
         "GeneratedCertificate", back_populates="template", cascade="all, delete-orphan"
@@ -211,6 +215,30 @@ class InvoiceSpaBillCertificate(CertificateBase):
     template = relationship("CertificateTemplate", back_populates="invoice_spa_bill_certificates")
 
 
+
+class IDCardCertificate(CertificateBase):
+    __tablename__ = "id_card_certificates"
+
+    # Note: older databases may not have a 'category' column for this table,
+    # so we rely on template.category instead of a per-row category field.
+
+    spa_id = Column(Integer, ForeignKey("spas.id"))
+    spa = relationship("SPA", back_populates="id_card_certificates")
+
+    candidate_name = Column(String(255))
+    candidate_photo = Column(Text, nullable=True)
+    designation = Column(String(255))
+    date_of_joining = Column(String(50))
+    contact_number = Column(String(20))
+    issue_date = Column(String(50))
+
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    generated_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    template = relationship("CertificateTemplate", back_populates="id_card_certificates")
+
+
+
 # ---------------------------
 # Generic / Legacy
 # ---------------------------
@@ -220,3 +248,5 @@ class GeneratedCertificate(CertificateBase):
     category = Column(SQLEnum(CertificateCategory))
 
     template = relationship("CertificateTemplate", back_populates="generated_certificates")
+
+

@@ -52,6 +52,7 @@ class SPA(Base):
     experience_letter_certificates = relationship("ExperienceLetterCertificate", back_populates="spa")
     appointment_letter_certificates = relationship("AppointmentLetterCertificate", back_populates="spa")
     invoice_spa_bill_certificates = relationship("InvoiceSpaBillCertificate", back_populates="spa")
+    id_card_certificates = relationship("IDCardCertificate", back_populates="spa")
 
     
 
@@ -131,6 +132,7 @@ class Hiring_Form(Base):
     created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
 
 # hiriing requirements posted by the spa
+    staff_required=Column(Integer, nullable=False)
     for_role = Column(String(255), nullable=False)
     description = Column(Text, nullable=False)
     required_experience = Column(String(255), nullable=False) 

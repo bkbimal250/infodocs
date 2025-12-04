@@ -4,6 +4,7 @@ API endpoints for notifications
 """
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from config.database import get_db
 from apps.users.models import User
@@ -202,3 +203,65 @@ async def delete_activity_endpoint(
     if not success:
         raise HTTPException(status_code=404, detail="Activity not found or access denied")
     return {"message": "Activity deleted successfully"}
+
+
+class BulkDeleteRequest(BaseModel):
+    notification_ids: Optional[List[int]] = None
+    activity_ids: Optional[List[int]] = None
+
+
+@notifications_router.post("/bulk-delete")
+async def bulk_delete_notifications(
+    request: BulkDeleteRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Bulk delete notifications and/or activities (admin only)"""
+    is_admin = current_user.role in ["admin", "super_admin"]
+    if not is_admin:
+        raise HTTPException(status_code=403, detail="Only admins can perform bulk delete")
+    
+    deleted_notifications = 0
+    deleted_activities = 0
+    failed_notifications = []
+    failed_activities = []
+    
+    if request.notification_ids:
+        for notif_id in request.notification_ids:
+            try:
+                success = await delete_notification(
+                    db=db,
+                    notification_id=notif_id,
+                    user_id=current_user.id,
+                    is_admin=is_admin
+                )
+                if success:
+                    deleted_notifications += 1
+                else:
+                    failed_notifications.append(notif_id)
+            except Exception as e:
+                failed_notifications.append(notif_id)
+    
+    if request.activity_ids:
+        for activity_id in request.activity_ids:
+            try:
+                success = await delete_activity(
+                    db=db,
+                    activity_id=activity_id,
+                    user_id=current_user.id,
+                    is_admin=is_admin
+                )
+                if success:
+                    deleted_activities += 1
+                else:
+                    failed_activities.append(activity_id)
+            except Exception as e:
+                failed_activities.append(activity_id)
+    
+    return {
+        "deleted_notifications": deleted_notifications,
+        "deleted_activities": deleted_activities,
+        "failed_notifications": failed_notifications,
+        "failed_activities": failed_activities,
+        "message": f"Successfully deleted {deleted_notifications} notification(s) and {deleted_activities} activity(ies)"
+    }

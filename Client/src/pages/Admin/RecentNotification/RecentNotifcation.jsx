@@ -25,6 +25,8 @@ const RecentNotification = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [filter, setFilter] = useState('all'); // all, unread, login, otp, password_reset, certificate
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [isDeleting, setIsDeleting] = useState(false);
   const itemsPerPage = 20;
 
   useEffect(() => {
@@ -83,16 +85,92 @@ const RecentNotification = () => {
     }
   };
 
+  // Filter notifications - must be defined before functions that use it
+  const filteredNotifications = notifications.filter((notif) => {
+    if (filter === 'all') return true;
+    if (filter === 'unread') return !notif.is_read;
+    if (filter === 'login') return notif.notification_type === 'login';
+    if (filter === 'otp') return notif.notification_type?.includes('otp');
+    if (filter === 'password_reset') return notif.notification_type === 'password_reset';
+    if (filter === 'certificate') return notif.notification_type === 'certificate_created';
+    return true;
+  });
+
+  // Selection handlers
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedIds(new Set(filteredNotifications.map(notif => notif.id)));
+    } else {
+      setSelectedIds(new Set());
+    }
+  };
+
+  const handleSelectOne = (notificationId) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(notificationId)) {
+      newSelected.delete(notificationId);
+    } else {
+      newSelected.add(notificationId);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const isAllSelected = filteredNotifications.length > 0 && 
+    filteredNotifications.every(notif => selectedIds.has(notif.id));
+  const isIndeterminate = selectedIds.size > 0 && selectedIds.size < filteredNotifications.length;
+
   const deleteNotification = async (notificationId) => {
     if (!window.confirm('Are you sure you want to delete this notification?')) {
       return;
     }
     try {
       await usersApi.deleteNotification(notificationId);
+      // Remove from selection if it was selected
+      const newSelected = new Set(selectedIds);
+      newSelected.delete(notificationId);
+      setSelectedIds(newSelected);
       await loadNotifications();
       await loadUnreadCount();
     } catch (error) {
       console.error('Error deleting notification:', error);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) {
+      alert('Please select at least one notification to delete');
+      return;
+    }
+
+    const count = selectedIds.size;
+    if (!window.confirm(`Are you sure you want to delete ${count} notification(s)? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+      const idsArray = Array.from(selectedIds);
+      const response = await usersApi.bulkDelete({ notification_ids: idsArray });
+      
+      // Show result message
+      if (response.data.deleted_notifications > 0) {
+        alert(`Successfully deleted ${response.data.deleted_notifications} notification(s)`);
+      }
+      if (response.data.failed_notifications?.length > 0) {
+        alert(`Failed to delete ${response.data.failed_notifications.length} notification(s)`);
+      }
+      
+      // Clear selection
+      setSelectedIds(new Set());
+      
+      // Refresh the list
+      await loadNotifications();
+      await loadUnreadCount();
+    } catch (error) {
+      console.error('Error deleting notifications:', error);
+      alert(error.response?.data?.detail || 'Failed to delete notifications');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -130,16 +208,6 @@ const RecentNotification = () => {
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
   };
 
-  const filteredNotifications = notifications.filter((notif) => {
-    if (filter === 'all') return true;
-    if (filter === 'unread') return !notif.is_read;
-    if (filter === 'login') return notif.notification_type === 'login';
-    if (filter === 'otp') return notif.notification_type?.includes('otp');
-    if (filter === 'password_reset') return notif.notification_type === 'password_reset';
-    if (filter === 'certificate') return notif.notification_type === 'certificate_created';
-    return true;
-  });
-
   return (
     <div className="min-h-screen bg-[var(--color-bg-secondary)] py-8 px-4">
       <div className="max-w-7xl mx-auto">
@@ -159,6 +227,15 @@ const RecentNotification = () => {
               <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium">
                 {unreadCount} unread
               </span>
+            )}
+            {selectedIds.size > 0 && (
+              <button
+                onClick={handleBulkDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+              >
+                {isDeleting ? `Deleting ${selectedIds.size}...` : `Delete Selected (${selectedIds.size})`}
+              </button>
             )}
             <button
               onClick={markAllAsRead}
@@ -218,15 +295,36 @@ const RecentNotification = () => {
             </div>
           ) : (
             <div className="divide-y divide-gray-200">
+              {/* Header with select all checkbox */}
+              <div className="p-4 bg-gray-50 border-b border-gray-200">
+                <input
+                  type="checkbox"
+                  checked={isAllSelected}
+                  ref={(input) => {
+                    if (input) input.indeterminate = isIndeterminate;
+                  }}
+                  onChange={handleSelectAll}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="ml-2 text-sm text-gray-600">Select All</span>
+              </div>
               {filteredNotifications.map((notification) => (
                 <div
                   key={notification.id}
                   className={`p-4 hover:bg-gray-50 transition-colors ${getNotificationColor(
                     notification.notification_type,
                     notification.is_read
-                  )}`}
+                  )} ${selectedIds.has(notification.id) ? 'bg-blue-50' : ''}`}
                 >
                   <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0 mt-1">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(notification.id)}
+                        onChange={() => handleSelectOne(notification.id)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                    </div>
                     <div className="flex-shrink-0 mt-1">
                       {getNotificationIcon(notification.notification_type)}
                     </div>

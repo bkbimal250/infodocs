@@ -153,6 +153,18 @@ export const prepareCertificateData = (category, formData, invoiceItems = []) =>
         amount_in_words: formData.amount_in_words || '',
       };
 
+    case CERTIFICATE_CATEGORIES.ID_CARD:
+      return {
+        ...baseData,
+        candidate_name: formData.candidate_name || '',
+        designation: formData.designation || '',
+        date_of_joining: formData.date_of_joining || '',
+        contact_number: formData.contact_number || '',
+        issue_date: formData.issue_date || '',
+        // cropped image comes from ImageUpload as a data URL
+        candidate_photo: formData.candidate_photo || '',
+      };
+
     default:
       return baseData;
   }

@@ -85,7 +85,8 @@ export const hrApi = {
    * @returns {Promise}
    */
   getCertificates: (params = {}) => {
-    return apiClient.get('/certificates/generated', { params });
+    // Use public generated certificates endpoint
+    return apiClient.get('/certificates/generated/public', { params });
   },
 
   /**

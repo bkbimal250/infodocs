@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { CERTIFICATE_CATEGORIES, CERTIFICATE_FIELDS } from '../../utils/certificateConstants';
+import { numberToWords } from '../../utils/certificateUtils';
 
 /**
  * Manager Salary Certificate Form
@@ -107,6 +108,29 @@ const ManagerSalaryCertificateForm = ({ formData, handleInputChange }) => {
     });
   };
 
+  // Auto-calculate salary in words when monthly_salary changes
+  useEffect(() => {
+    if (formData.monthly_salary) {
+      // Extract numeric value from salary string (remove Rs., commas, etc.)
+      const salaryStr = formData.monthly_salary.toString().replace(/[^\d]/g, '');
+      const salaryNum = parseInt(salaryStr, 10);
+      
+      if (!isNaN(salaryNum) && salaryNum > 0) {
+        const words = numberToWords(salaryNum);
+        // Only update if the field is empty or if it was auto-generated
+        if (!formData.monthly_salary_in_words || formData.monthly_salary_in_words === '') {
+          handleInputChange({
+            target: { 
+              name: 'monthly_salary_in_words', 
+              value: `Rupees ${words}`,
+              type: 'text' 
+            },
+          });
+        }
+      }
+    }
+  }, [formData.monthly_salary]);
+
   return (
     <div className="space-y-6">
       {/* Manager & Employment Details */}
@@ -153,11 +177,62 @@ const ManagerSalaryCertificateForm = ({ formData, handleInputChange }) => {
               {label('joining_date', 'Joining Date')}
             </label>
             <input
-              type="text"
+              type="date"
               name="joining_date"
-              value={formData.joining_date || ''}
-              onChange={handleInputChange}
-              placeholder={placeholder('joining_date', '15th Oct, 2025')}
+              value={(() => {
+                // Convert formatted date back to YYYY-MM-DD for date input
+                if (!formData.joining_date) return '';
+                // Check if already in YYYY-MM-DD format
+                if (/^\d{4}-\d{2}-\d{2}$/.test(formData.joining_date)) {
+                  return formData.joining_date;
+                }
+                // Try to parse formatted date (e.g., "15th Oct, 2025")
+                const dateMatch = formData.joining_date.match(/(\d+)(?:st|nd|rd|th)?\s+(\w+),\s+(\d+)/);
+                if (dateMatch) {
+                  const day = parseInt(dateMatch[1]);
+                  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                  const monthIndex = monthNames.indexOf(dateMatch[2]);
+                  const year = parseInt(dateMatch[3]);
+                  if (monthIndex !== -1) {
+                    const date = new Date(year, monthIndex, day);
+                    if (!isNaN(date.getTime())) {
+                      const yearStr = date.getFullYear();
+                      const monthStr = String(date.getMonth() + 1).padStart(2, '0');
+                      const dayStr = String(date.getDate()).padStart(2, '0');
+                      return `${yearStr}-${monthStr}-${dayStr}`;
+                    }
+                  }
+                }
+                return '';
+              })()}
+              onChange={(e) => {
+                // Convert date to readable format (e.g., "15th Oct, 2025")
+                if (e.target.value) {
+                  const date = new Date(e.target.value);
+                  if (!isNaN(date.getTime())) {
+                    const day = date.getDate();
+                    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    const month = monthNames[date.getMonth()];
+                    const year = date.getFullYear();
+                    
+                    // Add suffix to day
+                    let daySuffix = 'th';
+                    if (day === 1 || day === 21 || day === 31) daySuffix = 'st';
+                    else if (day === 2 || day === 22) daySuffix = 'nd';
+                    else if (day === 3 || day === 23) daySuffix = 'rd';
+                    
+                    const formattedDate = `${day}${daySuffix} ${month}, ${year}`;
+                    handleInputChange({
+                      target: { name: 'joining_date', value: formattedDate, type: 'text' },
+                    });
+                  }
+                } else {
+                  // Clear the date if input is cleared
+                  handleInputChange({
+                    target: { name: 'joining_date', value: '', type: 'text' },
+                  });
+                }
+              }}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
           </div>
@@ -195,9 +270,9 @@ const ManagerSalaryCertificateForm = ({ formData, handleInputChange }) => {
               type="text"
               name="monthly_salary_in_words"
               value={formData.monthly_salary_in_words || ''}
-              onChange={handleInputChange}
-              placeholder={placeholder('monthly_salary_in_words', 'Sixty Thousand Only')}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              disabled
+              placeholder={placeholder('monthly_salary_in_words', 'Rupees Sixty Thousand Only')}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
           </div>
         </div>

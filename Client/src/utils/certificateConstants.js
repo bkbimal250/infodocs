@@ -14,6 +14,7 @@ export const CERTIFICATE_CATEGORIES = {
   EXPERIENCE_LETTER: 'experience_letter',
   APPOINTMENT_LETTER: 'appointment_letter',
   INVOICE_SPA_BILL: 'invoice_spa_bill',
+  ID_CARD: 'id_card',
 };
 
 export const CERTIFICATE_CATEGORY_METADATA = {
@@ -47,6 +48,11 @@ export const CERTIFICATE_CATEGORY_METADATA = {
     icon: 'invoice',
     description: 'Itemised invoice for spa services',
   },
+  [CERTIFICATE_CATEGORIES.ID_CARD]: {
+    title: 'Employee ID Card',
+    icon: 'id-card',
+    description: 'Photo identity card for employees',
+  },
 };
 
 export const SPA_REQUIRED_CATEGORIES = [
@@ -54,6 +60,7 @@ export const SPA_REQUIRED_CATEGORIES = [
   CERTIFICATE_CATEGORIES.EXPERIENCE_LETTER,
   CERTIFICATE_CATEGORIES.APPOINTMENT_LETTER,
   CERTIFICATE_CATEGORIES.INVOICE_SPA_BILL,
+  CERTIFICATE_CATEGORIES.ID_CARD,
 ];
 
 // ========================
@@ -151,6 +158,21 @@ export const CERTIFICATE_FIELDS = {
       { name: 'customer_address', label: 'Customer Address', type: 'textarea', placeholder: 'Customer Address (Optional)' },
       { name: 'subtotal', label: 'Subtotal', type: 'text', placeholder: '₹0.00', readOnly: true },
       { name: 'amount_in_words', label: 'Amount in Words', type: 'text', placeholder: 'Rupees Three Thousand Five Hundred Only' },
+    ],
+  },
+
+  [CERTIFICATE_CATEGORIES.ID_CARD]: {
+    title: 'Employee ID Card',
+    icon: 'id-card',
+    description: 'Matches IDCardCertificate model',
+    requiredFields: ['candidate_name', 'designation', 'date_of_joining', 'contact_number'],
+    fields: [
+      { name: 'candidate_name', label: 'Candidate Name', type: 'text', placeholder: 'Full Name' },
+      { name: 'designation', label: 'Designation', type: 'text', placeholder: 'Spa Therapist / Manager' },
+      { name: 'date_of_joining', label: 'Date of Joining', type: 'date' },
+      { name: 'contact_number', label: 'Contact Number', type: 'text', placeholder: 'Mobile Number' },
+      { name: 'issue_date', label: 'Issue Date', type: 'date' },
+      { name: 'candidate_photo', label: 'Candidate Photo', type: 'file' },
     ],
   },
 };

@@ -30,6 +30,7 @@ const CreateCertifications = () => {
   const [spaSearch, setSpaSearch] = useState('');
   const [spaLoading, setSpaLoading] = useState(false);
   const [spaError, setSpaError] = useState(null);
+  const [showSpaDropdown, setShowSpaDropdown] = useState(false);
   const [state, setState] = useState(FORM_STATES.IDLE);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -163,14 +164,31 @@ const CreateCertifications = () => {
     [formatSpaAddress]
   );
 
-  const handleSpaSelect = (e) => {
-    const value = e.target.value;
-    if (!value) {
+  const handleSpaSelect = (spaId) => {
+    if (!spaId) {
       setSelectedSpaId(null);
       clearSpaData();
+      setSpaSearch('');
+      setShowSpaDropdown(false);
       return;
     }
-    setSelectedSpaId(parseInt(value, 10));
+    setSelectedSpaId(parseInt(spaId, 10));
+    setSpaSearch('');
+    setShowSpaDropdown(false);
+  };
+
+  const handleSpaSearchChange = (e) => {
+    const value = e.target.value;
+    setSpaSearch(value);
+    setShowSpaDropdown(true);
+    // Clear selection if current selected SPA is not in filtered results
+    if (selectedSpaId) {
+      const selectedSpa = filteredSpas.find((s) => s.id === selectedSpaId);
+      if (!selectedSpa && value) {
+        setSelectedSpaId(null);
+        clearSpaData();
+      }
+    }
   };
 
   useEffect(() => {
@@ -183,8 +201,22 @@ const CreateCertifications = () => {
     if (!shouldRequireSpa) {
       setSelectedSpaId(null);
       clearSpaData();
+      setShowSpaDropdown(false);
     }
   }, [shouldRequireSpa, clearSpaData]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showSpaDropdown && !event.target.closest('.spa-dropdown-container')) {
+        setShowSpaDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showSpaDropdown]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -392,57 +424,171 @@ const CreateCertifications = () => {
 
         {shouldRequireSpa && (
           <div className="bg-white rounded-lg shadow-xl p-6 border border-gray-100 mb-6">
-            <div className="flex flex-col gap-4 md:flex-row md:items-end">
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Search SPA</label>
-                <input
-                  type="text"
-                  value={spaSearch}
-                  onChange={(e) => setSpaSearch(e.target.value)}
-                  placeholder="Search by name, city, or code"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                {spaLoading && <p className="text-xs text-gray-500 mt-1">Loading SPA locations...</p>}
+            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              SPA Location <span className="text-red-500">*</span>
+            </h3>
+
+            <div className="space-y-4">
+              {/* Search and Select */}
+              <div className="relative spa-dropdown-container">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Search and Select SPA Location
+                </label>
+                
+                {/* Search Input */}
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                  <input
+                    type="text"
+                    value={spaSearch}
+                    onChange={handleSpaSearchChange}
+                    onFocus={() => setShowSpaDropdown(true)}
+                    placeholder="Search by name, code, area, or city..."
+                    className={`w-full pl-10 pr-10 py-3 text-sm border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+                      !selectedSpaId && !spaSearch
+                        ? 'border-red-300 bg-red-50'
+                        : selectedSpaId
+                        ? 'border-green-300 bg-green-50'
+                        : 'border-gray-300 bg-white hover:border-blue-300'
+                    }`}
+                  />
+                  {selectedSpaId && (
+                    <button
+                      onClick={() => handleSpaSelect(null)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-600 transition-colors"
+                      title="Clear selection"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                  {spaSearch && (
+                    <span className="absolute right-12 top-1/2 -translate-y-1/2 text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">
+                      {filteredSpas.length} {filteredSpas.length === 1 ? 'result' : 'results'}
+                    </span>
+                  )}
+                </div>
+
+                {/* Dropdown Results */}
+                {showSpaDropdown && (spaSearch || !selectedSpaId) && (
+                  <div className="absolute z-50 w-full mt-2 bg-white border-2 border-gray-300 rounded-xl shadow-2xl max-h-80 overflow-y-auto">
+                    {spaLoading ? (
+                      <div className="p-4 text-center text-gray-500">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
+                        <p className="mt-2 text-sm">Loading SPA locations...</p>
+                      </div>
+                    ) : filteredSpas.length > 0 ? (
+                      <ul className="py-2">
+                        {filteredSpas.map((spa) => (
+                          <li
+                            key={spa.id}
+                            onClick={() => handleSpaSelect(spa.id)}
+                            className={`px-4 py-3 cursor-pointer hover:bg-blue-50 transition-colors ${
+                              selectedSpaId === spa.id ? 'bg-blue-100 border-l-4 border-blue-600' : ''
+                            }`}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-gray-900">{spa.name}</span>
+                                  {selectedSpaId === spa.id && (
+                                    <span className="px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded-full font-medium">
+                                      Selected
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-3 mt-1 text-sm text-gray-600">
+                                  {spa.code && (
+                                    <span className="px-2 py-0.5 bg-gray-100 rounded text-xs font-medium">
+                                      Code: {spa.code}
+                                    </span>
+                                  )}
+                                  {spa.area && <span>{spa.area}</span>}
+                                  {spa.city && <span>{spa.city}</span>}
+                                  {spa.state && <span>{spa.state}</span>}
+                                </div>
+                                {spa.address && (
+                                  <p className="text-xs text-gray-500 mt-1 truncate">{spa.address}</p>
+                                )}
+                              </div>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : spaSearch ? (
+                      <div className="p-4 text-center text-gray-500">
+                        <p className="text-sm">No SPAs found matching "{spaSearch}"</p>
+                        <p className="text-xs mt-1 text-gray-400">Try a different search term</p>
+                      </div>
+                    ) : (
+                      <div className="p-4 text-center text-gray-500">
+                        <p className="text-sm">No SPA locations available</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Select SPA Location</label>
-                <select
-                  value={selectedSpaId || ''}
-                  onChange={handleSpaSelect}
-                  disabled={spaLoading || !spas.length}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50"
-                >
-                  <option value="">Select SPA</option>
-                  {filteredSpas.map((spa) => (
-                    <option key={spa.id} value={spa.id}>
-                      {spa.name} {spa.city ? `(${spa.city})` : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
+
+              {/* Selected SPA Display */}
+              {selectedSpa && (
+                <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <h4 className="text-lg font-bold text-gray-900">{selectedSpa.name}</h4>
+                        {selectedSpa.code && (
+                          <span className="px-2 py-1 text-xs font-semibold bg-blue-600 text-white rounded-full">
+                            Code: {selectedSpa.code}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600">{formatSpaAddress(selectedSpa) || '—'}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-3 border-t border-blue-200">
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 mb-1">Contact</p>
+                      <p className="text-sm font-semibold text-gray-900">{selectedSpa.phone_number || '—'}</p>
+                      {selectedSpa.alternate_number && (
+                        <p className="text-xs text-gray-600 mt-1">{selectedSpa.alternate_number}</p>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 mb-1">Email</p>
+                      <p className="text-sm font-semibold text-gray-900">{selectedSpa.email || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 mb-1">Website</p>
+                      <p className="text-sm font-semibold text-gray-900">{selectedSpa.website || '—'}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Error Messages */}
+              {spaError && (
+                <div className="mt-3 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg">
+                  {spaError}
+                </div>
+              )}
+              {!spaError && !spaLoading && !spas.length && (
+                <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 text-yellow-700 rounded-lg">
+                  No SPA locations available. Please contact administrator.
+                </div>
+              )}
             </div>
-            {spaError && <div className="mt-3 p-3 bg-red-50 border border-red-200 text-red-700 rounded">{spaError}</div>}
-            {!spaError && !spaLoading && !spas.length && (
-              <div className="mt-3 text-sm text-gray-500">No SPA locations available.</div>
-            )}
-            {selectedSpa && (
-              <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div>
-                  <p className="text-gray-500">Address</p>
-                  <p className="font-medium text-gray-900">{formatSpaAddress(selectedSpa) || '—'}</p>
-                </div>
-                <div>
-                  <p className="text-gray-500">Contact</p>
-                  <p className="font-medium text-gray-900">{selectedSpa.phone_number || '—'}</p>
-                  {selectedSpa.alternate_number && <p className="text-gray-700">{selectedSpa.alternate_number}</p>}
-                </div>
-                <div>
-                  <p className="text-gray-500">Email / Code</p>
-                  <p className="font-medium text-gray-900">{selectedSpa.email || '—'}</p>
-                  {selectedSpa.code && <p className="text-gray-700">Code: {selectedSpa.code}</p>}
-                </div>
-              </div>
-            )}
           </div>
         )}
 

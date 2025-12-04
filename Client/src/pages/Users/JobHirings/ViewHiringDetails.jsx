@@ -110,6 +110,16 @@ const ViewHiringDetails = () => {
                 </tr>
                 <tr className="hover:bg-[var(--color-bg-secondary)]">
                   <td className="px-4 py-3 text-sm font-medium text-gray-700 bg-[var(--color-bg-secondary)]">
+                    Staff Required
+                  </td>
+                  <td className="px-4 py-3 text-sm text-[var(--color-text-primary)]">
+                    <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full font-semibold">
+                      {hiringForm.staff_required || 'N/A'}
+                    </span>
+                  </td>
+                </tr>
+                <tr className="hover:bg-[var(--color-bg-secondary)]">
+                  <td className="px-4 py-3 text-sm font-medium text-gray-700 bg-[var(--color-bg-secondary)]">
                     Job Description
                   </td>
                   <td className="px-4 py-3 text-sm text-[var(--color-text-primary)] whitespace-pre-wrap">

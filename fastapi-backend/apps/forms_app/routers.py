@@ -238,6 +238,7 @@ async def submit_hiring_form(
             db=db,
             spa_id=hiring_data.spa_id,
             spa_name_text=None,  # Not in model, but keeping for consistency
+            staff_required=hiring_data.staff_required,
             for_role=hiring_data.for_role,
             description=hiring_data.description,
             required_experience=hiring_data.required_experience,
@@ -839,6 +840,7 @@ async def update_hiring_form_endpoint(
         db=db,
         form_id=form_id,
         spa_id=form_data.spa_id,
+        staff_required=form_data.staff_required,
         for_role=form_data.for_role,
         description=form_data.description,
         required_experience=form_data.required_experience,

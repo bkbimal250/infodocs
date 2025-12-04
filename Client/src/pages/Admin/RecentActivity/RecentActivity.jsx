@@ -25,6 +25,8 @@ const RecentActivity = () => {
   const [totalItems, setTotalItems] = useState(0);
   const [activeTab, setActiveTab] = useState('activities'); // activities, login_history
   const [filter, setFilter] = useState('all'); // all, login, otp, password_reset, certificate
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [isDeleting, setIsDeleting] = useState(false);
   const itemsPerPage = 20;
 
   useEffect(() => {
@@ -95,6 +97,10 @@ const RecentActivity = () => {
     }
     try {
       await usersApi.deleteActivity(activityId);
+      // Remove from selection if it was selected
+      const newSelected = new Set(selectedIds);
+      newSelected.delete(activityId);
+      setSelectedIds(newSelected);
       if (activeTab === 'activities') {
         await loadActivities();
       } else {
@@ -102,6 +108,48 @@ const RecentActivity = () => {
       }
     } catch (error) {
       console.error('Error deleting activity:', error);
+      alert('Failed to delete activity');
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) {
+      alert('Please select at least one activity to delete');
+      return;
+    }
+
+    const count = selectedIds.size;
+    if (!window.confirm(`Are you sure you want to delete ${count} activity(ies)? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+      const idsArray = Array.from(selectedIds);
+      const response = await usersApi.bulkDelete({ activity_ids: idsArray });
+      
+      // Show result message
+      if (response.data.deleted_activities > 0) {
+        alert(`Successfully deleted ${response.data.deleted_activities} activity(ies)`);
+      }
+      if (response.data.failed_activities?.length > 0) {
+        alert(`Failed to delete ${response.data.failed_activities.length} activity(ies)`);
+      }
+      
+      // Clear selection
+      setSelectedIds(new Set());
+      
+      // Refresh the list
+      if (activeTab === 'activities') {
+        await loadActivities();
+      } else {
+        await loadLoginHistory();
+      }
+    } catch (error) {
+      console.error('Error deleting activities:', error);
+      alert(error.response?.data?.detail || 'Failed to delete activities');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -139,6 +187,36 @@ const RecentActivity = () => {
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
   };
 
+  // Selection handlers (only for activities tab)
+  const handleSelectAll = (e) => {
+    if (activeTab !== 'activities') return;
+    if (e.target.checked) {
+      setSelectedIds(new Set(activities.map(activity => activity.id)));
+    } else {
+      setSelectedIds(new Set());
+    }
+  };
+
+  const handleSelectOne = (activityId) => {
+    if (activeTab !== 'activities') return;
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(activityId)) {
+      newSelected.delete(activityId);
+    } else {
+      newSelected.add(activityId);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const isAllSelected = activeTab === 'activities' && activities.length > 0 && 
+    activities.every(activity => selectedIds.has(activity.id));
+  const isIndeterminate = activeTab === 'activities' && selectedIds.size > 0 && selectedIds.size < activities.length;
+
+  // Clear selection when switching tabs
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [activeTab]);
+
   const currentData = activeTab === 'activities' ? activities : loginHistory;
 
   return (
@@ -155,19 +233,35 @@ const RecentActivity = () => {
               Track all user activities including logins, OTP, password resets, and certificate generation
             </p>
           </div>
-          <button
-            onClick={() => {
-              if (activeTab === 'activities') {
-                loadActivities();
-              } else {
-                loadLoginHistory();
-              }
-            }}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors flex items-center gap-2"
-          >
-            <HiOutlineRefresh />
-            Refresh
-          </button>
+          <div className="flex items-center gap-3">
+            {activeTab === 'activities' && selectedIds.size > 0 && (
+              <>
+                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                  {selectedIds.size} selected
+                </span>
+                <button
+                  onClick={handleBulkDelete}
+                  disabled={isDeleting}
+                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                >
+                  {isDeleting ? `Deleting ${selectedIds.size}...` : `Delete Selected (${selectedIds.size})`}
+                </button>
+              </>
+            )}
+            <button
+              onClick={() => {
+                if (activeTab === 'activities') {
+                  loadActivities();
+                } else {
+                  loadLoginHistory();
+                }
+              }}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors flex items-center gap-2"
+            >
+              <HiOutlineRefresh />
+              Refresh
+            </button>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -242,15 +336,44 @@ const RecentActivity = () => {
             </div>
           ) : (
             <div className="divide-y divide-gray-200">
+              {activeTab === 'activities' && activities.length > 0 && (
+                <div className="p-4 bg-gray-50 border-b border-gray-200">
+                  <input
+                    type="checkbox"
+                    checked={isAllSelected}
+                    ref={(input) => {
+                      if (input) input.indeterminate = isIndeterminate;
+                    }}
+                    onChange={handleSelectAll}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="ml-2 text-sm text-gray-600">Select All</span>
+                  {selectedIds.size > 0 && (
+                    <span className="ml-4 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                      {selectedIds.size} selected
+                    </span>
+                  )}
+                </div>
+              )}
               {currentData.map((item) => (
                 <div
                   key={item.id}
                   className={`p-4 hover:bg-gray-50 transition-colors ${getActivityColor(
                     item.activity_type || item.login_status,
                     item.login_status
-                  )}`}
+                  )} ${activeTab === 'activities' && selectedIds.has(item.id) ? 'bg-blue-50' : ''}`}
                 >
                   <div className="flex items-start gap-4">
+                    {activeTab === 'activities' && (
+                      <div className="flex-shrink-0 mt-1">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(item.id)}
+                          onChange={() => handleSelectOne(item.id)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                      </div>
+                    )}
                     <div className="flex-shrink-0 mt-1">
                       {activeTab === 'activities' ? (
                         getActivityIcon(item.activity_type)

@@ -21,6 +21,7 @@ from apps.certificates.models import (
     ExperienceLetterCertificate,
     AppointmentLetterCertificate,
     InvoiceSpaBillCertificate,
+    IDCardCertificate,
 )
 from apps.certificates.services.pdf_generator import (
     render_html_template,
@@ -40,6 +41,7 @@ SPA_REQUIRED_CATEGORIES = {
     CertificateCategory.EXPERIENCE_LETTER,
     CertificateCategory.APPOINTMENT_LETTER,
     CertificateCategory.INVOICE_SPA_BILL,
+    CertificateCategory.ID_CARD,
     # Note: SPA_THERAPIST does NOT require spa_id
 }
 
@@ -176,6 +178,7 @@ def get_template_name_by_category(category: CertificateCategory) -> str:
         CertificateCategory.EXPERIENCE_LETTER: "letter_of_experience",
         CertificateCategory.INVOICE_SPA_BILL: "invoice",
         CertificateCategory.SPA_THERAPIST: "completion_certificate",
+        CertificateCategory.ID_CARD: "id_card",
     }
     return mapping.get(category, "salary_certificate")
 
@@ -198,7 +201,7 @@ def prepare_certificate_data(template: CertificateTemplate, certificate_data: Di
     # Determine image URLs based on context
     if use_http_urls:
         # For browser preview - use HTTP URLs
-        base_url = certificate_data.get("base_url", "http://localhost:8009")
+        base_url = certificate_data.get("base_url", "https://infodocs.api.d0s369.co.in")
         background_image = certificate_data.get("certificate_background_image") or f"{base_url}/static/images/spacertificate.png"
         stamp_image = certificate_data.get("certificate_stamp_image") or f"{base_url}/static/images/Spa Certificate Stamp.png"
         signatory_image = certificate_data.get("certificate_signatory_image") or f"{base_url}/static/images/Spa Certificate Signatory.png"
@@ -210,7 +213,7 @@ def prepare_certificate_data(template: CertificateTemplate, certificate_data: Di
     
     # Handle SPA logo path conversion
     from config.settings import settings
-    base_url = certificate_data.get("base_url", "http://localhost:8009")
+    base_url = certificate_data.get("base_url", "https://infodocs.api.d0s369.co.in")
     media_base_path = Path(settings.UPLOAD_DIR).resolve()
     media_base_path_str = str(media_base_path).replace("\\", "/")
     
@@ -235,13 +238,36 @@ def prepare_certificate_data(template: CertificateTemplate, certificate_data: Di
     else:
         spa_logo = ""  # Empty string if no logo
     
+    # Build clean address without duplication
+    address_parts = []
+    if spa.get("address"):
+        address_parts.append(spa.get("address").strip())
+    if spa.get("area"):
+        address_parts.append(spa.get("area").strip())
+    if spa.get("city"):
+        address_parts.append(spa.get("city").strip())
+    if spa.get("state"):
+        address_parts.append(spa.get("state").strip())
+    if spa.get("pincode"):
+        address_parts.append(spa.get("pincode").strip())
+    
+    # Join address parts, removing duplicates and empty strings
+    clean_address_parts = []
+    seen = set()
+    for part in address_parts:
+        if part and part.lower() not in seen:
+            clean_address_parts.append(part)
+            seen.add(part.lower())
+    
+    spa_address_clean = ", ".join(clean_address_parts) if clean_address_parts else spa.get("address", "")
+    
     data = {
         "date": certificate_data.get("date", datetime.now().strftime("%d/%m/%Y")),
         "candidate_name": candidate_name,
 
         # SPA info
         "spa_name": spa.get("name", ""),
-        "spa_address": spa.get("address", ""),
+        "spa_address": spa_address_clean,  # Use clean address without duplication
         "spa_city": spa.get("city", ""),
         "spa_state": spa.get("state", ""),
         "spa_country": spa.get("country", ""),
@@ -267,13 +293,24 @@ def prepare_certificate_data(template: CertificateTemplate, certificate_data: Di
         excluded_fields = {"signatory_name", "signatory_title", "spa_id"}
     
     for k, v in certificate_data.items():
-        if k not in data and k not in excluded_fields:
-            data[k] = v
+        if k not in excluded_fields:
+            # Special handling for salary_breakdown - if it's a list, convert to HTML
+            if k == "salary_breakdown" and isinstance(v, list) and v:
+                rows = []
+                for row in v:
+                    if isinstance(row, dict):
+                        month = row.get("month", "")
+                        salary = row.get("salary", "")
+                        if month or salary:
+                            rows.append(f"<tr><td>{month}</td><td>{salary}</td></tr>")
+                data[k] = "".join(rows) if rows else "<tr><td>-</td><td>-</td></tr>"
+            elif k not in data:
+                data[k] = v
     
     # For SPA_THERAPIST, handle image paths/URLs
     if template.category == CertificateCategory.SPA_THERAPIST:
         from config.settings import settings
-        base_url = certificate_data.get("base_url", "http://localhost:8009")
+        base_url = certificate_data.get("base_url", "https://infodocs.api.d0s369.co.in")
         media_base_path = Path(settings.UPLOAD_DIR).resolve()
         media_base_path_str = str(media_base_path).replace("\\", "/")
         
@@ -320,8 +357,9 @@ def prepare_certificate_data(template: CertificateTemplate, certificate_data: Di
         salary_breakdown_html = "".join(rows)
     else:
         # Case 2: Build from month_year_list + month_salary_list
-        month_year_list = certificate_data.get("month_year_list") or []
-        month_salary_list = certificate_data.get("month_salary_list") or []
+        # Check both certificate_data and data (in case it was already merged)
+        month_year_list = certificate_data.get("month_year_list") or data.get("month_year_list") or []
+        month_salary_list = certificate_data.get("month_salary_list") or data.get("month_salary_list") or []
 
         # Support JSON strings from frontend (if any)
         try:
@@ -334,11 +372,13 @@ def prepare_certificate_data(template: CertificateTemplate, certificate_data: Di
             # If parsing fails, keep original values
             pass
 
-        if isinstance(month_year_list, list) and isinstance(month_salary_list, list):
+        if isinstance(month_year_list, list) and isinstance(month_salary_list, list) and len(month_year_list) > 0:
             rows = []
             for month, salary in zip(month_year_list, month_salary_list):
-                if (month or "").strip() or (salary or "").strip():
-                    rows.append(f"<tr><td>{month}</td><td>{salary}</td></tr>")
+                month_str = str(month).strip() if month else ""
+                salary_str = str(salary).strip() if salary else ""
+                if month_str or salary_str:
+                    rows.append(f"<tr><td>{month_str}</td><td>{salary_str}</td></tr>")
             salary_breakdown_html = "".join(rows)
 
     category_defaults = {
@@ -378,6 +418,14 @@ def prepare_certificate_data(template: CertificateTemplate, certificate_data: Di
             "end_date": "",
             "passport_size_photo": "",
             "candidate_signature": ""
+        },
+        CertificateCategory.ID_CARD: {
+            "candidate_name": candidate_name,
+            "candidate_photo": "",
+            "designation": "",
+            "date_of_joining": "",
+            "contact_number": "",
+            "issue_date": datetime.now().strftime("%d/%m/%Y")
         }
     }
 
@@ -386,6 +434,28 @@ def prepare_certificate_data(template: CertificateTemplate, certificate_data: Di
     for key, default_value in defaults.items():
         if key not in data or not data.get(key):
             data[key] = default_value
+    
+    # Final check: Ensure salary_breakdown is HTML string, not a list
+    if template.category == CertificateCategory.MANAGER_SALARY:
+        if "salary_breakdown" in data and isinstance(data["salary_breakdown"], list):
+            rows = []
+            for row in data["salary_breakdown"]:
+                if isinstance(row, dict):
+                    month = row.get("month", "")
+                    salary = row.get("salary", "")
+                    if month or salary:
+                        rows.append(f"<tr><td>{month}</td><td>{salary}</td></tr>")
+            data["salary_breakdown"] = "".join(rows) if rows else "<tr><td>-</td><td>-</td></tr>"
+        elif "salary_breakdown" not in data or not data.get("salary_breakdown"):
+            # If no salary_breakdown at all, try to build from month_year_list and month_salary_list
+            month_year_list = data.get("month_year_list") or certificate_data.get("month_year_list") or []
+            month_salary_list = data.get("month_salary_list") or certificate_data.get("month_salary_list") or []
+            if isinstance(month_year_list, list) and isinstance(month_salary_list, list):
+                rows = []
+                for month, salary in zip(month_year_list, month_salary_list):
+                    if (month or "").strip() or (salary or "").strip():
+                        rows.append(f"<tr><td>{month}</td><td>{salary}</td></tr>")
+                data["salary_breakdown"] = "".join(rows) if rows else "<tr><td>-</td><td>-</td></tr>"
     
     return data
 
@@ -398,6 +468,7 @@ def get_certificate_model(category: CertificateCategory):
         CertificateCategory.EXPERIENCE_LETTER: ExperienceLetterCertificate,
         CertificateCategory.APPOINTMENT_LETTER: AppointmentLetterCertificate,
         CertificateCategory.INVOICE_SPA_BILL: InvoiceSpaBillCertificate,
+        CertificateCategory.ID_CARD: IDCardCertificate,
     }
     return model_map.get(category, GeneratedCertificate)
 
@@ -453,6 +524,7 @@ async def create_generated_certificate(
             "passport_size_photo": None,  # Will be set after certificate is created
             "candidate_signature": None,  # Will be set after certificate is created
         },
+
         CertificateCategory.MANAGER_SALARY: {
             "manager_name": certificate_payload.get("manager_name") or name,
             "position": certificate_payload.get("position") or "Manager",
@@ -462,6 +534,7 @@ async def create_generated_certificate(
             "month_year_list": certificate_payload.get("month_year_list") or [],
             "month_salary_list": certificate_payload.get("month_salary_list") or [],
         },
+
         CertificateCategory.EXPERIENCE_LETTER: {
             "candidate_name": certificate_payload.get("candidate_name") or certificate_payload.get("employee_name") or name,
             "position": certificate_payload.get("position"),
@@ -470,6 +543,7 @@ async def create_generated_certificate(
             "duration": certificate_payload.get("duration"),
             "salary": certificate_payload.get("salary"),
         },
+
         CertificateCategory.APPOINTMENT_LETTER: {
             "employee_name": certificate_payload.get("employee_name") or name,
             "position": certificate_payload.get("position"),
@@ -477,6 +551,7 @@ async def create_generated_certificate(
             "salary": certificate_payload.get("salary"),
             "manager_signature": certificate_payload.get("manager_signature"),
         },
+
         CertificateCategory.INVOICE_SPA_BILL: {
             "bill_number": certificate_payload.get("bill_number"),
             "bill_date": certificate_payload.get("bill_date") or certificate_payload.get("invoice_date") or certificate_payload.get("date") or datetime.now().strftime("%d/%m/%Y"),
@@ -487,6 +562,16 @@ async def create_generated_certificate(
             "subtotal": certificate_payload.get("subtotal"),
             "amount_in_words": certificate_payload.get("amount_in_words"),
         },
+
+        CertificateCategory.ID_CARD: {
+            "candidate_name": certificate_payload.get("candidate_name") or name,
+            "candidate_photo": None,  # Will be set after certificate is created
+            "designation": certificate_payload.get("designation"),
+            "date_of_joining": certificate_payload.get("date_of_joining"),
+            "contact_number": certificate_payload.get("contact_number"),
+            "issue_date": certificate_payload.get("issue_date") or datetime.now().strftime("%d/%m/%Y"),
+        },
+        
     }
 
     base_data.update(category_fields.get(template.category, {}))
@@ -511,6 +596,15 @@ async def create_generated_certificate(
             if signature_path:
                 certificate.candidate_signature = signature_path
     
+    # Save base64 images as files for ID_CARD category
+    if template.category == CertificateCategory.ID_CARD:
+        candidate_photo = certificate_payload.get("candidate_photo")
+        
+        if candidate_photo:
+            photo_path = save_base64_image(candidate_photo, certificate.id, "id_card_photo")
+            if photo_path:
+                certificate.candidate_photo = photo_path
+    
     await db.commit()
     await db.refresh(certificate)
 
@@ -519,6 +613,7 @@ async def create_generated_certificate(
         CertificateCategory.SPA_THERAPIST: "candidate_name",
         CertificateCategory.EXPERIENCE_LETTER: "candidate_name",
         CertificateCategory.APPOINTMENT_LETTER: "employee_name",
+        CertificateCategory.ID_CARD: "candidate_name",
     }.get(template.category, None)
     display_name = getattr(certificate, display_name_field, name) if display_name_field else name
 
@@ -529,6 +624,10 @@ async def create_generated_certificate(
             certificate_payload["passport_size_photo"] = certificate.passport_size_photo
         if certificate.candidate_signature:
             certificate_payload["candidate_signature"] = certificate.candidate_signature
+    
+    if template.category == CertificateCategory.ID_CARD:
+        if certificate.candidate_photo:
+            certificate_payload["candidate_photo"] = certificate.candidate_photo
     
     data = prepare_certificate_data(template, certificate_payload, display_name, use_http_urls=False)
 
@@ -605,6 +704,7 @@ async def get_public_certificates(db: AsyncSession, skip: int = 0, limit: int = 
         ExperienceLetterCertificate,
         AppointmentLetterCertificate,
         InvoiceSpaBillCertificate,
+        IDCardCertificate,
         GeneratedCertificate,
     ]
     all_certificates = []
@@ -625,6 +725,7 @@ async def get_user_certificates(db: AsyncSession, user_id: int, skip: int = 0, l
         ExperienceLetterCertificate,
         AppointmentLetterCertificate,
         InvoiceSpaBillCertificate,
+        IDCardCertificate,
         GeneratedCertificate,
     ]
     all_certificates = []
@@ -648,6 +749,7 @@ async def get_all_certificates_with_users(db: AsyncSession, skip: int = 0, limit
         ExperienceLetterCertificate,
         AppointmentLetterCertificate,
         InvoiceSpaBillCertificate,
+        IDCardCertificate,
         GeneratedCertificate,
     ]
     
@@ -676,6 +778,47 @@ async def get_all_certificates_with_users(db: AsyncSession, skip: int = 0, limit
     return all_certificates
 
 
+async def delete_certificate(db: AsyncSession, certificate_id: int, category: Optional[CertificateCategory] = None) -> bool:
+    """Delete a certificate by ID from the appropriate table"""
+    models = [
+        (SpaTherapistCertificate, CertificateCategory.SPA_THERAPIST),
+        (ManagerSalaryCertificate, CertificateCategory.MANAGER_SALARY),
+        (ExperienceLetterCertificate, CertificateCategory.EXPERIENCE_LETTER),
+        (AppointmentLetterCertificate, CertificateCategory.APPOINTMENT_LETTER),
+        (InvoiceSpaBillCertificate, CertificateCategory.INVOICE_SPA_BILL),
+        (IDCardCertificate, CertificateCategory.ID_CARD),
+        (GeneratedCertificate, None),
+    ]
+    
+    # If category is provided, only check that specific model
+    if category:
+        model_map = {
+            CertificateCategory.SPA_THERAPIST: SpaTherapistCertificate,
+            CertificateCategory.MANAGER_SALARY: ManagerSalaryCertificate,
+            CertificateCategory.EXPERIENCE_LETTER: ExperienceLetterCertificate,
+            CertificateCategory.APPOINTMENT_LETTER: AppointmentLetterCertificate,
+            CertificateCategory.INVOICE_SPA_BILL: InvoiceSpaBillCertificate,
+            CertificateCategory.ID_CARD: IDCardCertificate,
+        }
+        model = model_map.get(category)
+        if model:
+            stmt = delete(model).where(model.id == certificate_id)
+            result = await db.execute(stmt)
+            await db.commit()
+            return result.rowcount > 0
+        return False
+    
+    # If no category, search all models
+    for model, _ in models:
+        stmt = delete(model).where(model.id == certificate_id)
+        result = await db.execute(stmt)
+        if result.rowcount > 0:
+            await db.commit()
+            return True
+    
+    return False
+
+
 async def get_certificate_statistics(db: AsyncSession):
     """Get certificate statistics: total, by user, by category"""
     from sqlalchemy import func
@@ -687,6 +830,7 @@ async def get_certificate_statistics(db: AsyncSession):
         (ExperienceLetterCertificate, CertificateCategory.EXPERIENCE_LETTER),
         (AppointmentLetterCertificate, CertificateCategory.APPOINTMENT_LETTER),
         (InvoiceSpaBillCertificate, CertificateCategory.INVOICE_SPA_BILL),
+        (IDCardCertificate, CertificateCategory.ID_CARD),
         (GeneratedCertificate, None),
     ]
     

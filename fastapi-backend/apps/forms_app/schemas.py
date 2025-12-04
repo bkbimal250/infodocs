@@ -131,6 +131,7 @@ class CandidateFormResponse(CandidateFormBase):
 class HiringFormBase(BaseModel):
     """Base hiring form schema"""
     spa_id: Optional[int] = None
+    staff_required: int
     for_role: str
     description: str
     required_experience: str
@@ -146,6 +147,7 @@ class HiringFormCreate(HiringFormBase):
 class HiringFormUpdate(BaseModel):
     """Hiring form update schema"""
     spa_id: Optional[int] = None
+    staff_required: Optional[int] = None
     for_role: Optional[str] = None
     description: Optional[str] = None
     required_experience: Optional[str] = None

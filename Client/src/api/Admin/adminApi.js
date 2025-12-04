@@ -106,7 +106,9 @@ export const adminApi = {
      * @returns {Promise}
      */
     getGeneratedCertificates: () => {
-      return apiClient.get('/certificates/generated');
+      // Backend route: GET /api/certificates/generated/public
+      // Returns all public generated certificates
+      return apiClient.get('/certificates/generated/public');
     },
 
     /**
@@ -142,8 +144,33 @@ export const adminApi = {
      * @returns {Promise}
      */
     downloadCertificate: (certificateId) => {
-      return apiClient.get(`/certificates/generated/${certificateId}/download`, {
+      // Backend route: GET /api/certificates/generated/{id}/download/pdf
+      return apiClient.get(`/certificates/generated/${certificateId}/download/pdf`, {
         responseType: 'blob',
+      });
+    },
+
+    /**
+     * Delete a certificate
+     * @param {number} certificateId - Certificate ID
+     * @param {string} category - Optional category to speed up deletion
+     * @returns {Promise}
+     */
+    deleteCertificate: (certificateId, category = null) => {
+      // Backend route: DELETE /api/certificates/admin/{id}?category=...
+      const params = category ? { category } : {};
+      return apiClient.delete(`/certificates/admin/${certificateId}`, { params });
+    },
+
+    /**
+     * Delete multiple certificates
+     * @param {Array<number>} certificateIds - Array of certificate IDs
+     * @returns {Promise}
+     */
+    bulkDeleteCertificates: (certificateIds) => {
+      // Backend route: POST /api/certificates/admin/bulk-delete
+      return apiClient.post('/certificates/admin/bulk-delete', {
+        certificate_ids: certificateIds
       });
     },
   },

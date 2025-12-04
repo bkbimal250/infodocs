@@ -2,8 +2,8 @@
 Certificate Routers
 API endpoints for certificate management
 """
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Response, Query
 from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from pathlib import Path
@@ -22,6 +22,7 @@ from apps.certificates.schemas import (
     TemplateCreate,
     TemplateUpdate,
 )
+from pydantic import BaseModel
 from apps.certificates.services.certificate_service import (
     get_public_templates,
     get_template_by_id,
@@ -36,6 +37,7 @@ from apps.certificates.services.certificate_service import (
     get_all_certificates_with_users,
     get_certificate_statistics,
     prepare_certificate_data,
+    delete_certificate,
 )
 from apps.certificates.services.pdf_generator import render_html_template, html_to_pdf, html_to_image
 from core.exceptions import NotFoundError, ValidationError
@@ -278,6 +280,33 @@ async def download_certificate_pdf(certificate_id: int, db: AsyncSession = Depen
     
     # Load SPA data from database if spa_id exists but spa object is missing
     cert_data = certificate.certificate_data or {}
+    
+    # For MANAGER_SALARY certificates, merge model fields into cert_data
+    if hasattr(certificate, 'manager_name'):
+        from apps.certificates.models import ManagerSalaryCertificate
+        if isinstance(certificate, ManagerSalaryCertificate):
+            cert_data["manager_name"] = certificate.manager_name or cert_data.get("manager_name")
+            cert_data["position"] = certificate.position or cert_data.get("position")
+            cert_data["joining_date"] = certificate.joining_date or cert_data.get("joining_date")
+            cert_data["monthly_salary"] = certificate.monthly_salary or cert_data.get("monthly_salary")
+            cert_data["monthly_salary_in_words"] = certificate.monthly_salary_in_words or cert_data.get("monthly_salary_in_words")
+            # Always include month_year_list and month_salary_list from model, even if empty
+            if hasattr(certificate, 'month_year_list'):
+                cert_data["month_year_list"] = certificate.month_year_list if certificate.month_year_list else []
+            if hasattr(certificate, 'month_salary_list'):
+                cert_data["month_salary_list"] = certificate.month_salary_list if certificate.month_salary_list else []
+    
+    # For ID_CARD certificates, merge model fields into cert_data
+    if hasattr(certificate, 'candidate_name') and hasattr(certificate, 'designation'):
+        from apps.certificates.models import IDCardCertificate
+        if isinstance(certificate, IDCardCertificate):
+            cert_data["candidate_name"] = certificate.candidate_name or cert_data.get("candidate_name")
+            cert_data["candidate_photo"] = certificate.candidate_photo or cert_data.get("candidate_photo")
+            cert_data["designation"] = certificate.designation or cert_data.get("designation")
+            cert_data["date_of_joining"] = certificate.date_of_joining or cert_data.get("date_of_joining")
+            cert_data["contact_number"] = certificate.contact_number or cert_data.get("contact_number")
+            cert_data["issue_date"] = certificate.issue_date or cert_data.get("issue_date")
+    
     if hasattr(certificate, 'spa_id') and certificate.spa_id and not cert_data.get("spa"):
         from apps.forms_app.models import SPA
         from sqlalchemy import select
@@ -480,3 +509,66 @@ async def get_all_certificates_admin(
     except Exception as e:
         logger.error(f"Error getting all certificates: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to retrieve certificates: {str(e)}")
+
+
+@certificates_router.delete("/admin/{certificate_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_certificate_admin(
+    certificate_id: int,
+    category: Optional[str] = Query(None, description="Optional category to speed up deletion"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "super_admin"))
+):
+    """Delete a certificate (admin only)"""
+    try:
+        cert_category = None
+        if category:
+            try:
+                cert_category = CertificateCategory(category)
+            except ValueError:
+                raise HTTPException(status_code=400, detail=f"Invalid category: {category}")
+        
+        deleted = await delete_certificate(db, certificate_id, cert_category)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Certificate not found")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting certificate {certificate_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to delete certificate: {str(e)}")
+
+
+class BulkDeleteRequest(BaseModel):
+    certificate_ids: List[int]
+
+
+@certificates_router.post("/admin/bulk-delete", status_code=status.HTTP_200_OK)
+async def bulk_delete_certificates_admin(
+    request: BulkDeleteRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "super_admin"))
+):
+    """Delete multiple certificates (admin only)"""
+    try:
+        deleted_count = 0
+        failed_ids = []
+        
+        for cert_id in request.certificate_ids:
+            try:
+                deleted = await delete_certificate(db, cert_id, None)
+                if deleted:
+                    deleted_count += 1
+                else:
+                    failed_ids.append(cert_id)
+            except Exception as e:
+                logger.error(f"Error deleting certificate {cert_id}: {e}")
+                failed_ids.append(cert_id)
+        
+        return {
+            "deleted_count": deleted_count,
+            "failed_count": len(failed_ids),
+            "failed_ids": failed_ids,
+            "message": f"Successfully deleted {deleted_count} certificate(s)"
+        }
+    except Exception as e:
+        logger.error(f"Error in bulk delete: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to delete certificates: {str(e)}")

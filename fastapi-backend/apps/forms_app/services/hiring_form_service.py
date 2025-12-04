@@ -14,6 +14,7 @@ async def create_hiring_form(
     db: AsyncSession,
     spa_id: Optional[int],
     spa_name_text: Optional[str],
+    staff_required: int,
     for_role: str,
     description: str,
     required_experience: str,
@@ -24,6 +25,7 @@ async def create_hiring_form(
     """Create a new hiring form submission"""
     hiring_form = Hiring_Form(
         spa_id=spa_id,
+        staff_required=staff_required,
         for_role=for_role,
         description=description,
         required_experience=required_experience,
@@ -94,6 +96,7 @@ async def update_hiring_form(
     db: AsyncSession,
     form_id: int,
     spa_id: Optional[int] = None,
+    staff_required: Optional[int] = None,
     for_role: Optional[str] = None,
     description: Optional[str] = None,
     required_experience: Optional[str] = None,
@@ -107,6 +110,8 @@ async def update_hiring_form(
     
     if spa_id is not None:
         form.spa_id = spa_id
+    if staff_required is not None:
+        form.staff_required = staff_required
     if for_role is not None:
         form.for_role = for_role
     if description is not None:

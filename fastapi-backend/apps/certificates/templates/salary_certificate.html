@@ -151,9 +151,9 @@
         <div class="certificate-body">
             <p>
                 This is to certify <strong>{{ manager_name }}</strong> is working as
-                <strong>{{ position }}</strong> at <strong>{{#if spa_name}}{{ spa_name }}{{else}}our organization{{/if}}</strong>,
+                <strong>{{ position }}</strong> at <strong>{{ spa_name }}</strong>,
                 located at {{ spa_address }}. The Monthly Net Salary is
-                <strong>Rs. {{ monthly_salary }}{{#if monthly_salary_in_words}} ({{ monthly_salary_in_words }}){{else}}{{#if salary_in_words}} ({{ salary_in_words }}){{/if}}{{/if}}</strong>.
+                <strong>Rs. {{ monthly_salary }}{{#if monthly_salary_in_words}} ({{ monthly_salary_in_words }}){{/if}}</strong>.
                 Joining date: <strong>{{ joining_date }}</strong>.
             </p>
         </div>
@@ -189,20 +189,12 @@
         <!-- Signature -->
         <div class="signature-block">
             <div>Best regards,</div>
-            {{#if manager_signature}}
-            <img src="{{ manager_signature }}" alt="Signature" class="signature-image">
-            {{else}}
-            {{#if signatory_signature}}
-            <img src="{{ signatory_signature }}" alt="Signature" class="signature-image">
-            {{else}}
             {{#if default_signature_image}}
             <img src="{{ default_signature_image }}" alt="Signature" class="signature-image">
             {{else}}
-            <img src="/Bhim Sir signature.png" alt="Signature" class="signature-image">
+            <img src="{{static_base_url}}/images/Bhim Sir signature.png" alt="Signature" class="signature-image">
             {{/if}}
-            {{/if}}
-            {{/if}}
-            <div class="signature-name">{{#if signatory_name}}{{ signatory_name }}{{else}}BhimaSingh Naik{{/if}}</div>
+            <div class="signature-name">BhimaSingh Naik</div>
         </div>
 
         <!-- Contact box -->

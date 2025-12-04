@@ -4,6 +4,7 @@ import ExperienceLetterForm from './ExperienceLetterForm';
 import AppointmentLetterForm from './AppointmentLetterForm';
 import OfferLetterForm from './OfferLetterForm';
 import InvoiceCertificateForm from './InvoiceCertificateForm';
+import IdCardForm from './IdCardForm';
 import CertificateFormFields from './CertificateFormFields';
 import ImageUpload from './ImageUpload';
 import SignatureUpload from './SignatureUpload';
@@ -17,6 +18,7 @@ export {
   AppointmentLetterForm,
   OfferLetterForm,
   InvoiceCertificateForm,
+  IdCardForm,
   CertificateFormFields,
   ImageUpload,
   SignatureUpload,
@@ -38,6 +40,7 @@ export const getCertificateFormComponent = (certificateCategoryDisplay) => {
     [CERTIFICATE_CATEGORIES.APPOINTMENT_LETTER]: AppointmentLetterForm,
     [CERTIFICATE_CATEGORIES.OFFER_LETTER]: OfferLetterForm,
     [CERTIFICATE_CATEGORIES.INVOICE_SPA_BILL]: InvoiceCertificateForm,
+    [CERTIFICATE_CATEGORIES.ID_CARD]: IdCardForm,
   };
   return components[certificateCategoryDisplay] || CertificateFormFields;
 };

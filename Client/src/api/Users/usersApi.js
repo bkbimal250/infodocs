@@ -76,6 +76,15 @@ export const usersApi = {
   },
 
   /**
+   * Bulk delete notifications and/or activities
+   * @param {Object} data - { notification_ids: [], activity_ids: [] }
+   * @returns {Promise}
+   */
+  bulkDelete: (data) => {
+    return apiClient.post('/notifications/bulk-delete', data);
+  },
+
+  /**
    * Get user's certificates (created by current user)
    * @param {Object} params - Query parameters (skip, limit)
    * @returns {Promise}

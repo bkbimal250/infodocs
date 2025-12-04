@@ -45,6 +45,9 @@ const HiringTable = ({ hiringForms, loading, onView, onEdit, onDelete }) => {
                 Role
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+                Staff Required
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
                 Description
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
@@ -79,6 +82,11 @@ const HiringTable = ({ hiringForms, loading, onView, onEdit, onDelete }) => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm font-medium text-gray-900">{form.for_role || 'N/A'}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full font-semibold text-sm">
+                    {form.staff_required || 'N/A'}
+                  </span>
                 </td>
                 <td className="px-6 py-4">
                   <div className="text-sm text-gray-900 max-w-xs truncate" title={form.description}>
