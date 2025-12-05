@@ -34,27 +34,27 @@ const Certifications = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--color-bg-secondary)' }}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading templates...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto" style={{ borderColor: 'var(--color-info)' }}></div>
+          <p className="mt-4" style={{ color: 'var(--color-text-secondary)' }}>Loading templates...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen py-8 px-4" style={{ backgroundColor: 'var(--color-bg-secondary)' }}>
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Certificate Templates</h1>
-          <p className="text-gray-600">Choose a template to create your certificate</p>
+          <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>Certificate Templates</h1>
+          <p style={{ color: 'var(--color-text-secondary)' }}>Choose a template to create your certificate</p>
         </div>
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
+          <div className="mb-6 p-4 rounded-lg" style={{ backgroundColor: 'var(--color-error-light)', borderColor: 'var(--color-error)', borderWidth: '1px', color: 'var(--color-error-dark)' }}>
             {error}
           </div>
         )}
@@ -65,10 +65,24 @@ const Certifications = () => {
             {templates.map((template) => (
               <div
                 key={template.id}
-                className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-200 overflow-hidden"
+                className="rounded-lg shadow-md transition-shadow overflow-hidden"
+                style={{ 
+                  backgroundColor: 'var(--color-bg-primary)',
+                  borderColor: 'var(--color-border-primary)',
+                  borderWidth: '1px'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
+                }}
               >
                 {/* Template Image or Placeholder */}
-                <div className="h-48 bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
+                <div 
+                  className="h-48 flex items-center justify-center"
+                  style={{ background: 'linear-gradient(to bottom right, var(--color-info-light), var(--color-primary-light))' }}
+                >
                   {template.template_image ? (
                     <img
                       src={template.template_image}
@@ -83,28 +97,28 @@ const Certifications = () => {
                   <div
                     className={`w-full h-full flex items-center justify-center ${template.template_image ? 'hidden' : ''}`}
                   >
-                    <HiDocumentText className="w-16 h-16 text-gray-400" />
+                    <HiDocumentText className="w-16 h-16" style={{ color: 'var(--color-text-tertiary)' }} />
                   </div>
                 </div>
 
                 {/* Template Info */}
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-3">
-                    <h3 className="text-lg font-semibold text-gray-900 flex-1">
+                    <h3 className="text-lg font-semibold flex-1" style={{ color: 'var(--color-text-primary)' }}>
                       {template.name || 'Untitled Template'}
                     </h3>
                   </div>
 
                   {template.category && (
                     <div className="mb-3">
-                      <span className="inline-block px-3 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                      <span className="inline-block px-3 py-1 text-xs font-medium rounded-full" style={{ backgroundColor: 'var(--color-info-light)', color: 'var(--color-info-dark)' }}>
                         {getCategoryDisplayName(template.category)}
                       </span>
                     </div>
                   )}
 
                   {template.description && (
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                    <p className="text-sm mb-4 line-clamp-2" style={{ color: 'var(--color-text-secondary)' }}>
                       {template.description}
                     </p>
                   )}
@@ -112,7 +126,7 @@ const Certifications = () => {
                   {/* Template Type Badge */}
                   {template.template_type && (
                     <div className="mb-4">
-                      <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded">
+                      <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded" style={{ backgroundColor: 'var(--color-gray-100)', color: 'var(--color-text-primary)' }}>
                         <HiTemplate className="w-3 h-3 mr-1" />
                         {template.template_type.toUpperCase()}
                       </span>
@@ -122,7 +136,13 @@ const Certifications = () => {
                   {/* Use Template Button */}
                   <button
                     onClick={() => navigate('/certificate-creation', { state: { templateId: template.id } })}
-                    className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 font-medium"
+                    className="w-full px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 font-medium"
+                    style={{ 
+                      backgroundColor: 'var(--color-info)',
+                      color: 'var(--color-text-inverse)'
+                    }}
+                    onMouseEnter={(e) => e.target.style.backgroundColor = 'var(--color-info-dark)'}
+                    onMouseLeave={(e) => e.target.style.backgroundColor = 'var(--color-info)'}
                   >
                     <span>Use Template</span>
                     <HiArrowRight className="w-4 h-4" />
@@ -132,23 +152,23 @@ const Certifications = () => {
             ))}
           </div>
         ) : (
-          <div className="text-center py-12 bg-white rounded-lg shadow-sm">
-            <HiDocumentText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Templates Available</h3>
-            <p className="text-gray-600">No certificate templates found. Please check back later.</p>
+          <div className="text-center py-12 rounded-lg shadow-sm" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
+            <HiDocumentText className="w-16 h-16 mx-auto mb-4" style={{ color: 'var(--color-text-tertiary)' }} />
+            <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>No Templates Available</h3>
+            <p style={{ color: 'var(--color-text-secondary)' }}>No certificate templates found. Please check back later.</p>
           </div>
         )}
 
         {/* Info Section */}
         {templates.length > 0 && (
-          <div className="mt-12 bg-blue-50 rounded-lg p-6 border border-blue-200">
+          <div className="mt-12 rounded-lg p-6" style={{ backgroundColor: 'var(--color-info-light)', borderColor: 'var(--color-info)', borderWidth: '1px' }}>
             <div className="flex items-start gap-4">
-              <div className="bg-blue-100 rounded-full p-3">
-                <HiDocumentText className="w-6 h-6 text-blue-600" />
+              <div className="rounded-full p-3" style={{ backgroundColor: 'var(--color-info)' }}>
+                <HiDocumentText className="w-6 h-6" style={{ color: 'var(--color-text-inverse)' }} />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">How to Use</h3>
-                <ol className="list-decimal list-inside text-gray-700 space-y-1 text-sm">
+                <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>How to Use</h3>
+                <ol className="list-decimal list-inside space-y-1 text-sm" style={{ color: 'var(--color-text-primary)' }}>
                   <li>Select a template from the options above</li>
                   <li>Fill in the required information</li>
                   <li>Preview and download your certificate</li>

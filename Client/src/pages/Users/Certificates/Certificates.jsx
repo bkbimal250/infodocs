@@ -1,16 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  HiOutlineDocumentText, 
-  HiOutlineDownload,
-  HiOutlineEye,
-  HiOutlineCalendar,
-  HiOutlineUser,
-  HiOutlinePrinter
-} from 'react-icons/hi';
+import { HiOutlineDocumentText } from 'react-icons/hi';
 import { authApi } from '../../../api/Auth/authApi';
 import { usersApi } from '../../../api/Users/usersApi';
 import apiClient from '../../../utils/apiConfig';
+import CertificateTable from './certificateTable';
 
 /**
  * User Certificates Page
@@ -26,6 +20,8 @@ const Certificates = () => {
     dateFrom: '',
     dateTo: ''
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   useEffect(() => {
     loadUser();
@@ -66,8 +62,8 @@ const Certificates = () => {
       }
       if (filters.category) {
         filtered = filtered.filter(cert => {
-          const category = cert.certificate_data?.category || cert.category || '';
-          return category === filters.category;
+          const category = (cert.certificate_data?.category || cert.category || '').toLowerCase();
+          return category === filters.category.toLowerCase();
         });
       }
       if (filters.dateFrom) {
@@ -84,6 +80,8 @@ const Certificates = () => {
       }
 
       setCertificates(filtered);
+      // Reset to first page when filters change
+      setCurrentPage(1);
     } catch (error) {
       console.error('Error loading certificates:', error);
       setCertificates([]);
@@ -98,16 +96,59 @@ const Certificates = () => {
         `/certificates/generated/${certificateId}/download/pdf`,
         { responseType: 'blob' }
       );
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      
+      if (!response.data) {
+        throw new Error('No data received from server');
+      }
+      
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `certificate_${certificateId}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();
+      
+      // Clean up the URL after a short delay
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+      }, 100);
     } catch (error) {
       console.error('Error downloading certificate:', error);
-      alert('Failed to download certificate');
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to download certificate';
+      alert(`Failed to download certificate: ${errorMessage}`);
+    }
+  };
+
+  const downloadImage = async (certificateId) => {
+    try {
+      const response = await apiClient.get(
+        `/certificates/generated/${certificateId}/download/image`,
+        { responseType: 'blob' }
+      );
+      
+      if (!response.data) {
+        throw new Error('No data received from server');
+      }
+      
+      const blob = new Blob([response.data], { type: 'image/png' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `certificate_${certificateId}.png`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      
+      // Clean up the URL after a short delay
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+      }, 100);
+    } catch (error) {
+      console.error('Error downloading certificate image:', error);
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to download certificate image';
+      alert(`Failed to download certificate image: ${errorMessage}`);
     }
   };
 
@@ -122,16 +163,27 @@ const Certificates = () => {
       const printWindow = window.open(url, '_blank');
       
       if (printWindow) {
-        printWindow.onload = () => {
+        // Wait for PDF to load before printing
+        printWindow.addEventListener('load', () => {
           setTimeout(() => {
             printWindow.print();
-            // Close window after printing (optional, user can cancel)
+            // Clean up URL after a delay (user can cancel print dialog)
             setTimeout(() => {
-              printWindow.close();
               window.URL.revokeObjectURL(url);
             }, 1000);
           }, 500);
-        };
+        });
+        
+        // Fallback: if window doesn't load, try printing anyway
+        setTimeout(() => {
+          if (printWindow && !printWindow.closed) {
+            try {
+              printWindow.print();
+            } catch (e) {
+              console.error('Error triggering print:', e);
+            }
+          }
+        }, 1000);
       } else {
         // If popup blocked, fallback to download
         alert('Popup blocked. Please allow popups and try again, or use the download button.');
@@ -139,7 +191,7 @@ const Certificates = () => {
       }
     } catch (error) {
       console.error('Error printing certificate:', error);
-      alert('Failed to print certificate');
+      alert('Failed to print certificate. Please try downloading instead.');
     }
   };
 
@@ -154,8 +206,13 @@ const Certificates = () => {
 
   const getCategoryName = (certificate) => {
     const category = certificate.certificate_data?.category || certificate.category || '';
-    return category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Unknown';
+    // Return the raw category value for the table component to format
+    return category || 'Unknown';
   };
+
+  // Calculate pagination
+  const totalPages = Math.ceil(certificates.length / itemsPerPage);
+  const totalItems = certificates.length;
 
   if (loading && !user) {
     return (
@@ -201,11 +258,13 @@ const Certificates = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">All Categories</option>
-                <option value="SPA_THERAPIST">Spa Therapist</option>
-                <option value="MANAGER_SALARY">Manager Salary</option>
-                <option value="EXPERIENCE_LETTER">Experience Letter</option>
-                <option value="APPOINTMENT_LETTER">Appointment Letter</option>
-                <option value="INVOICE_SPA_BILL">Invoice/Spa Bill</option>
+                <option value="spa_therapist">Spa Therapist</option>
+                <option value="manager_salary">Manager Salary</option>
+                <option value="experience_letter">Experience Letter</option>
+                <option value="appointment_letter">Appointment Letter</option>
+                <option value="invoice_spa_bill">Invoice/SPA Bill</option>
+                <option value="id_card">ID Card</option>
+                <option value="offer_letter">Offer Letter</option>
               </select>
             </div>
             <div>
@@ -257,87 +316,19 @@ const Certificates = () => {
 
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-[var(--color-bg-secondary)]">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Certificate
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Category
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Candidate/Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Created Date
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-[var(--color-bg-primary)] divide-y divide-gray-200">
-                  {certificates.map((certificate) => (
-                    <tr key={certificate.id} className="hover:bg-[var(--color-bg-secondary)]">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <HiOutlineDocumentText className="h-5 w-5 text-[var(--color-primary)] mr-2" />
-                          <span className="text-sm font-medium text-[var(--color-text-primary)]">
-                            Certificate #{certificate.id}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                          {getCategoryName(certificate)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <HiOutlineUser className="h-4 w-4 text-gray-400 mr-2" />
-                          <span className="text-sm text-[var(--color-text-primary)]">
-                            {getCandidateName(certificate)}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center text-sm text-gray-500">
-                          <HiOutlineCalendar className="h-4 w-4 mr-2" />
-                          {new Date(certificate.generated_at || certificate.created_at).toLocaleDateString()}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex items-center justify-end space-x-2">
-                          <Link
-                            to={`/certificate/${certificate.id}`}
-                            className="text-[var(--color-primary)] hover:text-blue-900"
-                            title="View"
-                          >
-                            <HiOutlineEye className="h-5 w-5" />
-                          </Link>
-                          <button
-                            onClick={() => downloadPDF(certificate.id)}
-                            className="text-green-600 hover:text-green-900"
-                            title="Download PDF"
-                          >
-                            <HiOutlineDownload className="h-5 w-5" />
-                          </button>
-                          <button
-                            onClick={() => printPDF(certificate.id)}
-                            className="text-purple-600 hover:text-purple-900"
-                            title="Print Certificate"
-                          >
-                            <HiOutlinePrinter className="h-5 w-5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <CertificateTable
+              certificates={certificates}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              itemsPerPage={itemsPerPage}
+              totalItems={totalItems}
+              onPageChange={setCurrentPage}
+              onDownloadPDF={downloadPDF}
+              onDownloadImage={downloadImage}
+              onPrint={printPDF}
+              getCandidateName={getCandidateName}
+              getCategoryName={getCategoryName}
+            />
           )}
         </div>
       </div>

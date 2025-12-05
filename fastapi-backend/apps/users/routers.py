@@ -82,90 +82,114 @@ async def login(
     db: AsyncSession = Depends(get_db)
 ):
     """Login with username/email and password"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
     if not credentials.username and not credentials.email:
         raise HTTPException(
             status_code=422,
             detail="Username or email is required"
         )
     
-    username_or_email = credentials.username or credentials.email
-    user = await authenticate_user(db, username_or_email, credentials.password)
-    
-    if not user:
-        # Track failed login attempt
+    try:
+        username_or_email = credentials.username or credentials.email
+        user = await authenticate_user(db, username_or_email, credentials.password)
+        
+        if not user:
+            # Track failed login attempt (non-blocking)
+            try:
+                from apps.notifications.services.activity_service import log_login_activity
+                ip_address = request.client.host if request.client else None
+                user_agent = request.headers.get("user-agent")
+                await log_login_activity(
+                    db=db,
+                    user_id=None,  # User not found
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                    status="failed",
+                    failure_reason="Invalid credentials"
+                )
+            except Exception as e:
+                logger.warning(f"Error tracking failed login (non-critical): {e}")
+            
+            raise AuthenticationError("Invalid credentials")
+        
+        # Update last login time first (critical operation)
         try:
-            from apps.notifications.services.activity_service import log_login_activity
+            from datetime import datetime, timezone
+            user.last_login_at = datetime.now(timezone.utc)
+            await db.commit()
+            await db.refresh(user)
+        except Exception as e:
+            logger.error(f"Error updating last login time: {e}", exc_info=True)
+            # Don't fail login if this fails, but log it
+        
+        # Track successful login (non-blocking - don't fail login if this fails)
+        try:
+            from apps.notifications.services.activity_service import log_login_activity, log_activity
+            from apps.notifications.services.notification_service import create_login_notification
+            
             ip_address = request.client.host if request.client else None
             user_agent = request.headers.get("user-agent")
-            await log_login_activity(
-                db=db,
-                user_id=None,  # User not found
-                ip_address=ip_address,
-                user_agent=user_agent,
-                status="failed",
-                failure_reason="Invalid credentials"
-            )
+            
+            # Log login activity (fire and forget - don't wait if it fails)
+            try:
+                await log_login_activity(
+                    db=db,
+                    user_id=user.id,
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                    status="success"
+                )
+            except Exception as e:
+                logger.warning(f"Error logging login activity (non-critical): {e}")
+            
+            # Log password login activity (fire and forget)
+            try:
+                await log_activity(
+                    db=db,
+                    user_id=user.id,
+                    activity_type="password_login_success",
+                    activity_description=f"Password login successful for {user.email}",
+                    entity_type="login",
+                    ip_address=ip_address,
+                    user_agent=user_agent
+                )
+            except Exception as e:
+                logger.warning(f"Error logging password login activity (non-critical): {e}")
+            
+            # Create login notification (fire and forget)
+            try:
+                await create_login_notification(
+                    db=db,
+                    user_id=user.id,
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                    send_admin_email=True
+                )
+            except Exception as e:
+                logger.warning(f"Error creating login notification (non-critical): {e}")
         except Exception as e:
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.error(f"Error tracking failed login: {e}", exc_info=True)
+            logger.warning(f"Error in login tracking (non-critical): {e}")
         
-        raise AuthenticationError("Invalid credentials")
-    
-    # Track successful login
-    try:
-        from apps.notifications.services.activity_service import log_login_activity, log_activity
-        from apps.notifications.services.notification_service import create_login_notification
+        # Ensure user is refreshed before creating token response
+        try:
+            await db.refresh(user)
+        except Exception as e:
+            logger.warning(f"Error refreshing user (non-critical): {e}")
         
-        ip_address = request.client.host if request.client else None
-        user_agent = request.headers.get("user-agent")
+        # Create and return token response (this is the critical operation)
+        return create_token_response(user)
         
-        # Update last login time
-        from datetime import datetime, timezone
-        user.last_login_at = datetime.now(timezone.utc)
-        await db.commit()
-        await db.refresh(user)  # Refresh to ensure updated_at is loaded
-        
-        # Log login activity
-        await log_login_activity(
-            db=db,
-            user_id=user.id,
-            ip_address=ip_address,
-            user_agent=user_agent,
-            status="success"
-        )
-        
-        # Log password login activity
-        await log_activity(
-            db=db,
-            user_id=user.id,
-            activity_type="password_login_success",
-            activity_description=f"Password login successful for {user.email}",
-            entity_type="login",
-            ip_address=ip_address,
-            user_agent=user_agent
-        )
-        
-        # Create login notification (with admin email)
-        await create_login_notification(
-            db=db,
-            user_id=user.id,
-            ip_address=ip_address,
-            user_agent=user_agent,
-            send_admin_email=True  # Send email to admin
-        )
+    except AuthenticationError:
+        # Re-raise authentication errors
+        raise
     except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"Error tracking login: {e}", exc_info=True)
-    
-    # Ensure user is refreshed before creating token response
-    try:
-        await db.refresh(user)
-    except Exception:
-        pass
-    
-    return create_token_response(user)
+        logger.error(f"Unexpected error during login: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail="An error occurred during login. Please try again."
+        )
 
 
 @auth_router.post("/login_with_email", response_model=TokenResponseSchema)
@@ -175,79 +199,107 @@ async def login_with_email(
     db: AsyncSession = Depends(get_db)
 ):
     """Login with email and password"""
-    user = await authenticate_user(db, credentials.email, credentials.password)
+    import logging
+    logger = logging.getLogger(__name__)
     
-    if not user:
-        # Track failed login attempt
+    try:
+        user = await authenticate_user(db, credentials.email, credentials.password)
+        
+        if not user:
+            # Track failed login attempt (non-blocking)
+            try:
+                from apps.notifications.services.activity_service import log_login_activity
+                ip_address = request.client.host if request.client else None
+                user_agent = request.headers.get("user-agent")
+                await log_login_activity(
+                    db=db,
+                    user_id=None,
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                    status="failed",
+                    failure_reason="Invalid credentials"
+                )
+            except Exception as e:
+                logger.warning(f"Error tracking failed login (non-critical): {e}")
+            
+            raise AuthenticationError("Invalid credentials")
+        
+        # Update last login time first (critical operation)
         try:
-            from apps.notifications.services.activity_service import log_login_activity
+            from datetime import datetime, timezone
+            user.last_login_at = datetime.now(timezone.utc)
+            await db.commit()
+            await db.refresh(user)
+        except Exception as e:
+            logger.error(f"Error updating last login time: {e}", exc_info=True)
+        
+        # Track successful login (non-blocking)
+        try:
+            from apps.notifications.services.activity_service import log_login_activity, log_activity
+            from apps.notifications.services.notification_service import create_login_notification
+            from datetime import datetime, timezone
+            
             ip_address = request.client.host if request.client else None
             user_agent = request.headers.get("user-agent")
-            await log_login_activity(
-                db=db,
-                user_id=None,
-                ip_address=ip_address,
-                user_agent=user_agent,
-                status="failed",
-                failure_reason="Invalid credentials"
-            )
-        except Exception:
-            pass
+            
+            # Log login activity (fire and forget)
+            try:
+                await log_login_activity(
+                    db=db,
+                    user_id=user.id,
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                    status="success"
+                )
+            except Exception as e:
+                logger.warning(f"Error logging login activity (non-critical): {e}")
+            
+            # Log password login activity (fire and forget)
+            try:
+                await log_activity(
+                    db=db,
+                    user_id=user.id,
+                    activity_type="password_login_success",
+                    activity_description=f"Password login successful for {user.email}",
+                    entity_type="login",
+                    ip_address=ip_address,
+                    user_agent=user_agent
+                )
+            except Exception as e:
+                logger.warning(f"Error logging password login activity (non-critical): {e}")
+            
+            # Create login notification (fire and forget)
+            try:
+                await create_login_notification(
+                    db=db,
+                    user_id=user.id,
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                    send_admin_email=True
+                )
+            except Exception as e:
+                logger.warning(f"Error creating login notification (non-critical): {e}")
+        except Exception as e:
+            logger.warning(f"Error in login tracking (non-critical): {e}")
         
-        raise AuthenticationError("Invalid credentials")
-    
-    # Track successful login
-    try:
-        from apps.notifications.services.activity_service import log_login_activity, log_activity
-        from apps.notifications.services.notification_service import create_login_notification
-        from datetime import datetime, timezone
+        # Ensure user is refreshed before creating token response
+        try:
+            await db.refresh(user)
+        except Exception as e:
+            logger.warning(f"Error refreshing user (non-critical): {e}")
         
-        ip_address = request.client.host if request.client else None
-        user_agent = request.headers.get("user-agent")
+        # Create and return token response (critical operation)
+        return create_token_response(user)
         
-        # Update last login time
-        user.last_login_at = datetime.now(timezone.utc)
-        await db.commit()
-        await db.refresh(user)  # Refresh to ensure updated_at is loaded
-        
-        # Log login activity
-        await log_login_activity(
-            db=db,
-            user_id=user.id,
-            ip_address=ip_address,
-            user_agent=user_agent,
-            status="success"
+    except AuthenticationError:
+        # Re-raise authentication errors
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error during login: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail="An error occurred during login. Please try again."
         )
-        
-        # Log password login activity
-        await log_activity(
-            db=db,
-            user_id=user.id,
-            activity_type="password_login_success",
-            activity_description=f"Password login successful for {user.email}",
-            entity_type="login",
-            ip_address=ip_address,
-            user_agent=user_agent
-        )
-        
-        # Create login notification (with admin email)
-        await create_login_notification(
-            db=db,
-            user_id=user.id,
-            ip_address=ip_address,
-            user_agent=user_agent,
-            send_admin_email=True  # Send email to admin
-        )
-    except Exception:
-        pass
-    
-    # Ensure user is refreshed before creating token response
-    try:
-        await db.refresh(user)
-    except Exception:
-        pass
-    
-    return create_token_response(user)
 
 
 @auth_router.post("/request_login_otp", response_model=MessageResponseSchema)

@@ -59,23 +59,20 @@ const HeroSection = ({ user = null }) => {
           
           {/* Features */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto mt-16">
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20 hover:bg-white/15 transition-all duration-300">
-              <div className="text-4xl font-bold mb-3 text-white">100%</div>
-              <div className="text-lg font-semibold mb-2 text-white">Secure & Reliable</div>
-              <div className="text-blue-100 text-sm">Enterprise-grade security for all your documents</div>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20 hover:bg-white/15 transition-all duration-300">
-              <div className="text-4xl font-bold mb-3 text-white">Fast</div>
-              <div className="text-lg font-semibold mb-2 text-white">Instant Processing</div>
-              <div className="text-blue-100 text-sm">Generate certificates and process forms in seconds</div>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20 hover:bg-white/15 transition-all duration-300">
-              <div className="text-4xl font-bold mb-3 text-white">Easy</div>
-              <div className="text-lg font-semibold mb-2 text-white">User-Friendly</div>
-              <div className="text-blue-100 text-sm">Intuitive interface designed for efficiency</div>
-            </div>
+     
+
+
+
+
           </div>
+
+
+
         </div>
+
+
+
+        
       </div>
     </section>
   );

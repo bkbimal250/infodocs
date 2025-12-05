@@ -3,6 +3,7 @@ Certificate Routers
 API endpoints for certificate management
 """
 from typing import List, Optional
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Response, Query
 from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,7 +14,7 @@ import logging
 from config.database import get_db
 from config.settings import settings
 from apps.users.models import User
-from core.dependencies import require_role, get_current_active_user
+from core.dependencies import require_role, get_current_active_user, get_optional_current_user
 from apps.certificates.models import CertificateCategory, TemplateType
 from apps.certificates.schemas import (
     PublicCertificateCreate,
@@ -39,7 +40,13 @@ from apps.certificates.services.certificate_service import (
     prepare_certificate_data,
     delete_certificate,
 )
-from apps.certificates.services.pdf_generator import render_html_template, html_to_pdf, html_to_image
+from apps.certificates.services.pdf_generator import (
+    render_html_template, 
+    html_to_pdf, 
+    html_to_image,
+    pdf_to_image,
+    PDF2IMAGE_AVAILABLE
+)
 from core.exceptions import NotFoundError, ValidationError
 
 logger = logging.getLogger(__name__)
@@ -234,6 +241,70 @@ async def list_public_certificates(skip: int = 0, limit: int = 100, db: AsyncSes
     return await get_public_certificates(db, skip=skip, limit=limit)
 
 
+def get_certificate_name(certificate) -> str:
+    """Get the name field from any certificate type"""
+    if hasattr(certificate, 'candidate_name') and certificate.candidate_name:
+        return certificate.candidate_name
+    elif hasattr(certificate, 'manager_name') and certificate.manager_name:
+        return certificate.manager_name
+    elif hasattr(certificate, 'employee_name') and certificate.employee_name:
+        return certificate.employee_name
+    elif hasattr(certificate, 'customer_name') and certificate.customer_name:
+        return certificate.customer_name
+    elif hasattr(certificate, 'therapist_name') and certificate.therapist_name:
+        return certificate.therapist_name
+    return ""
+
+
+def convert_certificate_to_response(certificate):
+    """Convert any certificate model to GeneratedCertificateResponse format"""
+    # Get candidate name based on certificate type
+    candidate_name = get_certificate_name(certificate)
+    
+    # Get spa_id
+    spa_id = getattr(certificate, 'spa_id', None)
+    
+    # Get template_id
+    template_id = getattr(certificate, 'template_id', None) or 0
+    
+    # Get certificate_pdf
+    certificate_pdf = getattr(certificate, 'certificate_pdf', None)
+    
+    # Get is_public
+    is_public = getattr(certificate, 'is_public', True)
+    
+    # Get category from certificate model
+    category = getattr(certificate, 'category', None)
+    if category:
+        # If it's an enum, get its value
+        if hasattr(category, 'value'):
+            category = category.value
+        category = str(category)
+    
+    # Get generated_at as string
+    generated_at = getattr(certificate, 'generated_at', None)
+    if generated_at:
+        if isinstance(generated_at, datetime):
+            generated_at = generated_at.isoformat()
+        else:
+            generated_at = str(generated_at)
+    else:
+        # Fallback to current time if no date available
+        generated_at = datetime.now(timezone.utc).isoformat()
+    
+    return {
+        "id": certificate.id,
+        "template_id": template_id,
+        "candidate_name": candidate_name,
+        "candidate_email": None,  # Not stored in most certificate types
+        "spa_id": spa_id,
+        "certificate_pdf": certificate_pdf,
+        "is_public": is_public,
+        "generated_at": generated_at,
+        "category": category,  # Include category in response
+    }
+
+
 @certificates_router.get("/generated/my-certificates", response_model=List[GeneratedCertificateResponse])
 async def list_my_certificates(
     skip: int = 0,
@@ -243,27 +314,53 @@ async def list_my_certificates(
 ):
     """List certificates created by the current user"""
     try:
-        return await get_user_certificates(db, user_id=current_user.id, skip=skip, limit=limit)
+        certificates = await get_user_certificates(db, user_id=current_user.id, skip=skip, limit=limit)
+        # Convert certificates to response format
+        return [convert_certificate_to_response(cert) for cert in certificates]
     except Exception as e:
         logger.error(f"Error listing user certificates: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to retrieve certificates: {str(e)}")
 
 
 @certificates_router.get("/generated/{certificate_id}", response_model=GeneratedCertificateResponse)
-async def get_public_certificate(certificate_id: int, db: AsyncSession = Depends(get_db)):
-    """Get a single public certificate"""
+async def get_public_certificate(
+    certificate_id: int, 
+    db: AsyncSession = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+):
+    """Get a single certificate - public if is_public=True, or admin/super_admin can access any"""
     certificate = await get_generated_certificate_by_id(db, certificate_id)
-    if not certificate or not certificate.is_public:
-        raise HTTPException(status_code=404, detail="Certificate not found or not public")
-    return certificate
+    if not certificate:
+        raise HTTPException(status_code=404, detail="Certificate not found")
+    
+    # Allow admin and super_admin to view any certificate
+    is_admin = current_user and current_user.role in ["admin", "super_admin"]
+    is_public = getattr(certificate, 'is_public', True)
+    
+    if not is_public and not is_admin:
+        raise HTTPException(status_code=403, detail="Certificate is not public")
+    
+    # Convert to response format
+    return convert_certificate_to_response(certificate)
 
 
 @certificates_router.get("/generated/{certificate_id}/download/pdf")
-async def download_certificate_pdf(certificate_id: int, db: AsyncSession = Depends(get_db)):
-    """Download certificate as PDF"""
+async def download_certificate_pdf(
+    certificate_id: int, 
+    db: AsyncSession = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+):
+    """Download certificate as PDF - public if is_public=True, or admin/super_admin can download any"""
     certificate = await get_generated_certificate_by_id(db, certificate_id)
-    if not certificate or not certificate.is_public:
-        raise HTTPException(status_code=404, detail="Certificate not found or not public")
+    if not certificate:
+        raise HTTPException(status_code=404, detail="Certificate not found")
+    
+    # Allow admin and super_admin to download any certificate
+    is_admin = current_user and current_user.role in ["admin", "super_admin"]
+    is_public = getattr(certificate, 'is_public', True)
+    
+    if not is_public and not is_admin:
+        raise HTTPException(status_code=403, detail="Certificate is not public")
 
     if certificate.certificate_pdf:
         pdf_path = Path(settings.UPLOAD_DIR) / certificate.certificate_pdf
@@ -295,6 +392,27 @@ async def download_certificate_pdf(certificate_id: int, db: AsyncSession = Depen
                 cert_data["month_year_list"] = certificate.month_year_list if certificate.month_year_list else []
             if hasattr(certificate, 'month_salary_list'):
                 cert_data["month_salary_list"] = certificate.month_salary_list if certificate.month_salary_list else []
+    
+    # For EXPERIENCE_LETTER certificates, merge model fields into cert_data
+    if hasattr(certificate, 'candidate_name') and hasattr(certificate, 'position') and hasattr(certificate, 'joining_date'):
+        from apps.certificates.models import ExperienceLetterCertificate
+        if isinstance(certificate, ExperienceLetterCertificate):
+            cert_data["candidate_name"] = certificate.candidate_name or cert_data.get("candidate_name")
+            cert_data["position"] = certificate.position or cert_data.get("position")
+            cert_data["joining_date"] = certificate.joining_date or cert_data.get("joining_date")
+            cert_data["end_date"] = certificate.end_date or cert_data.get("end_date")
+            cert_data["duration"] = certificate.duration or cert_data.get("duration")
+            cert_data["salary"] = certificate.salary or cert_data.get("salary")
+    
+    # For APPOINTMENT_LETTER certificates, merge model fields into cert_data
+    if hasattr(certificate, 'employee_name') and hasattr(certificate, 'start_date'):
+        from apps.certificates.models import AppointmentLetterCertificate
+        if isinstance(certificate, AppointmentLetterCertificate):
+            cert_data["employee_name"] = certificate.employee_name or cert_data.get("employee_name")
+            cert_data["position"] = certificate.position or cert_data.get("position")
+            cert_data["start_date"] = certificate.start_date or cert_data.get("start_date")
+            cert_data["salary"] = certificate.salary or cert_data.get("salary")
+            cert_data["manager_signature"] = certificate.manager_signature or cert_data.get("manager_signature")
     
     # For ID_CARD certificates, merge model fields into cert_data
     if hasattr(certificate, 'candidate_name') and hasattr(certificate, 'designation'):
@@ -331,7 +449,9 @@ async def download_certificate_pdf(certificate_id: int, db: AsyncSession = Depen
             }
             cert_data["spa_id"] = spa_obj.id
     
-    data = prepare_certificate_data(template, cert_data, certificate.candidate_name or "", use_http_urls=False)
+    # Get the name for this certificate type
+    certificate_name = get_certificate_name(certificate)
+    data = prepare_certificate_data(template, cert_data, certificate_name, use_http_urls=False)
     html_content = template.template_html
     rendered_html = render_html_template(html_content, data)
     pdf_bytes = html_to_pdf(rendered_html)
@@ -341,12 +461,50 @@ async def download_certificate_pdf(certificate_id: int, db: AsyncSession = Depen
 
 
 @certificates_router.get("/generated/{certificate_id}/download/image")
-async def download_certificate_image(certificate_id: int, db: AsyncSession = Depends(get_db)):
-    """Download certificate as image (PNG)"""
+async def download_certificate_image(
+    certificate_id: int, 
+    db: AsyncSession = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+):
+    """Download certificate as image (PNG) - converts from PDF if available, otherwise generates from HTML.
+    Public if is_public=True, or admin/super_admin can download any"""
     certificate = await get_generated_certificate_by_id(db, certificate_id)
-    if not certificate or not certificate.is_public:
-        raise HTTPException(status_code=404, detail="Certificate not found or not public")
+    if not certificate:
+        raise HTTPException(status_code=404, detail="Certificate not found")
+    
+    # Allow admin and super_admin to download any certificate
+    is_admin = current_user and current_user.role in ["admin", "super_admin"]
+    is_public = getattr(certificate, 'is_public', True)
+    
+    if not is_public and not is_admin:
+        raise HTTPException(status_code=403, detail="Certificate is not public")
 
+    # First, try to convert from existing PDF if available
+    certificate_pdf = getattr(certificate, 'certificate_pdf', None)
+    if certificate_pdf:
+        pdf_path = Path(settings.UPLOAD_DIR) / certificate_pdf
+        if pdf_path.exists():
+            try:
+                # Read PDF file and convert to image
+                if not PDF2IMAGE_AVAILABLE:
+                    logger.warning("pdf2image not available, falling back to HTML generation")
+                else:
+                    with open(pdf_path, 'rb') as f:
+                        pdf_bytes = f.read()
+                    
+                    # Convert PDF to image
+                    image_bytes = pdf_to_image(pdf_bytes, format="PNG", dpi=150)
+                    
+                    logger.info(f"Successfully converted PDF to image for certificate {certificate_id}")
+                    return StreamingResponse(
+                        io.BytesIO(image_bytes), 
+                        media_type="image/png",
+                        headers={"Content-Disposition": f"attachment; filename=certificate_{certificate_id}.png"}
+                    )
+            except Exception as e:
+                logger.warning(f"Failed to convert PDF to image: {e}, falling back to HTML generation", exc_info=True)
+
+    # Fallback: Generate from HTML template
     template = await get_template_by_id(db, certificate.template_id)
     if not template:
         raise HTTPException(status_code=404, detail="Template not found")
@@ -356,6 +514,53 @@ async def download_certificate_image(certificate_id: int, db: AsyncSession = Dep
     
     # Load SPA data from database if spa_id exists but spa object is missing
     cert_data = certificate.certificate_data or {}
+    
+    # For MANAGER_SALARY certificates, merge model fields into cert_data
+    if hasattr(certificate, 'manager_name'):
+        from apps.certificates.models import ManagerSalaryCertificate
+        if isinstance(certificate, ManagerSalaryCertificate):
+            cert_data["manager_name"] = certificate.manager_name or cert_data.get("manager_name")
+            cert_data["position"] = certificate.position or cert_data.get("position")
+            cert_data["joining_date"] = certificate.joining_date or cert_data.get("joining_date")
+            cert_data["monthly_salary"] = certificate.monthly_salary or cert_data.get("monthly_salary")
+            cert_data["monthly_salary_in_words"] = certificate.monthly_salary_in_words or cert_data.get("monthly_salary_in_words")
+            if hasattr(certificate, 'month_year_list'):
+                cert_data["month_year_list"] = certificate.month_year_list if certificate.month_year_list else []
+            if hasattr(certificate, 'month_salary_list'):
+                cert_data["month_salary_list"] = certificate.month_salary_list if certificate.month_salary_list else []
+    
+    # For EXPERIENCE_LETTER certificates, merge model fields into cert_data
+    if hasattr(certificate, 'candidate_name') and hasattr(certificate, 'position') and hasattr(certificate, 'joining_date'):
+        from apps.certificates.models import ExperienceLetterCertificate
+        if isinstance(certificate, ExperienceLetterCertificate):
+            cert_data["candidate_name"] = certificate.candidate_name or cert_data.get("candidate_name")
+            cert_data["position"] = certificate.position or cert_data.get("position")
+            cert_data["joining_date"] = certificate.joining_date or cert_data.get("joining_date")
+            cert_data["end_date"] = certificate.end_date or cert_data.get("end_date")
+            cert_data["duration"] = certificate.duration or cert_data.get("duration")
+            cert_data["salary"] = certificate.salary or cert_data.get("salary")
+    
+    # For APPOINTMENT_LETTER certificates, merge model fields into cert_data
+    if hasattr(certificate, 'employee_name') and hasattr(certificate, 'start_date'):
+        from apps.certificates.models import AppointmentLetterCertificate
+        if isinstance(certificate, AppointmentLetterCertificate):
+            cert_data["employee_name"] = certificate.employee_name or cert_data.get("employee_name")
+            cert_data["position"] = certificate.position or cert_data.get("position")
+            cert_data["start_date"] = certificate.start_date or cert_data.get("start_date")
+            cert_data["salary"] = certificate.salary or cert_data.get("salary")
+            cert_data["manager_signature"] = certificate.manager_signature or cert_data.get("manager_signature")
+    
+    # For ID_CARD certificates, merge model fields into cert_data
+    if hasattr(certificate, 'candidate_name') and hasattr(certificate, 'designation'):
+        from apps.certificates.models import IDCardCertificate
+        if isinstance(certificate, IDCardCertificate):
+            cert_data["candidate_name"] = certificate.candidate_name or cert_data.get("candidate_name")
+            cert_data["candidate_photo"] = certificate.candidate_photo or cert_data.get("candidate_photo")
+            cert_data["designation"] = certificate.designation or cert_data.get("designation")
+            cert_data["date_of_joining"] = certificate.date_of_joining or cert_data.get("date_of_joining")
+            cert_data["contact_number"] = certificate.contact_number or cert_data.get("contact_number")
+            cert_data["issue_date"] = certificate.issue_date or cert_data.get("issue_date")
+    
     if hasattr(certificate, 'spa_id') and certificate.spa_id and not cert_data.get("spa"):
         from apps.forms_app.models import SPA
         from sqlalchemy import select
@@ -380,7 +585,9 @@ async def download_certificate_image(certificate_id: int, db: AsyncSession = Dep
             }
             cert_data["spa_id"] = spa_obj.id
     
-    data = prepare_certificate_data(template, cert_data, certificate.candidate_name or "", use_http_urls=False)
+    # Get the name for this certificate type
+    certificate_name = get_certificate_name(certificate)
+    data = prepare_certificate_data(template, cert_data, certificate_name, use_http_urls=False)
     html_content = template.template_html
     rendered_html = render_html_template(html_content, data)
     image_bytes = html_to_image(rendered_html)

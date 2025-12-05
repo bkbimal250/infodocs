@@ -61,6 +61,7 @@ class GeneratedCertificateResponse(BaseModel):
     certificate_pdf: Optional[str] = None
     is_public: bool
     generated_at: str
+    category: Optional[CertificateCategory] = None  # Certificate category
 
 
 # --------------------------------------------

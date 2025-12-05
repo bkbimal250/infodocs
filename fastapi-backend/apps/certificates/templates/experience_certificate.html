@@ -191,8 +191,8 @@
             <!-- HEADER -->
             <div class="header">
                 <div>
-                    <div class="company-name">{{ spa.name }}</div>
-                    <div class="company-branch">{{ spa.area }}</div>
+                    <div class="company-name">{{ spa_name }}</div>
+                    <div class="company-branch">{{ spa_area }}</div>
                 </div>
                 <div class="date">DATE: {{ date }}</div>
             </div>
@@ -206,8 +206,8 @@
             <div class="content">
                 <p>
                     This is to certify that <strong>{{ candidate_name }}</strong> has been working as 
-                    <strong>{{ position }}</strong> at <strong>{{ spa.name }}</strong>
-                    [{{ spa.address }}] from 
+                    <strong>{{ position }}</strong> at <strong>{{ spa_name }}</strong>
+                    [{{ spa_address }}] from 
                     <strong>{{ start_date }}</strong> to <strong>{{ end_date }}</strong>for a duration of <strong>{{ duration }}</strong> at a monthly Salary of 
                     <strong>Rs. {{ salary }}.</strong>
                 </p>
@@ -232,9 +232,9 @@
 
             <!-- FOOTER -->
             <div class="footer-contact">
-                <div><i class="bi bi-telephone-fill"></i> {{spa.phone_number}}/ {{spa.alternate_number}}</div>
+                <div><i class="bi bi-telephone-fill"></i> {{spa_phone}}{{#if spa_phone1}} / {{spa_phone1}}{{/if}}</div>
                 <div><i class="bi bi-geo-alt-fill"></i> 
-                    {{spa.address}}
+                    {{spa_address}}
                 </div>
             </div>
 

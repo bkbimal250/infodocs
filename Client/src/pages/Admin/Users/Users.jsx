@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { adminApi } from '../../../api/Admin/adminApi';
 import UsersTable from './Userstable';
+import UserFilter from './UserFilter';
 import Pagination from '../../common/Pagination';
 
 /**
@@ -10,27 +11,34 @@ import Pagination from '../../common/Pagination';
  */
 const AdminUsers = () => {
   const navigate = useNavigate();
+  const [allUsers, setAllUsers] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+  const [filter, setFilter] = useState({
+    search: '',
+    role: '',
+    status: '',
+  });
   const itemsPerPage = 15;
 
   useEffect(() => {
     loadUsers();
-  }, [currentPage]);
+  }, []);
+
+  useEffect(() => {
+    // Apply filters and pagination whenever allUsers, filter, or currentPage changes
+    applyFiltersAndPagination();
+  }, [allUsers, filter, currentPage]);
 
   const loadUsers = async () => {
     try {
       setLoading(true);
       const response = await adminApi.users.getUsers();
-      const allUsers = response.data || [];
-      setTotalItems(allUsers.length);
-      // Apply client-side pagination
-      const startIndex = (currentPage - 1) * itemsPerPage;
-      const endIndex = startIndex + itemsPerPage;
-      setUsers(allUsers.slice(startIndex, endIndex));
+      const usersData = response.data || [];
+      setAllUsers(usersData);
       setError(null);
     } catch (err) {
       setError('Failed to load users');
@@ -38,6 +46,60 @@ const AdminUsers = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const applyFiltersAndPagination = () => {
+    // Apply filters
+    let filtered = allUsers.filter((user) => {
+      // Search filter
+      if (filter.search) {
+        const searchLower = filter.search.toLowerCase();
+        const matchesSearch =
+          user.first_name?.toLowerCase().includes(searchLower) ||
+          user.last_name?.toLowerCase().includes(searchLower) ||
+          user.email?.toLowerCase().includes(searchLower) ||
+          user.username?.toLowerCase().includes(searchLower) ||
+          user.phone_number?.toLowerCase().includes(searchLower);
+        if (!matchesSearch) return false;
+      }
+
+      // Role filter
+      if (filter.role && user.role !== filter.role) {
+        return false;
+      }
+
+      // Status filter
+      if (filter.status) {
+        if (filter.status === 'active' && !user.is_active) return false;
+        if (filter.status === 'inactive' && user.is_active) return false;
+        if (filter.status === 'verified' && !user.is_verified) return false;
+        if (filter.status === 'unverified' && user.is_verified) return false;
+      }
+
+      return true;
+    });
+
+    // Update total items
+    setTotalItems(filtered.length);
+
+    // Apply pagination
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    setUsers(filtered.slice(startIndex, endIndex));
+  };
+
+  const handleFilterChange = (newFilter) => {
+    setFilter(newFilter);
+    setCurrentPage(1); // Reset to first page when filter changes
+  };
+
+  const handleClearFilters = () => {
+    setFilter({
+      search: '',
+      role: '',
+      status: '',
+    });
+    setCurrentPage(1);
   };
 
   const handleEdit = (user) => {
@@ -94,6 +156,13 @@ const AdminUsers = () => {
             {error}
           </div>
         )}
+
+        {/* Filters */}
+        <UserFilter
+          filter={filter}
+          onFilterChange={handleFilterChange}
+          onClearFilters={handleClearFilters}
+        />
 
         {/* Users Table */}
         <div className="bg-[var(--color-bg-primary)] rounded-lg shadow overflow-hidden">

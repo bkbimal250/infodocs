@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { authApi } from '../api/Auth/authApi';
 import HeroSection from './Herosection';
 import Features from './Features';
+import Developer from './components/Developer';
 
 /**
  * Home Page Component
@@ -70,6 +71,7 @@ const Home = () => {
     <div className="min-h-screen bg-gray-50">
       <HeroSection />
       <Features />
+      <Developer />
     </div>
   );
 };

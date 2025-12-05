@@ -140,7 +140,7 @@
     <div class="certificate-container">
 
         <!-- Header -->
-        <div class="header-title">{{#if spa_name}}{{ spa_name }}{{else}}Spa / Company Name{{/if}}</div>
+        <div class="header-title"> {{ spa_name }} </div>
         <div class="header-subtitle">SALARY CERTIFICATE</div>
 
         <div class="date-text">DATE: <strong>{{ date }}</strong></div>
@@ -152,7 +152,7 @@
             <p>
                 This is to certify <strong>{{ manager_name }}</strong> is working as
                 <strong>{{ position }}</strong> at <strong>{{ spa_name }}</strong>,
-                located at {{ spa_address }}. The Monthly Net Salary is
+                located at {{ spa_address }} . The Monthly Net Salary is
                 <strong>Rs. {{ monthly_salary }}{{#if monthly_salary_in_words}} ({{ monthly_salary_in_words }}){{/if}}</strong>.
                 Joining date: <strong>{{ joining_date }}</strong>.
             </p>

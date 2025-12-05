@@ -225,7 +225,7 @@ def html_to_image(
             # Fallback: PDF -> Image conversion
             logger.info("Using PDF-to-image conversion (WeasyPrint unavailable)")
             pdf_bytes = html_to_pdf(html_content)
-            return _pdf_to_image(pdf_bytes, output_path, format, dpi)
+            return pdf_to_image(pdf_bytes, output_path, format, dpi)
     except Exception as e:
         logger.error(f"Image generation failed: {str(e)}", exc_info=True)
         raise RuntimeError(f"Image generation error: {str(e)}") from e
@@ -259,32 +259,27 @@ def _html_to_image_weasyprint(
     """)
     
     try:
+        # WeasyPrint doesn't support direct PNG output, so we:
+        # 1. Generate PDF using WeasyPrint
+        # 2. Convert PDF to image using pdf2image
         html = HTML(string=html_content)
-        png_bytes = html.write_png(
+        pdf_bytes = html.write_pdf(
             stylesheets=[css], 
-            font_config=font_config, 
-            resolution=dpi
+            font_config=font_config,
+            optimize_size=('fonts', 'images')
         )
         
-        # Convert to requested format if not PNG
-        if format.upper() != "PNG":
-            from PIL import Image
-            img = Image.open(BytesIO(png_bytes))
-            output = BytesIO()
-            img.save(output, format=format)
-            output.seek(0)
-            image_bytes = output.read()
-        else:
-            image_bytes = png_bytes
+        # Convert PDF to image using pdf2image
+        if not PDF2IMAGE_AVAILABLE:
+            raise RuntimeError(
+                "pdf2image not available. "
+                "Install with: pip install pdf2image (requires poppler)"
+            )
         
-        # Save to file if path provided
-        if output_path:
-            Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-            with open(output_path, 'wb') as f:
-                f.write(image_bytes)
-            logger.info(f"Image saved to: {output_path}")
+        # Use the pdf_to_image function to convert
+        image_bytes = pdf_to_image(pdf_bytes, output_path, format, dpi)
         
-        logger.info(f"Image generated successfully ({len(image_bytes)} bytes)")
+        logger.info(f"Image generated successfully from HTML via PDF ({len(image_bytes)} bytes)")
         return image_bytes
         
     except Exception as e:
@@ -292,7 +287,7 @@ def _html_to_image_weasyprint(
         raise
 
 
-def _pdf_to_image(
+def pdf_to_image(
     pdf_bytes: bytes, 
     output_path: Optional[str] = None, 
     format: str = "PNG",

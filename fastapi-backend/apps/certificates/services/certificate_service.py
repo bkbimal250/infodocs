@@ -201,7 +201,7 @@ def prepare_certificate_data(template: CertificateTemplate, certificate_data: Di
     # Determine image URLs based on context
     if use_http_urls:
         # For browser preview - use HTTP URLs
-        base_url = certificate_data.get("base_url", "https://infodocs.api.d0s369.co.in")
+        base_url = certificate_data.get("base_url", "http://localhost:8009/api")
         background_image = certificate_data.get("certificate_background_image") or f"{base_url}/static/images/spacertificate.png"
         stamp_image = certificate_data.get("certificate_stamp_image") or f"{base_url}/static/images/Spa Certificate Stamp.png"
         signatory_image = certificate_data.get("certificate_signatory_image") or f"{base_url}/static/images/Spa Certificate Signatory.png"
@@ -213,7 +213,7 @@ def prepare_certificate_data(template: CertificateTemplate, certificate_data: Di
     
     # Handle SPA logo path conversion
     from config.settings import settings
-    base_url = certificate_data.get("base_url", "https://infodocs.api.d0s369.co.in")
+    base_url = certificate_data.get("base_url", "http://localhost:8009/api")
     media_base_path = Path(settings.UPLOAD_DIR).resolve()
     media_base_path_str = str(media_base_path).replace("\\", "/")
     
@@ -238,28 +238,8 @@ def prepare_certificate_data(template: CertificateTemplate, certificate_data: Di
     else:
         spa_logo = ""  # Empty string if no logo
     
-    # Build clean address without duplication
-    address_parts = []
-    if spa.get("address"):
-        address_parts.append(spa.get("address").strip())
-    if spa.get("area"):
-        address_parts.append(spa.get("area").strip())
-    if spa.get("city"):
-        address_parts.append(spa.get("city").strip())
-    if spa.get("state"):
-        address_parts.append(spa.get("state").strip())
-    if spa.get("pincode"):
-        address_parts.append(spa.get("pincode").strip())
-    
-    # Join address parts, removing duplicates and empty strings
-    clean_address_parts = []
-    seen = set()
-    for part in address_parts:
-        if part and part.lower() not in seen:
-            clean_address_parts.append(part)
-            seen.add(part.lower())
-    
-    spa_address_clean = ", ".join(clean_address_parts) if clean_address_parts else spa.get("address", "")
+    # Use address field directly from model (already contains full address)
+    spa_address = spa.get("address", "").strip() if spa.get("address") else ""
     
     data = {
         "date": certificate_data.get("date", datetime.now().strftime("%d/%m/%Y")),
@@ -267,7 +247,8 @@ def prepare_certificate_data(template: CertificateTemplate, certificate_data: Di
 
         # SPA info
         "spa_name": spa.get("name", ""),
-        "spa_address": spa_address_clean,  # Use clean address without duplication
+        "spa_address": spa_address,  # Use address field directly
+        "spa_area": spa.get("area", ""),
         "spa_city": spa.get("city", ""),
         "spa_state": spa.get("state", ""),
         "spa_country": spa.get("country", ""),
@@ -288,9 +269,10 @@ def prepare_certificate_data(template: CertificateTemplate, certificate_data: Di
 
     # Merge additional certificate_data without overwriting existing keys
     # For SPA_THERAPIST, exclude signatory_name, signatory_title, and spa_id
-    excluded_fields = set()
+    # Always exclude spa_address to prevent frontend from overwriting database address
+    excluded_fields = {"spa_address"}  # Always use address from database, not from certificate_data
     if template.category == CertificateCategory.SPA_THERAPIST:
-        excluded_fields = {"signatory_name", "signatory_title", "spa_id"}
+        excluded_fields.update({"signatory_name", "signatory_title", "spa_id"})
     
     for k, v in certificate_data.items():
         if k not in excluded_fields:
@@ -310,7 +292,7 @@ def prepare_certificate_data(template: CertificateTemplate, certificate_data: Di
     # For SPA_THERAPIST, handle image paths/URLs
     if template.category == CertificateCategory.SPA_THERAPIST:
         from config.settings import settings
-        base_url = certificate_data.get("base_url", "https://infodocs.api.d0s369.co.in")
+        base_url = certificate_data.get("base_url", "http://localhost:8009/api")
         media_base_path = Path(settings.UPLOAD_DIR).resolve()
         media_base_path_str = str(media_base_path).replace("\\", "/")
         
@@ -372,14 +354,19 @@ def prepare_certificate_data(template: CertificateTemplate, certificate_data: Di
             # If parsing fails, keep original values
             pass
 
-        if isinstance(month_year_list, list) and isinstance(month_salary_list, list) and len(month_year_list) > 0:
+        if isinstance(month_year_list, list) and isinstance(month_salary_list, list):
             rows = []
-            for month, salary in zip(month_year_list, month_salary_list):
+            # Use the longer list to ensure we process all entries
+            max_len = max(len(month_year_list), len(month_salary_list))
+            for i in range(max_len):
+                month = month_year_list[i] if i < len(month_year_list) else ""
+                salary = month_salary_list[i] if i < len(month_salary_list) else ""
                 month_str = str(month).strip() if month else ""
                 salary_str = str(salary).strip() if salary else ""
+                # Only add row if at least one field has a value
                 if month_str or salary_str:
                     rows.append(f"<tr><td>{month_str}</td><td>{salary_str}</td></tr>")
-            salary_breakdown_html = "".join(rows)
+            salary_breakdown_html = "".join(rows) if rows else ""
 
     category_defaults = {
         CertificateCategory.MANAGER_SALARY: {
@@ -452,9 +439,16 @@ def prepare_certificate_data(template: CertificateTemplate, certificate_data: Di
             month_salary_list = data.get("month_salary_list") or certificate_data.get("month_salary_list") or []
             if isinstance(month_year_list, list) and isinstance(month_salary_list, list):
                 rows = []
-                for month, salary in zip(month_year_list, month_salary_list):
-                    if (month or "").strip() or (salary or "").strip():
-                        rows.append(f"<tr><td>{month}</td><td>{salary}</td></tr>")
+                # Use the longer list to ensure we process all entries
+                max_len = max(len(month_year_list), len(month_salary_list))
+                for i in range(max_len):
+                    month = month_year_list[i] if i < len(month_year_list) else ""
+                    salary = month_salary_list[i] if i < len(month_salary_list) else ""
+                    month_str = str(month).strip() if month else ""
+                    salary_str = str(salary).strip() if salary else ""
+                    # Only add row if at least one field has a value
+                    if month_str or salary_str:
+                        rows.append(f"<tr><td>{month_str}</td><td>{salary_str}</td></tr>")
                 data["salary_breakdown"] = "".join(rows) if rows else "<tr><td>-</td><td>-</td></tr>"
     
     return data
@@ -690,10 +684,31 @@ async def create_generated_certificate(
 # Generated Certificate Queries
 # -------------------------
 
-async def get_generated_certificate_by_id(db: AsyncSession, certificate_id: int) -> Optional[GeneratedCertificate]:
-    stmt = select(GeneratedCertificate).where(GeneratedCertificate.id == certificate_id)
-    result = await db.execute(stmt)
-    return result.scalar_one_or_none()
+async def get_generated_certificate_by_id(db: AsyncSession, certificate_id: int):
+    """Get a certificate by ID from any certificate table"""
+    models = [
+        SpaTherapistCertificate,
+        ManagerSalaryCertificate,
+        ExperienceLetterCertificate,
+        AppointmentLetterCertificate,
+        InvoiceSpaBillCertificate,
+        IDCardCertificate,
+        GeneratedCertificate,
+    ]
+    
+    # Search all certificate tables
+    for model in models:
+        try:
+            stmt = select(model).where(model.id == certificate_id)
+            result = await db.execute(stmt)
+            certificate = result.scalar_one_or_none()
+            if certificate:
+                return certificate
+        except Exception as e:
+            logger.warning(f"Error searching {model.__tablename__} for certificate {certificate_id}: {e}")
+            continue
+    
+    return None
 
 
 async def get_public_certificates(db: AsyncSession, skip: int = 0, limit: int = 100):
@@ -730,11 +745,26 @@ async def get_user_certificates(db: AsyncSession, user_id: int, skip: int = 0, l
     ]
     all_certificates = []
     for model in models:
-        stmt = select(model).where(model.created_by == user_id)
-        result = await db.execute(stmt)
-        all_certificates.extend(list(result.scalars().all()))
+        try:
+            stmt = select(model).where(model.created_by == user_id)
+            result = await db.execute(stmt)
+            certificates = list(result.scalars().all())
+            all_certificates.extend(certificates)
+        except Exception as e:
+            logger.warning(f"Error fetching certificates from {model.__tablename__}: {e}")
+            continue
 
-    all_certificates.sort(key=lambda x: x.generated_at if hasattr(x, 'generated_at') else x.created_at, reverse=True)
+    # Sort certificates by date, handling None values and different date field names
+    def get_sort_date(cert):
+        if hasattr(cert, 'generated_at') and cert.generated_at:
+            return cert.generated_at
+        elif hasattr(cert, 'created_at') and cert.created_at:
+            return cert.created_at
+        else:
+            # Fallback to a very old date if no date is available
+            return datetime(1970, 1, 1, tzinfo=timezone.utc)
+    
+    all_certificates.sort(key=get_sort_date, reverse=True)
     return all_certificates[skip:skip + limit]
 
 

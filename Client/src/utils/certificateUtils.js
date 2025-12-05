@@ -75,21 +75,59 @@ export const prepareCertificateData = (category, formData, invoiceItems = []) =>
       };
 
     case CERTIFICATE_CATEGORIES.MANAGER_SALARY: {
-      let salaryBreakdown = formData.salary_breakdown || formData.month_salary_data;
-      if (typeof salaryBreakdown === 'string') {
-        try {
-          const parsed = JSON.parse(salaryBreakdown);
-          salaryBreakdown = Array.isArray(parsed) ? parsed : [];
-        } catch {
-          salaryBreakdown = [];
+      // First, check if month_year_list and month_salary_list already exist in formData
+      // This is the primary source from ManagerSalaryCertificateForm
+      let monthYearList = formData.month_year_list;
+      let monthSalaryList = formData.month_salary_list;
+      
+      // Ensure they are arrays
+      if (!Array.isArray(monthYearList)) {
+        monthYearList = [];
+      }
+      if (!Array.isArray(monthSalaryList)) {
+        monthSalaryList = [];
+      }
+      
+      // Filter out empty entries
+      const validEntries = [];
+      for (let i = 0; i < Math.max(monthYearList.length, monthSalaryList.length); i++) {
+        const month = (monthYearList[i] || '').toString().trim();
+        const salary = (monthSalaryList[i] || '').toString().trim();
+        if (month || salary) {
+          validEntries.push({ month, salary });
         }
       }
-      if (!Array.isArray(salaryBreakdown) || !salaryBreakdown.length) {
+      
+      // If we have valid entries from formData, use them
+      let salaryBreakdown = validEntries.length > 0 
+        ? validEntries 
+        : null;
+      
+      // If not, try to get from salary_breakdown or month_salary_data
+      if (!salaryBreakdown) {
+        let breakdown = formData.salary_breakdown || formData.month_salary_data;
+        if (typeof breakdown === 'string') {
+          try {
+            const parsed = JSON.parse(breakdown);
+            breakdown = Array.isArray(parsed) ? parsed : [];
+          } catch {
+            breakdown = [];
+          }
+        }
+        if (Array.isArray(breakdown) && breakdown.length > 0) {
+          salaryBreakdown = breakdown;
+        }
+      }
+      
+      // If still no data, generate default breakdown
+      if (!salaryBreakdown || salaryBreakdown.length === 0) {
         salaryBreakdown = generateSalaryBreakdown(formData);
       }
-
-      const monthYearList = salaryBreakdown.map((entry) => entry.month || entry.month_year || '');
-      const monthSalaryList = salaryBreakdown.map((entry) => entry.salary || entry.amount || '');
+      
+      // Extract month_year_list and month_salary_list from salaryBreakdown
+      // This ensures they're always in sync
+      const finalMonthYearList = salaryBreakdown.map((entry) => entry.month || entry.month_year || '');
+      const finalMonthSalaryList = salaryBreakdown.map((entry) => entry.salary || entry.amount || '');
 
       return {
         ...baseData,
@@ -99,8 +137,8 @@ export const prepareCertificateData = (category, formData, invoiceItems = []) =>
         monthly_salary: formData.monthly_salary || '',
         monthly_salary_in_words: formData.monthly_salary_in_words || formData.salary_in_words || '',
         salary_breakdown: salaryBreakdown,
-        month_year_list: monthYearList,
-        month_salary_list: monthSalaryList,
+        month_year_list: finalMonthYearList,
+        month_salary_list: finalMonthSalaryList,
       };
     }
 

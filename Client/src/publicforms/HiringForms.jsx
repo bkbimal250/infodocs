@@ -26,7 +26,6 @@ const experience_options = [
 
 
 
-
 const HiringForms = () => {
   const [spas, setSpas] = useState([]);
   const [spaSearch, setSpaSearch] = useState('');
@@ -248,6 +247,7 @@ const HiringForms = () => {
                     onChange={handleInputChange}
                     required
                     min="1"
+                    step="1"
                     placeholder="e.g., 2, 5, 10"
                     className="w-full px-4 py-3 text-sm border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all hover:border-purple-300"
                   />

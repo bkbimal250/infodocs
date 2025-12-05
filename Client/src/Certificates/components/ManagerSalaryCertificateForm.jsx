@@ -17,6 +17,16 @@ import { numberToWords } from '../../utils/certificateUtils';
  * - month_year_list (JSON list of months/years)
  * - month_salary_list (JSON list of salaries)
  */
+
+const positionOptions = [
+ "Manager",
+ "Therapist",
+ "Beautician",
+ "Housekeeper",
+ "Receptionist",
+];
+
+
 const ManagerSalaryCertificateForm = ({ formData, handleInputChange }) => {
   const config = CERTIFICATE_FIELDS[CERTIFICATE_CATEGORIES.MANAGER_SALARY] || {};
 
@@ -37,6 +47,63 @@ const ManagerSalaryCertificateForm = ({ formData, handleInputChange }) => {
   const rowCount = Math.max(monthYearList.length, monthSalaryList.length, 1);
   const rows = Array.from({ length: rowCount });
 
+  // Convert "MON YYYY" format (e.g., "OCT 2024") to "YYYY-MM" format for date input
+  const formatMonthYearToDate = (monthYear) => {
+    if (!monthYear || !monthYear.trim()) return '';
+    
+    // Try to parse formats like "OCT 2024", "Oct 2024", "10 2024", etc.
+    const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    const monthNamesShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    // Try to match "MON YYYY" or "MON-YYYY" format
+    const match = monthYear.match(/([A-Za-z]{3})[\s-]?(\d{4})/);
+    if (match) {
+      const monthStr = match[1].toUpperCase();
+      const year = match[2];
+      const monthIndex = monthNames.indexOf(monthStr) !== -1 
+        ? monthNames.indexOf(monthStr) 
+        : monthNamesShort.indexOf(match[1]);
+      
+      if (monthIndex !== -1) {
+        const month = String(monthIndex + 1).padStart(2, '0');
+        return `${year}-${month}`;
+      }
+    }
+    
+    // Try to parse "MM/YYYY" or "MM-YYYY" format
+    const dateMatch = monthYear.match(/(\d{1,2})[\s/-](\d{4})/);
+    if (dateMatch) {
+      const month = String(parseInt(dateMatch[1], 10)).padStart(2, '0');
+      const year = dateMatch[2];
+      return `${year}-${month}`;
+    }
+    
+    return '';
+  };
+
+  // Convert "YYYY-MM" format from date input to "MON YYYY" format
+  const formatDateToMonthYear = (dateValue) => {
+    if (!dateValue || !dateValue.trim()) return '';
+    
+    // If already in "MON YYYY" format, return as is
+    if (/^[A-Z]{3}\s\d{4}$/.test(dateValue.trim().toUpperCase())) {
+      return dateValue.trim().toUpperCase();
+    }
+    
+    // Parse "YYYY-MM" format
+    const match = dateValue.match(/(\d{4})-(\d{2})/);
+    if (match) {
+      const year = match[1];
+      const monthIndex = parseInt(match[2], 10) - 1;
+      const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+      if (monthIndex >= 0 && monthIndex < 12) {
+        return `${monthNames[monthIndex]} ${year}`;
+      }
+    }
+    
+    return dateValue;
+  };
+
   const updateSalaryRow = (index, field, value) => {
     const years = Array.isArray(formData.month_year_list)
       ? [...formData.month_year_list]
@@ -49,7 +116,8 @@ const ManagerSalaryCertificateForm = ({ formData, handleInputChange }) => {
     while (salaries.length < rowCount) salaries.push('');
 
     if (field === 'month') {
-      years[index] = value;
+      // Convert date value (YYYY-MM) to MON YYYY format
+      years[index] = formatDateToMonthYear(value);
     } else {
       salaries[index] = value;
     }
@@ -160,14 +228,19 @@ const ManagerSalaryCertificateForm = ({ formData, handleInputChange }) => {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               {label('position', 'Position / Designation')}
             </label>
-            <input
-              type="text"
+            <select
               name="position"
               value={formData.position || ''}
-              onChange={handleInputChange}
-              placeholder={placeholder('position', 'Manager')}
+              onChange={(e) => handleInputChange({ target: { name: 'position', value: e.target.value } })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            />
+            >
+              <option value="">Select Position</option>
+              {positionOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -305,10 +378,9 @@ const ManagerSalaryCertificateForm = ({ formData, handleInputChange }) => {
                 <tr key={index} className="border-b last:border-b-0">
                   <td className="px-4 py-2">
                     <input
-                      type="text"
-                      value={monthYearList[index] || ''}
+                      type="month"
+                      value={formatMonthYearToDate(monthYearList[index] || '')}
                       onChange={(e) => updateSalaryRow(index, 'month', e.target.value)}
-                      placeholder="Oct 2025"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
                     />
                   </td>

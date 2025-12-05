@@ -1,6 +1,7 @@
 """
 Dependencies for FastAPI routes
 """
+from typing import Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
@@ -63,3 +64,33 @@ def require_role(*allowed_roles: str):
             )
         return current_user
     return role_checker
+
+
+async def get_optional_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer(auto_error=False)),
+    db: AsyncSession = Depends(get_db)
+) -> Optional[User]:
+    """
+    Get current authenticated user from JWT token (optional - returns None if not authenticated)
+    """
+    if not credentials:
+        return None
+    
+    try:
+        token = credentials.credentials
+        payload = jwt.decode(
+            token,
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM]
+        )
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            return None
+    except (JWTError, Exception):
+        return None
+    
+    user = await get_user_by_id(db, int(user_id))
+    if user is None or not user.is_active:
+        return None
+    
+    return user
