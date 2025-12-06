@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { certificateApi } from '../api/Certificates/certificateApi';
+import { apiCache } from '../utils/apiCache';
+import { debounce } from '../utils/debounce';
 import {
   CERTIFICATE_CATEGORIES,
   CERTIFICATE_CATEGORY_METADATA,
@@ -82,31 +84,62 @@ const CreateCertifications = () => {
     return spas.find((spa) => spa.id === selectedSpaId) || null;
   }, [spas, selectedSpaId]);
 
-  const loadTemplates = async () => {
+  const loadTemplates = useCallback(async () => {
     try {
       setState(FORM_STATES.LOADING);
+      
+      // Check cache first
+      const cacheKey = '/certificates/templates';
+      const cached = apiCache.get(cacheKey);
+      
+      if (cached) {
+        setTemplates(cached);
+        setError(null);
+        setState(FORM_STATES.IDLE);
+        return;
+      }
+      
       const response = await certificateApi.getPublicTemplates();
-      setTemplates(response.data || []);
+      const templates = response.data || [];
+      setTemplates(templates);
       setError(null);
+      
+      // Cache the response
+      apiCache.set(cacheKey, {}, templates);
     } catch (err) {
       setError(ERROR_MESSAGES.LOAD_TEMPLATES_FAILED);
     } finally {
       setState(FORM_STATES.IDLE);
     }
-  };
+  }, []);
 
-  const loadSpas = async () => {
+  const loadSpas = useCallback(async () => {
     try {
       setSpaLoading(true);
+      
+      // Check cache first
+      const cacheKey = '/forms/spas';
+      const cached = apiCache.get(cacheKey);
+      
+      if (cached) {
+        setSpas(cached);
+        setSpaError(null);
+        setSpaLoading(false);
+        return;
+      }
       const response = await certificateApi.getSpas();
-      setSpas(response.data || []);
+      const spasData = response.data || [];
+      setSpas(spasData);
       setSpaError(null);
+      
+      // Cache the response
+      apiCache.set(cacheKey, {}, spasData);
     } catch (err) {
       setSpaError('Failed to load SPA locations');
     } finally {
       setSpaLoading(false);
     }
-  };
+  }, []);
 
   const formatSpaAddress = useCallback((spa) => {
     if (!spa) return '';
@@ -179,10 +212,18 @@ const CreateCertifications = () => {
     setShowSpaDropdown(false);
   };
 
-  const handleSpaSearchChange = (e) => {
+  // Debounced SPA search handler
+  const debouncedSpaSearch = useMemo(
+    () => debounce((value) => {
+      setSpaSearch(value);
+      setShowSpaDropdown(true);
+    }, 300),
+    []
+  );
+
+  const handleSpaSearchChange = useCallback( (e) => {
     const value = e.target.value;
-    setSpaSearch(value);
-    setShowSpaDropdown(true);
+    debouncedSpaSearch(value);
     // Clear selection if current selected SPA is not in filtered results
     if (selectedSpaId) {
       const selectedSpa = filteredSpas.find((s) => s.id === selectedSpaId);
@@ -191,7 +232,7 @@ const CreateCertifications = () => {
         clearSpaData();
       }
     }
-  };
+  }, [debouncedSpaSearch, selectedSpaId, clearSpaData]);
 
   useEffect(() => {
     if (selectedSpa) {

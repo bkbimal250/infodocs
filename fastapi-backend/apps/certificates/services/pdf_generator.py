@@ -40,6 +40,16 @@ try:
 except ImportError:
     logger.warning("pdf2image not available - image generation may be limited")
 
+# Async file I/O
+AIOFILES_AVAILABLE = False
+try:
+    import aiofiles
+    import aiofiles.os
+    AIOFILES_AVAILABLE = True
+    logger.info("✓ aiofiles is available (Async file I/O enabled)")
+except ImportError:
+    logger.warning("aiofiles not available - using synchronous file I/O")
+
 # Ensure media directory exists
 MEDIA_DIR = Path(settings.UPLOAD_DIR) / "certificates"
 MEDIA_DIR.mkdir(parents=True, exist_ok=True)
@@ -477,9 +487,9 @@ def _get_nested_value(data: Dict[str, Any], key_path: str) -> Any:
 # FILE MANAGEMENT
 # ============================================================
 
-def save_base64_image(base64_data: str, certificate_id: int, image_type: str = "photo") -> Optional[str]:
+async def save_base64_image(base64_data: str, certificate_id: int, image_type: str = "photo") -> Optional[str]:
     """
-    Save base64 image to file and return relative path
+    Save base64 image to file and return relative path (async)
     
     Args:
         base64_data: Base64 encoded image string (with or without data:image prefix)
@@ -525,12 +535,19 @@ def save_base64_image(base64_data: str, certificate_id: int, image_type: str = "
         filename = f"cert_{certificate_id}_{image_type}_{timestamp}.{ext}"
         file_path = MEDIA_DIR / filename
         
-        # Ensure directory exists
-        file_path.parent.mkdir(parents=True, exist_ok=True)
+        # Ensure directory exists (async if available)
+        if AIOFILES_AVAILABLE:
+            await aiofiles.os.makedirs(str(file_path.parent), exist_ok=True)
+        else:
+            file_path.parent.mkdir(parents=True, exist_ok=True)
         
-        # Write file
-        with open(file_path, 'wb') as f:
-            f.write(image_bytes)
+        # Write file (async if available, fallback to sync)
+        if AIOFILES_AVAILABLE:
+            async with aiofiles.open(file_path, 'wb') as f:
+                await f.write(image_bytes)
+        else:
+            with open(file_path, 'wb') as f:
+                f.write(image_bytes)
         
         logger.info(f"Image saved: {filename} ({len(image_bytes)} bytes)")
         
@@ -544,13 +561,13 @@ def save_base64_image(base64_data: str, certificate_id: int, image_type: str = "
         return None
 
 
-def save_certificate_file(
+async def save_certificate_file(
     certificate_id: int, 
     file_bytes: bytes, 
     file_type: str = "pdf"
 ) -> str:
     """
-    Save certificate file and return relative path
+    Save certificate file and return relative path (async)
     
     Args:
         certificate_id: Certificate ID
@@ -569,12 +586,19 @@ def save_certificate_file(
         filename = f"certificate_{certificate_id}_{timestamp}.{file_type}"
         file_path = MEDIA_DIR / filename
         
-        # Ensure directory exists
-        file_path.parent.mkdir(parents=True, exist_ok=True)
+        # Ensure directory exists (async if available)
+        if AIOFILES_AVAILABLE:
+            await aiofiles.os.makedirs(str(file_path.parent), exist_ok=True)
+        else:
+            file_path.parent.mkdir(parents=True, exist_ok=True)
         
-        # Write file
-        with open(file_path, 'wb') as f:
-            f.write(file_bytes)
+        # Write file (async if available, fallback to sync)
+        if AIOFILES_AVAILABLE:
+            async with aiofiles.open(file_path, 'wb') as f:
+                await f.write(file_bytes)
+        else:
+            with open(file_path, 'wb') as f:
+                f.write(file_bytes)
         
         logger.info(f"Certificate saved: {filename} ({len(file_bytes)} bytes)")
         

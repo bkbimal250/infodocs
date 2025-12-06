@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from '../utils/ProtectedRoute';
 import Layout from '../components/Layout';
@@ -5,6 +6,15 @@ import AdminLayout from '../components/AdminLayout';
 import HrLayout from '../components/HrLayout';
 import ManagerLayout from '../components/ManagerLayout';
 import UserLayout from '../components/UserLayout';
+import { FormSkeleton } from '../components/LoadingSkeleton';
+
+// Lazy load components for code splitting
+const LazyCertifications = lazy(() => import('../Certificates/Certifications'));
+const LazyCreateCertifications = lazy(() => import('../Certificates/CreateCertifications'));
+const LazyViewCertificates = lazy(() => import('../Certificates/ViewCertificates'));
+const LazyCertificatePreviewPage = lazy(() => import('../Certificates/CertificatePreviewPage'));
+const LazyHome = lazy(() => import('../Home/Home'));
+const LazyAbout = lazy(() => import('../Home/About'));
 
 // Auth Pages
 import { Login, Register, ForgotPassword, VerityOtp, CreateNewpassord } from '../pages/auth';
@@ -138,7 +148,9 @@ const AppRouter = () => {
           path="/certificates"
           element={
             <Layout>
-              <Certifications />
+              <Suspense fallback={<FormSkeleton />}>
+                <LazyCertifications />
+              </Suspense>
             </Layout>
           }
         />
@@ -147,21 +159,29 @@ const AppRouter = () => {
           element={
             <ProtectedRoute allowedRoles={['user', 'admin', 'super_admin', 'spa_manager', 'hr']}>
               <Layout>
-                <CreateCertifications />
+                <Suspense fallback={<FormSkeleton />}>
+                  <LazyCreateCertifications />
+                </Suspense>
               </Layout>
             </ProtectedRoute>
           }
         />
         <Route
           path="/certificate-preview"
-          element={<CertificatePreviewPage />}
+          element={
+            <Suspense fallback={<FormSkeleton />}>
+              <LazyCertificatePreviewPage />
+            </Suspense>
+          }
         />
         <Route
           path="/certificate/:certificateId"
           element={
             <ProtectedRoute allowedRoles={['user', 'admin', 'super_admin', 'spa_manager', 'hr']}>
               <Layout>
-                <ViewCertificates />
+                <Suspense fallback={<FormSkeleton />}>
+                  <LazyViewCertificates />
+                </Suspense>
               </Layout>
             </ProtectedRoute>
           }
@@ -689,7 +709,9 @@ const AppRouter = () => {
           path="/"
           element={
             <Layout>
-              <Home />
+              <Suspense fallback={<FormSkeleton />}>
+                <LazyHome />
+              </Suspense>
             </Layout>
           }
         />
@@ -698,7 +720,9 @@ const AppRouter = () => {
           path="/about"
           element={
             <Layout>
-              <About />
+              <Suspense fallback={<FormSkeleton />}>
+                <LazyAbout />
+              </Suspense>
             </Layout>
           }
         />

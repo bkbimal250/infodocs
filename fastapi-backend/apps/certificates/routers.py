@@ -124,7 +124,7 @@ async def preview_certificate(
             }
             cert_data["spa_id"] = spa_obj.id
     
-    data = prepare_certificate_data(template, cert_data, certificate_data.name, use_http_urls=True)
+    data = await prepare_certificate_data(template, cert_data, certificate_data.name, use_http_urls=True)
     if template.template_type != TemplateType.HTML:
         raise HTTPException(status_code=400, detail="Preview not available for this template type")
 
@@ -195,7 +195,7 @@ async def generate_certificate(
                 cert_data["spa_id"] = spa_obj.id
         
         # For PDF generation, use file:// paths (not HTTP URLs)
-        data = prepare_certificate_data(template, cert_data, display_name, use_http_urls=False)
+        data = await prepare_certificate_data(template, cert_data, display_name, use_http_urls=False)
 
         if template.template_type != TemplateType.HTML:
             raise HTTPException(status_code=400, detail="PDF generation not available for this template type")
@@ -451,7 +451,7 @@ async def download_certificate_pdf(
     
     # Get the name for this certificate type
     certificate_name = get_certificate_name(certificate)
-    data = prepare_certificate_data(template, cert_data, certificate_name, use_http_urls=False)
+    data = await prepare_certificate_data(template, cert_data, certificate_name, use_http_urls=False)
     html_content = template.template_html
     rendered_html = render_html_template(html_content, data)
     pdf_bytes = html_to_pdf(rendered_html)
@@ -587,7 +587,7 @@ async def download_certificate_image(
     
     # Get the name for this certificate type
     certificate_name = get_certificate_name(certificate)
-    data = prepare_certificate_data(template, cert_data, certificate_name, use_http_urls=False)
+    data = await prepare_certificate_data(template, cert_data, certificate_name, use_http_urls=False)
     html_content = template.template_html
     rendered_html = render_html_template(html_content, data)
     image_bytes = html_to_image(rendered_html)

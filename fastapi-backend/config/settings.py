@@ -66,6 +66,14 @@ class Settings(BaseSettings):
         raise ValueError("CORS_ORIGINS must be list or comma-separated string")
 
     # ------------------------------------------------------------------
+    # API Base URL Settings
+    # ------------------------------------------------------------------
+    API_BASE_URL: str = Field(
+        default="https://infodocs.api.d0s369.co.in/api",
+        description="Default backend API base URL for static paths and images"
+    )
+
+    # ------------------------------------------------------------------
     # File Upload Settings
     # ------------------------------------------------------------------
     MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10 MB

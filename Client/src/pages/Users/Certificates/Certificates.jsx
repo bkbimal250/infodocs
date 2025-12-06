@@ -227,10 +227,13 @@ const Certificates = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[var(--color-text-primary)]">My Certificates</h1>
-          <p className="mt-2 text-[var(--color-text-secondary)]">
-            View and manage certificates you've created
-          </p>
+         
+          <Link
+                to="/certificates"
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Create  Certificate
+              </Link>
         </div>
 
         {/* Filters */}

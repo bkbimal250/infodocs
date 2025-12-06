@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import ReactCrop from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
+import { Button, Label } from '../../ui';
 
 /**
  * Document Upload Component
@@ -150,9 +151,9 @@ const DocumentUpload = ({ files, handleFileChange, setFiles }) => {
       <div className="space-y-2">
         {/* Passport Size Photo with Crop */}
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">
+          <Label className="mb-1">
             Passport Size Photo
-          </label>
+          </Label>
           <input
             ref={el => fileInputRefs.current.passport_size_photo = el}
             type="file"
@@ -191,20 +192,22 @@ const DocumentUpload = ({ files, handleFileChange, setFiles }) => {
                 </div>
               </div>
               <div className="flex gap-2 justify-end">
-                <button
+                <Button
                   type="button"
                   onClick={() => handleCancelCrop('passport_size_photo')}
-                  className="px-3 py-1.5 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                  variant="secondary"
+                  size="sm"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   onClick={() => handleCropComplete('passport_size_photo')}
-                  className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                  variant="primary"
+                  size="sm"
                 >
                   Apply Crop
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -215,9 +218,9 @@ const DocumentUpload = ({ files, handleFileChange, setFiles }) => {
 
         {/* Age Proof Document (PDF or Image) */}
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">
-            Age Proof Document *
-          </label>
+          <Label required className="mb-1">
+            Age Proof Document
+          </Label>
           <input
             type="file"
             name="age_proof_document"
@@ -231,9 +234,9 @@ const DocumentUpload = ({ files, handleFileChange, setFiles }) => {
         {/* Aadhar Card Front with Crop */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
+            <Label className="mb-1">
               Aadhar Card Front
-            </label>
+            </Label>
             <input
               ref={el => fileInputRefs.current.aadhar_card_front = el}
               type="file"
@@ -295,9 +298,9 @@ const DocumentUpload = ({ files, handleFileChange, setFiles }) => {
           
           {/* Aadhar Card Back with Crop */}
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
+            <Label className="mb-1">
               Aadhar Card Back
-            </label>
+            </Label>
             <input
               ref={el => fileInputRefs.current.aadhar_card_back = el}
               type="file"
@@ -360,7 +363,7 @@ const DocumentUpload = ({ files, handleFileChange, setFiles }) => {
 
         {/* PAN Card with Crop */}
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">PAN Card</label>
+          <Label className="mb-1">PAN Card</Label>
           <input
             ref={el => fileInputRefs.current.pan_card = el}
             type="file"
@@ -422,7 +425,7 @@ const DocumentUpload = ({ files, handleFileChange, setFiles }) => {
 
         {/* Signature with Crop */}
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Signature *</label>
+          <Label required className="mb-1">Signature</Label>
           <input
             ref={el => fileInputRefs.current.signature = el}
             type="file"
@@ -485,9 +488,9 @@ const DocumentUpload = ({ files, handleFileChange, setFiles }) => {
 
         {/* Additional Documents */}
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">
+          <Label className="mb-1">
             Additional Documents
-          </label>
+          </Label>
           <input
             type="file"
             name="documents"

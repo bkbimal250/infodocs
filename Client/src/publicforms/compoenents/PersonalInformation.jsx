@@ -1,4 +1,5 @@
 import React from 'react';
+import { Input, Select, Textarea, Label, Checkbox } from '../../ui';
 
 /**
  * Personal Information Component
@@ -131,37 +132,34 @@ const PersonalInformation = ({ formData, handleInputChange }) => {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              First Name *
-            </label>
-            <input
+            <Label required className="mb-1">
+              First Name
+            </Label>
+            <Input
               type="text"
               name="first_name"
               value={formData.first_name}
               onChange={handleInputChange}
               required
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Middle Name</label>
-            <input
+            <Label className="mb-1">Middle Name</Label>
+            <Input
               type="text"
               name="middle_name"
               value={formData.middle_name}
               onChange={handleInputChange}
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Last Name *</label>
-            <input
+            <Label required className="mb-1">Last Name</Label>
+            <Input
               type="text"
               name="last_name"
               value={formData.last_name}
               onChange={handleInputChange}
               required
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
         </div>
@@ -177,47 +175,36 @@ const PersonalInformation = ({ formData, handleInputChange }) => {
         </h2>
         <div className="space-y-2">
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Current Address *
-            </label>
-            <textarea
+            <Label required className="mb-1">
+              Current Address
+            </Label>
+            <Textarea
               name="current_address"
               value={formData.current_address}
               onChange={handleInputChange}
               required
               rows={2}
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="block text-xs font-medium text-gray-700">
+              <Label>
                 Aadhar Address
-              </label>
-              <label className="flex items-center gap-1.5 cursor-pointer group hover:text-blue-600 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={sameAsCurrentAddress}
-                  onChange={handleSameAddressChange}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 cursor-pointer transition-all"
-                />
-                <span className="text-xs text-gray-600 font-medium group-hover:text-blue-600 transition-colors">
-                  ✓ Same as Current Address
-                </span>
-              </label>
+              </Label>
+              <Checkbox
+                name="same_as_current_address"
+                checked={sameAsCurrentAddress}
+                onChange={handleSameAddressChange}
+                label="✓ Same as Current Address"
+              />
             </div>
-            <textarea
+            <Textarea
               name="aadhar_address"
               value={formData.aadhar_address}
               onChange={handleInputChange}
               disabled={sameAsCurrentAddress}
               rows={2}
               placeholder={sameAsCurrentAddress ? "Same as current address" : "Enter Aadhar address"}
-              className={`w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all ${
-                sameAsCurrentAddress 
-                  ? 'bg-gray-100 cursor-not-allowed text-gray-500' 
-                  : 'bg-white'
-              }`}
             />
             {sameAsCurrentAddress && (
               <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
@@ -230,37 +217,35 @@ const PersonalInformation = ({ formData, handleInputChange }) => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">City *</label>
-              <input
+              <Label required className="mb-1">City</Label>
+              <Input
                 type="text"
                 name="city"
                 value={formData.city}
                 onChange={handleInputChange}
                 required
-                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Zip Code *</label>
-              <input
+              <Label required className="mb-1">Zip Code</Label>
+              <Input
                 type="text"
                 name="zip_code"
                 value={formData.zip_code}
                 onChange={handleInputChange}
                 required
-                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                State * 
+              <Label required className="mb-1">
+                State
                 {filteredStates.length !== state_options.length && (
                   <span className="ml-2 text-xs text-gray-500 font-normal">
                     ({filteredStates.length} results)
                   </span>
                 )}
-              </label>
-              <input
+              </Label>
+              <Input
                 type="text"
                 value={stateSearch}
                 onChange={(e) => {
@@ -275,7 +260,7 @@ const PersonalInformation = ({ formData, handleInputChange }) => {
                   }
                 }}
                 placeholder="Search state..."
-                className="w-full mb-2 px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                className="mb-2"
               />
               <select 
                 className={`w-full px-2 py-1.5 text-sm border rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent ${
@@ -317,105 +302,101 @@ const PersonalInformation = ({ formData, handleInputChange }) => {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Phone Number *
-            </label>
-            <input
+            <Label required className="mb-1">
+              Phone Number
+            </Label>
+            <Input
               type="tel"
               name="phone_number"
               value={formData.phone_number}
               onChange={handleInputChange}
               required
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
+            <Label className="mb-1">
               Alternate Number
-            </label>
-            <input
+            </Label>
+            <Input
               type="tel"
               name="alternate_number"
               value={formData.alternate_number}
               onChange={handleInputChange}
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Age *</label>
-            <input
+            <Label required className="mb-1">Age</Label>
+            <Input
               type="number"
               name="age"
               value={formData.age}
               onChange={handleInputChange}
               required
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Position Applied For *
-            </label>
-            <select className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
-                onChange={(e) => handleInputChange({ target: { name: 'position_applied_for', value: e.target.value } })}
-                name="position_applied_for"
-                value={formData.position_applied_for}
-                required
-            >
-              <option value="">Select Position</option>
-              {positions.map((position) => (
-                <option key={position} value={position}>{position}</option>
-              ))}
-            </select>  
+            <Label required className="mb-1">
+              Position Applied For
+            </Label>
+            <Select
+              onChange={(e) => handleInputChange({ target: { name: 'position_applied_for', value: e.target.value } })}
+              name="position_applied_for"
+              value={formData.position_applied_for}
+              required
+              options={positions.map((position) => ({
+                value: position,
+                label: position
+              }))}
+              placeholder="Select Position"
+            />
             <p className="text-xs text-gray-500 mt-1">
               Please select the position you are applying for.
             </p>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Work Experience *
-            </label>
-            <select className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+            <Label required className="mb-1">
+              Work Experience
+            </Label>
+            <Select
               onChange={(e) => handleInputChange({ target: { name: 'work_experience', value: e.target.value } })}
               name="work_experience"
               value={formData.work_experience}
               required
-            >
-              <option value="">Select Work Experience</option>
-              {work_experience_options.map((work_experience) => (
-                <option key={work_experience} value={work_experience}>{work_experience}</option>
-              ))}
-            </select>
+              options={work_experience_options.map((work_experience) => ({
+                value: work_experience,
+                label: work_experience
+              }))}
+              placeholder="Select Work Experience"
+            />
             <p className="text-xs text-gray-500 mt-1">
               Please select the work experience you have.
             </p>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Therapist Experience *
-            </label>
-              <select className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+            <Label required className="mb-1">
+              Therapist Experience
+            </Label>
+            <Select
               onChange={(e) => handleInputChange({ target: { name: 'Therapist_experience', value: e.target.value } })}
               name="Therapist_experience"
               value={formData.Therapist_experience}
               required
-            >
-              <option value="">Select Therapist Experience</option>
-              {therapist_experience_options.map((therapist_experience) => (
-                <option key={therapist_experience} value={therapist_experience}>{therapist_experience}</option>
-              ))}
-            </select>
+              options={therapist_experience_options.map((therapist_experience) => ({
+                value: therapist_experience,
+                label: therapist_experience
+              }))}
+              placeholder="Select Therapist Experience"
+            />
           </div>
           <div className="md:col-span-2">
-            <label className="block text-xs font-medium text-gray-700 mb-1">
+            <Label className="mb-1">
               Education & Certificate Courses
-            </label>
-            <textarea
+            </Label>
+            <Textarea
               name="education_certificate_courses"
               value={formData.education_certificate_courses}
               onChange={handleInputChange}
               rows={2}
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
         </div>

@@ -30,6 +30,7 @@ from apps.certificates.services.pdf_generator import (
     save_base64_image
 )
 from core.exceptions import NotFoundError, ValidationError
+from config.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +40,38 @@ TEMPLATE_DIR = Path(__file__).parent.parent / "templates"
 # Cache static paths to avoid recalculating on every call
 _STATIC_PATH_CACHE = None
 _MEDIA_PATH_CACHE = None
+
+# Template caching (in-memory cache)
+_template_cache = {}
+_template_list_cache = None
+_cache_lock = None
+
+def _get_cache_lock():
+    """Get or create cache lock for thread-safe operations"""
+    global _cache_lock
+    if _cache_lock is None:
+        import asyncio
+        _cache_lock = asyncio.Lock()
+    return _cache_lock
+
+def _invalidate_template_cache(template_id: Optional[int] = None):
+    """Invalidate template cache
+    
+    Args:
+        template_id: If provided, only invalidate this template. If None, invalidate all caches.
+    """
+    global _template_cache, _template_list_cache
+    
+    if template_id is not None:
+        # Invalidate specific template
+        if template_id in _template_cache:
+            del _template_cache[template_id]
+            logger.debug(f"Invalidated cache for template {template_id}")
+    else:
+        # Invalidate all caches
+        _template_cache.clear()
+        _template_list_cache = None
+        logger.debug("Invalidated all template caches")
 
 def _get_static_path():
     """Get static file base path (cached)"""
@@ -68,8 +101,21 @@ SPA_REQUIRED_CATEGORIES = {
 # Template CRUD Operations
 # -------------------------
 
-async def get_public_templates(db: AsyncSession) -> List[CertificateTemplate]:
-    """Get all public and active certificate templates"""
+async def get_public_templates(db: AsyncSession, use_cache: bool = True) -> List[CertificateTemplate]:
+    """Get all public and active certificate templates (with caching)
+    
+    Args:
+        db: Database session
+        use_cache: If True, use cached results (default: True)
+    """
+    global _template_list_cache
+    
+    # Return cached result if available and cache is enabled
+    if use_cache and _template_list_cache is not None:
+        logger.debug("Returning cached public templates list")
+        return _template_list_cache
+    
+    # Fetch from database
     stmt = select(CertificateTemplate).where(
         and_(
             CertificateTemplate.is_active.is_(True),
@@ -77,14 +123,41 @@ async def get_public_templates(db: AsyncSession) -> List[CertificateTemplate]:
         )
     ).order_by(CertificateTemplate.name)
     result = await db.execute(stmt)
-    return list(result.scalars().all())
+    templates = list(result.scalars().all())
+    
+    # Cache the result
+    if use_cache:
+        _template_list_cache = templates
+        logger.debug(f"Cached {len(templates)} public templates")
+    
+    return templates
 
 
-async def get_template_by_id(db: AsyncSession, template_id: int) -> Optional[CertificateTemplate]:
-    """Get certificate template by ID"""
+async def get_template_by_id(db: AsyncSession, template_id: int, use_cache: bool = True) -> Optional[CertificateTemplate]:
+    """Get certificate template by ID (with caching)
+    
+    Args:
+        db: Database session
+        template_id: Template ID
+        use_cache: If True, use cached result (default: True)
+    """
+    # Check cache first
+    if use_cache and template_id in _template_cache:
+        logger.debug(f"Returning cached template {template_id}")
+        return _template_cache[template_id]
+    
+    # Fetch from database
     stmt = select(CertificateTemplate).where(CertificateTemplate.id == template_id)
     result = await db.execute(stmt)
-    return result.scalar_one_or_none()
+    template = result.scalar_one_or_none()
+    
+    # Cache the result if found
+    if use_cache and template:
+        async with _get_cache_lock():
+            _template_cache[template_id] = template
+            logger.debug(f"Cached template {template_id}")
+    
+    return template
 
 
 async def get_all_templates(db: AsyncSession, skip: int = 0, limit: int = 100) -> List[CertificateTemplate]:
@@ -122,6 +195,10 @@ async def create_template(
         db.add(template)
         await db.commit()
         await db.refresh(template)
+        
+        # Invalidate cache for new template
+        _invalidate_template_cache()
+        
         return template
     except Exception as e:
         logger.error(f"Error creating template in database: {str(e)}", exc_info=True)
@@ -161,10 +238,15 @@ async def update_template(
 
     await db.commit()
     await db.refresh(template)
+    
+    # Invalidate cache for updated template
+    _invalidate_template_cache(template_id)
+    
     return template
 
 
 async def delete_template(db: AsyncSession, template_id: int) -> bool:
+    """Delete a certificate template and invalidate cache"""
     """Delete a certificate template"""
     template = await get_template_by_id(db, template_id)
     if not template:
@@ -173,6 +255,10 @@ async def delete_template(db: AsyncSession, template_id: int) -> bool:
     stmt = delete(CertificateTemplate).where(CertificateTemplate.id == template_id)
     await db.execute(stmt)
     await db.commit()
+    
+    # Invalidate cache for deleted template
+    _invalidate_template_cache(template_id)
+    
     return True
 
 # -------------------------
@@ -202,7 +288,7 @@ def get_template_name_by_category(category: CertificateCategory) -> str:
     return mapping.get(category, "salary_certificate")
 
 
-def prepare_certificate_data(template: CertificateTemplate, certificate_data: Dict[str, Any], candidate_name: str, use_http_urls: bool = False) -> Dict[str, Any]:
+async def prepare_certificate_data(template: CertificateTemplate, certificate_data: Dict[str, Any], candidate_name: str, use_http_urls: bool = False) -> Dict[str, Any]:
     """Prepare data for rendering certificate templates
     
     Args:
@@ -218,7 +304,7 @@ def prepare_certificate_data(template: CertificateTemplate, certificate_data: Di
     static_base_path_str = str(static_base_path).replace("\\", "/")
     
     # Get base URL once
-    base_url = certificate_data.get("base_url", "http://localhost:8009/api")
+    base_url = certificate_data.get("base_url", settings.API_BASE_URL)
     
     # Determine image URLs based on context
     if use_http_urls:
@@ -310,7 +396,7 @@ def prepare_certificate_data(template: CertificateTemplate, certificate_data: Di
     
     # For SPA_THERAPIST, handle image paths/URLs (using cached paths)
     if template.category == CertificateCategory.SPA_THERAPIST:
-        base_url = certificate_data.get("base_url", "http://localhost:8009/api")
+        base_url = certificate_data.get("base_url", settings.API_BASE_URL)
         media_base_path = _get_media_path()
         media_base_path_str = str(media_base_path).replace("\\", "/")
         
@@ -342,7 +428,7 @@ def prepare_certificate_data(template: CertificateTemplate, certificate_data: Di
     
     # For ID_CARD, handle candidate_photo image paths/URLs (using cached paths)
     if template.category == CertificateCategory.ID_CARD:
-        base_url = certificate_data.get("base_url", "http://localhost:8009/api")
+        base_url = certificate_data.get("base_url", settings.API_BASE_URL)
         media_base_path = _get_media_path()
         media_base_path_str = str(media_base_path).replace("\\", "/")
         
@@ -363,7 +449,7 @@ def prepare_certificate_data(template: CertificateTemplate, certificate_data: Di
                     logger.warning("Base64 image found during PDF generation for ID_CARD. Image should be saved as file first.")
                     # Try to extract and save if we have certificate_id
                     if certificate_data.get("certificate_id"):
-                        temp_path = save_base64_image(photo, certificate_data["certificate_id"], "id_card_photo_temp")
+                        temp_path = await save_base64_image(photo, certificate_data["certificate_id"], "id_card_photo_temp")
                         if temp_path:
                             photo = temp_path
                             data["candidate_photo"] = f"file:///{media_base_path_str}/{temp_path}"
@@ -661,12 +747,12 @@ async def create_generated_certificate(
         signature = certificate_payload.get("candidate_signature")
         
         if passport_photo:
-            photo_path = save_base64_image(passport_photo, certificate.id, "photo")
+            photo_path = await save_base64_image(passport_photo, certificate.id, "photo")
             if photo_path:
                 certificate.passport_size_photo = photo_path
         
         if signature:
-            signature_path = save_base64_image(signature, certificate.id, "signature")
+            signature_path = await save_base64_image(signature, certificate.id, "signature")
             if signature_path:
                 certificate.candidate_signature = signature_path
     
@@ -675,7 +761,7 @@ async def create_generated_certificate(
         candidate_photo = certificate_payload.get("candidate_photo")
         
         if candidate_photo:
-            photo_path = save_base64_image(candidate_photo, certificate.id, "id_card_photo")
+            photo_path = await save_base64_image(candidate_photo, certificate.id, "id_card_photo")
             if photo_path:
                 certificate.candidate_photo = photo_path
     
@@ -706,14 +792,14 @@ async def create_generated_certificate(
         # If still base64 in payload (shouldn't happen after save, but handle it)
         elif certificate_payload.get("candidate_photo") and certificate_payload["candidate_photo"].startswith("data:image"):
             # Convert base64 to file path if not already saved
-            photo_path = save_base64_image(certificate_payload["candidate_photo"], certificate.id, "id_card_photo")
+            photo_path = await save_base64_image(certificate_payload["candidate_photo"], certificate.id, "id_card_photo")
             if photo_path:
                 certificate.candidate_photo = photo_path
                 certificate_payload["candidate_photo"] = photo_path
                 await db.commit()
                 await db.refresh(certificate)
     
-    data = prepare_certificate_data(template, certificate_payload, display_name, use_http_urls=False)
+    data = await prepare_certificate_data(template, certificate_payload, display_name, use_http_urls=False)
 
     # Render PDF if HTML template
     if template.template_type == TemplateType.HTML:
@@ -723,7 +809,7 @@ async def create_generated_certificate(
         rendered_html = render_html_template(html_content, data)
         try:
             pdf_bytes = html_to_pdf(rendered_html)
-            certificate.certificate_pdf = save_certificate_file(certificate.id, pdf_bytes, "pdf")
+            certificate.certificate_pdf = await save_certificate_file(certificate.id, pdf_bytes, "pdf")
             await db.commit()
             await db.refresh(certificate)
         except Exception as e:

@@ -1,8 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import apiClient from '../utils/apiConfig';
 import PersonalInformation from './compoenents/PersonalInformation';
 import DocumentUpload from './compoenents/DocumentUpload';
+import { Input, Select, Button, Label } from '../ui';
+import { apiCache } from '../utils/apiCache';
+import { debounce } from '../utils/debounce';
 
 /**
  * Candidate Form
@@ -46,37 +49,48 @@ const CandidateForm = () => {
     loadSpas();
   }, []);
 
-  const filteredSpas = spas.filter((spa) => {
-    if (!spaSearch) return true;
+  const filteredSpas = useMemo(() => {
+    if (!spaSearch) return spas;
     const term = spaSearch.toLowerCase();
-    return (
-      spa.name?.toLowerCase().includes(term) ||
-      (spa.code !== null && spa.code !== undefined && String(spa.code).includes(term)) ||
-      spa.area?.toLowerCase().includes(term) ||
-      spa.city?.toLowerCase().includes(term)
-    );
-  });
+    return spas.filter((spa) => {
+      return (
+        spa.name?.toLowerCase().includes(term) ||
+        (spa.code !== null && spa.code !== undefined && String(spa.code).includes(term)) ||
+        spa.area?.toLowerCase().includes(term) ||
+        spa.city?.toLowerCase().includes(term)
+      );
+    });
+  }, [spas, spaSearch]);
 
-  const loadSpas = async () => {
+  const loadSpas = useCallback(async () => {
     try {
+      // Check cache first
+      const cacheKey = '/forms/spas';
+      const cached = apiCache.get(cacheKey);
+      
+      if (cached) {
+        setSpas(cached);
+        return;
+      }
+      
       const response = await apiClient.get('/forms/spas');
-      setSpas(response.data || []);
+      const spasData = response.data || [];
+      setSpas(spasData);
+      
+      // Cache the response
+      apiCache.set(cacheKey, {}, spasData);
     } catch (err) {
       console.error('Failed to load SPAs', err);
     }
-  };
+  }, []);
 
-  const handleInputChange = (e) => {
+  const handleInputChange = useCallback((e) => {
     const { name, value } = e.target;
-    setFormData((prev) => {
-      const newData = {
-        ...prev,
-        [name]: value,
-      };
-      
-      return newData;
-    });
-  };
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  }, []);
 
   const handleFileChange = (e) => {
     const { name, files: fileList } = e.target;
@@ -329,17 +343,18 @@ const CandidateForm = () => {
               </h2>
               <div className="space-y-2">
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    SPA Location <span className="text-red-500">*</span>
-                  </label>
+                  <Label required>
+                    SPA Location
+                  </Label>
 
                   {/* SPA Search */}
                   <div className="relative mb-2">
-                    <input
+                    <Input
                       type="text"
                       value={spaSearch}
                       onChange={(e) => {
-                        setSpaSearch(e.target.value);
+                        const value = e.target.value;
+                        setSpaSearch(value);
                         // Clear selection if search changes and selected SPA is not in filtered results
                         if (formData.spa_id) {
                           const selectedSpa = filteredSpas.find(s => s.id === parseInt(formData.spa_id));
@@ -349,7 +364,6 @@ const CandidateForm = () => {
                         }
                       }}
                       placeholder="Search by name, code, area, or city"
-                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                     />
                     {spaSearch && (
                       <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs text-gray-500">
@@ -391,11 +405,11 @@ const CandidateForm = () => {
                       ))
                     )}
                   </select>
-                  {spaSearch && filteredSpas.length === 0 && (
-                    <p className="mt-1 text-xs text-amber-600">No SPAs found. Try a different search term.</p>
-                  )}
                   {!formData.spa_id && !spaSearch && (
                     <p className="mt-1 text-xs text-red-600">Please select a SPA location from the list</p>
+                  )}
+                  {spaSearch && filteredSpas.length === 0 && (
+                    <p className="mt-1 text-xs text-amber-600">No SPAs found. Try a different search term.</p>
                   )}
                 </div>
               </div>
@@ -419,38 +433,34 @@ const CandidateForm = () => {
           {/* Navigation Buttons */}
           <div className="flex gap-2 pt-3 border-t border-gray-200">
             {currentStep > 1 && (
-              <button
+              <Button
                 type="button"
                 onClick={handlePrevious}
-                className="px-6 py-2 bg-gray-200 text-gray-700 rounded text-sm font-semibold hover:bg-gray-300 transition-all"
+                variant="secondary"
               >
                 Previous
-              </button>
+              </Button>
             )}
             
             {currentStep < 3 ? (
-              <button
+              <Button
                 type="button"
                 onClick={handleNext}
-                className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 px-4 rounded text-sm font-semibold hover:from-blue-700 hover:to-purple-700 shadow hover:shadow-md transition-all"
+                variant="primary"
+                fullWidth
               >
                 Next
-              </button>
+              </Button>
             ) : (
-              <button
+              <Button
                 type="submit"
                 disabled={loading}
-                className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 px-4 rounded text-sm font-semibold hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed shadow hover:shadow-md transition-all"
+                variant="primary"
+                fullWidth
+                loading={loading}
               >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Submitting...
-                  </span>
-                ) : (
-                  'Submit Application'
-                )}
-              </button>
+                {loading ? 'Submitting...' : 'Submit Application'}
+              </Button>
             )}
           </div>
         </form>

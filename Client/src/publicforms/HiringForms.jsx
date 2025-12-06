@@ -1,6 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import apiClient from '../utils/apiConfig';
+import { Input, Select, Textarea, Button, Label } from '../ui';
+import { apiCache } from '../utils/apiCache';
+import { debounce } from '../utils/debounce';
 
 /**
  * Hiring Form Submission Page
@@ -44,33 +47,48 @@ const HiringForms = () => {
     loadSpas();
   }, []);
 
-  const loadSpas = async () => {
+  const loadSpas = useCallback(async () => {
     try {
+      // Check cache first
+      const cacheKey = '/forms/spas';
+      const cached = apiCache.get(cacheKey);
+      
+      if (cached) {
+        setSpas(cached);
+        return;
+      }
+      
       const response = await apiClient.get('/forms/spas');
-      setSpas(response.data || []);
+      const spasData = response.data || [];
+      setSpas(spasData);
+      
+      // Cache the response
+      apiCache.set(cacheKey, {}, spasData);
     } catch (err) {
       console.error('Failed to load SPAs', err);
     }
-  };
+  }, []);
 
-  const filteredSpas = spas.filter((spa) => {
-    if (!spaSearch) return true;
+  const filteredSpas = useMemo(() => {
+    if (!spaSearch) return spas;
     const term = spaSearch.toLowerCase();
-    return (
-      spa.name?.toLowerCase().includes(term) ||
-      (spa.code !== null && spa.code !== undefined && String(spa.code).includes(term)) ||
-      spa.area?.toLowerCase().includes(term) ||
-      spa.city?.toLowerCase().includes(term)
-    );
-  });
+    return spas.filter((spa) => {
+      return (
+        spa.name?.toLowerCase().includes(term) ||
+        (spa.code !== null && spa.code !== undefined && String(spa.code).includes(term)) ||
+        spa.area?.toLowerCase().includes(term) ||
+        spa.city?.toLowerCase().includes(term)
+      );
+    });
+  }, [spas, spaSearch]);
 
-  const handleInputChange = (e) => {
+  const handleInputChange = useCallback((e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
-  };
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -132,18 +150,13 @@ const HiringForms = () => {
             </h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">
-                  Select SPA Location <span className="text-red-500">*</span>
-                </label>
+                <Label required className="mb-3">
+                  Select SPA Location
+                </Label>
 
                 {/* SPA Search */}
                 <div className="relative mb-3">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                  </div>
-                  <input
+                  <Input
                     type="text"
                     value={spaSearch}
                     onChange={(e) => {
@@ -160,7 +173,7 @@ const HiringForms = () => {
                       }
                     }}
                     placeholder="Search by name, code, area, or city..."
-                    className="w-full pl-10 pr-20 py-3 text-sm border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
+                    className="pl-10 pr-20"
                   />
                   {spaSearch && (
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-purple-600 bg-purple-50 px-2 py-1 rounded-lg">
@@ -210,14 +223,14 @@ const HiringForms = () => {
                     ))
                   )}
                 </select>
-                {spaSearch && filteredSpas.length === 0 && (
-                  <p className="mt-1 text-xs text-amber-600">
-                    No SPAs found. Try a different search term.
-                  </p>
-                )}
                 {!formData.spa_id && !spaSearch && (
                   <p className="mt-1 text-xs text-red-600">
                     Please select a SPA location from the list
+                  </p>
+                )}
+                {spaSearch && filteredSpas.length === 0 && (
+                  <p className="mt-1 text-xs text-amber-600">
+                    No SPAs found. Try a different search term.
                   </p>
                 )}
               </div>
@@ -237,10 +250,10 @@ const HiringForms = () => {
             <div className="space-y-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Number of Staff Required <span className="text-red-500">*</span>
-                  </label>
-                  <input
+                  <Label required className="mb-2">
+                    Number of Staff Required
+                  </Label>
+                  <Input
                     type="number"
                     name="staff_required"
                     value={formData.staff_required}
@@ -249,7 +262,6 @@ const HiringForms = () => {
                     min="1"
                     step="1"
                     placeholder="e.g., 2, 5, 10"
-                    className="w-full px-4 py-3 text-sm border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all hover:border-purple-300"
                   />
                   <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -259,35 +271,33 @@ const HiringForms = () => {
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Role/Position Required <span className="text-red-500">*</span>
-                  </label>
-                <select 
-                  value={formData.for_role} 
-                  name="for_role" 
-                  onChange={handleInputChange}
-                  required 
-                  className="w-full px-4 py-3 text-sm border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all hover:border-purple-300 font-medium"
-                >  
-                  <option value="">-- Select Role --</option>
-                  {role_options.map((role) => (
-                    <option key={role} value={role}>{role}</option>
-                  ))}
-                </select>
+                  <Label required className="mb-2">
+                    Role/Position Required
+                  </Label>
+                  <Select
+                    value={formData.for_role}
+                    name="for_role"
+                    onChange={handleInputChange}
+                    required
+                    options={role_options.map((role) => ({
+                      value: role,
+                      label: role
+                    }))}
+                    placeholder="-- Select Role --"
+                  />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Job Description <span className="text-red-500">*</span>
-                </label>
-                <textarea
+                <Label required className="mb-2">
+                  Job Description
+                </Label>
+                <Textarea
                   name="description"
                   value={formData.description}
                   onChange={handleInputChange}
                   required
                   rows={5}
                   placeholder="Describe the position, responsibilities, and what you're looking for..."
-                  className="w-full px-4 py-3 text-sm border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all resize-none hover:border-purple-300"
                 />
                 <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -311,48 +321,45 @@ const HiringForms = () => {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Required Experience <span className="text-red-500">*</span>
-                </label>
-                <select 
-                  value={formData.required_experience} 
-                  name="required_experience" 
+                <Label required className="mb-2">
+                  Required Experience
+                </Label>
+                <Select
+                  value={formData.required_experience}
+                  name="required_experience"
                   onChange={handleInputChange}
-                  required 
-                  className="w-full px-4 py-3 text-sm border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all hover:border-purple-300 font-medium"
-                >  
-                  <option value="">-- Select Experience --</option>
-                  {experience_options.map((experience) => (
-                    <option key={experience} value={experience}>{experience}</option>
-                  ))}
-                </select>
+                  required
+                  options={experience_options.map((experience) => ({
+                    value: experience,
+                    label: experience
+                  }))}
+                  placeholder="-- Select Experience --"
+                />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Required Education <span className="text-red-500">*</span>
-                </label>
-                <input
+                <Label required className="mb-2">
+                  Required Education
+                </Label>
+                <Input
                   type="text"
                   name="required_education"
                   value={formData.required_education}
                   onChange={handleInputChange}
                   required
                   placeholder="e.g., Diploma Therapist, Diploma Beautician"
-                  className="w-full px-4 py-3 text-sm border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all hover:border-purple-300"
                 />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Required Skills <span className="text-red-500">*</span>
-                </label>
-                <input
+                <Label required className="mb-2">
+                  Required Skills
+                </Label>
+                <Input
                   type="text"
                   name="required_skills"
                   value={formData.required_skills}
                   onChange={handleInputChange}
                   required
                   placeholder="e.g., Communication skills, Customer service, Team management"
-                  className="w-full px-4 py-3 text-sm border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all hover:border-purple-300"
                 />
                 <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -365,25 +372,15 @@ const HiringForms = () => {
           </div>
 
           <div className="flex gap-4 pt-6">
-            <button
+            <Button
               type="submit"
               disabled={loading}
-              className="flex-1 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 text-white py-4 px-8 rounded-xl text-base font-bold hover:from-purple-700 hover:via-pink-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-xl hover:shadow-2xl transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3"
+              variant="primary"
+              fullWidth
+              loading={loading}
             >
-              {loading ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                  <span>Submitting...</span>
-                </>
-              ) : (
-                <>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span>Submit Hiring Form</span>
-                </>
-              )}
-            </button>
+              {loading ? 'Submitting...' : 'Submit Hiring Form'}
+            </Button>
           </div>
         </form>
         
