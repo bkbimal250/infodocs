@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import ReactCrop from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { HiX, HiCheck } from 'react-icons/hi';
@@ -8,19 +8,74 @@ import { HiX, HiCheck } from 'react-icons/hi';
  * Allows users to crop images before using them
  */
 const ImageCrop = ({ imageSrc, onCropComplete, onCancel, aspectRatio = null }) => {
-  const [crop, setCrop] = useState({
-    unit: '%',
-    width: 90,
-    aspect: aspectRatio,
+  const [crop, setCrop] = useState(() => {
+    // Initialize with proper x and y values to avoid undefined errors
+    if (aspectRatio) {
+      const cropSize = Math.min(90, 100);
+      const cropHeight = cropSize / aspectRatio;
+      return {
+        unit: '%',
+        x: (100 - cropSize) / 2,
+        y: (100 - cropHeight) / 2,
+        width: cropSize,
+        height: cropHeight,
+        aspect: aspectRatio,
+      };
+    } else {
+      return {
+        unit: '%',
+        x: 5,
+        y: 5,
+        width: 90,
+        height: 90,
+      };
+    }
   });
   const [completedCrop, setCompletedCrop] = useState(null);
-  const [imgRef, setImgRef] = useState(null);
+  const imgRef = useRef(null);
+  const imageLoadedRef = useRef(false);
+
+  // Reset when image source changes
+  useEffect(() => {
+    imageLoadedRef.current = false;
+    setCompletedCrop(null);
+  }, [imageSrc]);
 
   const onImageLoaded = useCallback((image) => {
-    setImgRef(image);
-  }, []);
+    // Prevent multiple calls that cause infinite loops
+    if (imageLoadedRef.current || !image) return;
+    
+    imageLoadedRef.current = true;
+    imgRef.current = image;
+    
+    // Initialize crop to center of image only if not already set
+    if (aspectRatio) {
+      const cropSize = Math.min(90, 100);
+      const cropHeight = cropSize / aspectRatio;
+      setCrop({
+        unit: '%',
+        x: (100 - cropSize) / 2,
+        y: (100 - cropHeight) / 2,
+        width: cropSize,
+        height: cropHeight,
+        aspect: aspectRatio,
+      });
+    } else {
+      setCrop({
+        unit: '%',
+        x: 5,
+        y: 5,
+        width: 90,
+        height: 90,
+      });
+    }
+  }, [aspectRatio]);
 
-  const getCroppedImg = (image, crop) => {
+  const getCroppedImg = useCallback((image, crop) => {
+    if (!image || !crop) {
+      return Promise.resolve(null);
+    }
+
     const canvas = document.createElement('canvas');
     const scaleX = image.naturalWidth / image.width;
     const scaleY = image.naturalHeight / image.height;
@@ -34,6 +89,10 @@ const ImageCrop = ({ imageSrc, onCropComplete, onCancel, aspectRatio = null }) =
     canvas.width = cropWidth * scaleX;
     canvas.height = cropHeight * scaleY;
     const ctx = canvas.getContext('2d');
+
+    if (!ctx) {
+      return Promise.resolve(null);
+    }
 
     ctx.drawImage(
       image,
@@ -55,23 +114,41 @@ const ImageCrop = ({ imageSrc, onCropComplete, onCancel, aspectRatio = null }) =
         }
         const url = URL.createObjectURL(blob);
         resolve(url);
-      }, 'image/png');
+      }, 'image/jpeg', 0.95);
     });
-  };
+  }, []);
 
-  const handleCropComplete = async () => {
-    if (!imgRef || !completedCrop) {
-      onCropComplete(imageSrc); // Return original if no crop
+  const handleCropComplete = useCallback(async () => {
+    if (!imgRef.current) {
+      onCropComplete(imageSrc); // Return original if no image
       return;
     }
 
-    const croppedImageUrl = await getCroppedImg(imgRef, completedCrop);
-    if (croppedImageUrl) {
-      onCropComplete(croppedImageUrl);
-    } else {
+    // Use completedCrop if available, otherwise use current crop
+    const cropToUse = completedCrop || crop;
+    
+    // Validate crop has all required properties
+    if (!cropToUse || 
+        typeof cropToUse.x === 'undefined' || 
+        typeof cropToUse.y === 'undefined' ||
+        !cropToUse.width || 
+        !cropToUse.height) {
+      onCropComplete(imageSrc); // Return original if no valid crop
+      return;
+    }
+
+    try {
+      const croppedImageUrl = await getCroppedImg(imgRef.current, cropToUse);
+      if (croppedImageUrl) {
+        onCropComplete(croppedImageUrl);
+      } else {
+        onCropComplete(imageSrc);
+      }
+    } catch (error) {
+      console.error('Error cropping image:', error);
       onCropComplete(imageSrc);
     }
-  };
+  }, [imgRef, completedCrop, crop, imageSrc, getCroppedImg, onCropComplete]);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
@@ -99,19 +176,45 @@ const ImageCrop = ({ imageSrc, onCropComplete, onCancel, aspectRatio = null }) =
           <div className="flex justify-center">
             <ReactCrop
               crop={crop}
-              onChange={(c) => setCrop(c)}
-              onComplete={(c) => setCompletedCrop(c)}
+              onChange={(c) => {
+                // Ensure x and y are always defined
+                if (c && typeof c.x !== 'undefined' && typeof c.y !== 'undefined') {
+                  setCrop(c);
+                  // Also update completedCrop when user drags/resizes
+                  if (c.width && c.height) {
+                    setCompletedCrop(c);
+                  }
+                }
+              }}
+              onComplete={(c) => {
+                // Only update if crop has valid coordinates
+                if (c && typeof c.x !== 'undefined' && typeof c.y !== 'undefined') {
+                  setCompletedCrop(c);
+                }
+              }}
               aspect={aspectRatio}
+              locked={false}
+              keepSelection={true}
             >
               <img
-                ref={setImgRef}
                 alt="Crop me"
                 src={imageSrc}
-                onLoad={onImageLoaded}
-                style={{ maxWidth: '100%', maxHeight: '70vh' }}
+                onLoad={(e) => {
+                  onImageLoaded(e.currentTarget);
+                }}
+                style={{ 
+                  maxWidth: '100%', 
+                  maxHeight: '70vh',
+                  display: 'block'
+                }}
               />
             </ReactCrop>
           </div>
+          {aspectRatio && (
+            <p className="text-sm text-gray-500 mt-2 text-center">
+              Aspect ratio: {aspectRatio.toFixed(2)} (locked)
+            </p>
+          )}
         </div>
       </div>
     </div>

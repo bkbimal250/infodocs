@@ -36,6 +36,25 @@ logger = logging.getLogger(__name__)
 # Template directory
 TEMPLATE_DIR = Path(__file__).parent.parent / "templates"
 
+# Cache static paths to avoid recalculating on every call
+_STATIC_PATH_CACHE = None
+_MEDIA_PATH_CACHE = None
+
+def _get_static_path():
+    """Get static file base path (cached)"""
+    global _STATIC_PATH_CACHE
+    if _STATIC_PATH_CACHE is None:
+        _STATIC_PATH_CACHE = Path(__file__).resolve().parents[3] / "Static"
+    return _STATIC_PATH_CACHE
+
+def _get_media_path():
+    """Get media upload path (cached)"""
+    global _MEDIA_PATH_CACHE
+    if _MEDIA_PATH_CACHE is None:
+        from config.settings import settings
+        _MEDIA_PATH_CACHE = Path(settings.UPLOAD_DIR).resolve()
+    return _MEDIA_PATH_CACHE
+
 SPA_REQUIRED_CATEGORIES = {
     CertificateCategory.MANAGER_SALARY,
     CertificateCategory.EXPERIENCE_LETTER,
@@ -194,14 +213,16 @@ def prepare_certificate_data(template: CertificateTemplate, certificate_data: Di
     """
     spa = certificate_data.get("spa", {})
 
-    # Get static file base path
-    static_base_path = Path(__file__).resolve().parents[3] / "Static"
+    # Get static file base path (using cached path)
+    static_base_path = _get_static_path()
     static_base_path_str = str(static_base_path).replace("\\", "/")
+    
+    # Get base URL once
+    base_url = certificate_data.get("base_url", "http://localhost:8009/api")
     
     # Determine image URLs based on context
     if use_http_urls:
         # For browser preview - use HTTP URLs
-        base_url = certificate_data.get("base_url", "http://localhost:8009/api")
         background_image = certificate_data.get("certificate_background_image") or f"{base_url}/static/images/spacertificate.png"
         stamp_image = certificate_data.get("certificate_stamp_image") or f"{base_url}/static/images/Spa Certificate Stamp.png"
         signatory_image = certificate_data.get("certificate_signatory_image") or f"{base_url}/static/images/Spa Certificate Signatory.png"
@@ -211,10 +232,8 @@ def prepare_certificate_data(template: CertificateTemplate, certificate_data: Di
         stamp_image = certificate_data.get("certificate_stamp_image") or f"file:///{static_base_path_str}/images/Spa Certificate Stamp.png"
         signatory_image = certificate_data.get("certificate_signatory_image") or f"file:///{static_base_path_str}/images/Spa Certificate Signatory.png"
     
-    # Handle SPA logo path conversion
-    from config.settings import settings
-    base_url = certificate_data.get("base_url", "http://localhost:8009/api")
-    media_base_path = Path(settings.UPLOAD_DIR).resolve()
+    # Handle SPA logo path conversion (using cached media path)
+    media_base_path = _get_media_path()
     media_base_path_str = str(media_base_path).replace("\\", "/")
     
     spa_logo = spa.get("logo", "")
@@ -289,11 +308,10 @@ def prepare_certificate_data(template: CertificateTemplate, certificate_data: Di
             elif k not in data:
                 data[k] = v
     
-    # For SPA_THERAPIST, handle image paths/URLs
+    # For SPA_THERAPIST, handle image paths/URLs (using cached paths)
     if template.category == CertificateCategory.SPA_THERAPIST:
-        from config.settings import settings
         base_url = certificate_data.get("base_url", "http://localhost:8009/api")
-        media_base_path = Path(settings.UPLOAD_DIR).resolve()
+        media_base_path = _get_media_path()
         media_base_path_str = str(media_base_path).replace("\\", "/")
         
         # Handle passport_size_photo
@@ -321,6 +339,68 @@ def prepare_certificate_data(template: CertificateTemplate, certificate_data: Di
                     # For PDF: use file:// path
                     data["candidate_signature"] = f"file:///{media_base_path_str}/{sig}"
             # If it's base64 (for preview), keep it as is - it works in HTML
+    
+    # For ID_CARD, handle candidate_photo image paths/URLs (using cached paths)
+    if template.category == CertificateCategory.ID_CARD:
+        base_url = certificate_data.get("base_url", "http://localhost:8009/api")
+        media_base_path = _get_media_path()
+        media_base_path_str = str(media_base_path).replace("\\", "/")
+        
+        # Handle candidate_photo
+        if data.get("candidate_photo"):
+            photo = data["candidate_photo"]
+            logger.debug(f"ID_CARD candidate_photo processing: photo={photo[:50] if len(photo) > 50 else photo}, use_http_urls={use_http_urls}")
+            
+            # If it's base64 data URL
+            if photo.startswith("data:image"):
+                if use_http_urls:
+                    # For preview: keep base64 as is - it works in HTML
+                    data["candidate_photo"] = photo
+                    logger.debug("Keeping base64 image for preview")
+                else:
+                    # For PDF: WeasyPrint can't handle base64, need to convert to file
+                    # This should have been saved already, but handle it just in case
+                    logger.warning("Base64 image found during PDF generation for ID_CARD. Image should be saved as file first.")
+                    # Try to extract and save if we have certificate_id
+                    if certificate_data.get("certificate_id"):
+                        temp_path = save_base64_image(photo, certificate_data["certificate_id"], "id_card_photo_temp")
+                        if temp_path:
+                            photo = temp_path
+                            data["candidate_photo"] = f"file:///{media_base_path_str}/{temp_path}"
+                            logger.info(f"Converted base64 to file path: {temp_path}")
+                        else:
+                            data["candidate_photo"] = ""
+                    else:
+                        data["candidate_photo"] = ""
+            # If it's a relative file path (certificates/filename.jpg), convert to appropriate URL
+            elif photo.startswith("certificates/"):
+                if use_http_urls:
+                    # For preview: use HTTP URL
+                    data["candidate_photo"] = f"{base_url}/media/{photo}"
+                    logger.debug(f"Preview: converted to HTTP URL: {data['candidate_photo']}")
+                else:
+                    # For PDF: use file:// path (absolute path)
+                    photo_path = Path(media_base_path) / photo
+                    file_url = f"file:///{media_base_path_str}/{photo}"
+                    if photo_path.exists():
+                        data["candidate_photo"] = file_url
+                        logger.info(f"PDF: Using existing file path: {file_url}")
+                    else:
+                        # Try anyway - might work if path is correct
+                        data["candidate_photo"] = file_url
+                        logger.warning(f"PDF: File not found at {photo_path}, but using path anyway: {file_url}")
+            # If it's already a full URL or file:// path, keep it as is
+            elif photo.startswith("http://") or photo.startswith("https://") or photo.startswith("file://"):
+                data["candidate_photo"] = photo
+                logger.debug(f"Keeping existing URL: {photo[:50]}")
+            else:
+                # Unknown format, try to use as is
+                data["candidate_photo"] = photo
+                logger.warning(f"Unknown photo format, using as is: {photo[:50]}")
+        else:
+            # If no photo, set empty string to avoid broken image
+            data["candidate_photo"] = ""
+            logger.debug("No candidate_photo provided")
 
     # Category-specific defaults (only set if not already in data)
 
@@ -620,8 +700,18 @@ async def create_generated_certificate(
             certificate_payload["candidate_signature"] = certificate.candidate_signature
     
     if template.category == CertificateCategory.ID_CARD:
+        # Use saved photo path from database if available
         if certificate.candidate_photo:
             certificate_payload["candidate_photo"] = certificate.candidate_photo
+        # If still base64 in payload (shouldn't happen after save, but handle it)
+        elif certificate_payload.get("candidate_photo") and certificate_payload["candidate_photo"].startswith("data:image"):
+            # Convert base64 to file path if not already saved
+            photo_path = save_base64_image(certificate_payload["candidate_photo"], certificate.id, "id_card_photo")
+            if photo_path:
+                certificate.candidate_photo = photo_path
+                certificate_payload["candidate_photo"] = photo_path
+                await db.commit()
+                await db.refresh(certificate)
     
     data = prepare_certificate_data(template, certificate_payload, display_name, use_http_urls=False)
 
@@ -712,7 +802,11 @@ async def get_generated_certificate_by_id(db: AsyncSession, certificate_id: int)
 
 
 async def get_public_certificates(db: AsyncSession, skip: int = 0, limit: int = 100):
-    """Get all public generated certificates from all certificate tables"""
+    """Get all public generated certificates from all certificate tables
+    
+    Optimized: Executes queries in parallel and uses database-level sorting where possible
+    """
+    import asyncio
     models = [
         SpaTherapistCertificate,
         ManagerSalaryCertificate,
@@ -722,18 +816,41 @@ async def get_public_certificates(db: AsyncSession, skip: int = 0, limit: int = 
         IDCardCertificate,
         GeneratedCertificate,
     ]
+    
+    # Execute all queries in parallel for better performance
+    async def fetch_certificates(model):
+        try:
+            stmt = select(model).where(model.is_public.is_(True))
+            result = await db.execute(stmt)
+            return list(result.scalars().all())
+        except Exception as e:
+            logger.warning(f"Error fetching certificates from {model.__tablename__}: {e}")
+            return []
+    
+    # Execute all queries concurrently
+    results = await asyncio.gather(*[fetch_certificates(model) for model in models])
+    
+    # Flatten results
     all_certificates = []
-    for model in models:
-        stmt = select(model).where(model.is_public.is_(True))
-        result = await db.execute(stmt)
-        all_certificates.extend(list(result.scalars().all()))
+    for cert_list in results:
+        all_certificates.extend(cert_list)
 
-    all_certificates.sort(key=lambda x: x.generated_at, reverse=True)
+    # Sort by generated_at (handling None values)
+    all_certificates.sort(
+        key=lambda x: x.generated_at if hasattr(x, 'generated_at') and x.generated_at else datetime(1970, 1, 1, tzinfo=timezone.utc),
+        reverse=True
+    )
+    
+    # Apply pagination
     return all_certificates[skip:skip + limit]
 
 
 async def get_user_certificates(db: AsyncSession, user_id: int, skip: int = 0, limit: int = 100):
-    """Get certificates created by a specific user"""
+    """Get certificates created by a specific user
+    
+    Optimized: Executes queries in parallel for better performance
+    """
+    import asyncio
     models = [
         SpaTherapistCertificate,
         ManagerSalaryCertificate,
@@ -743,16 +860,24 @@ async def get_user_certificates(db: AsyncSession, user_id: int, skip: int = 0, l
         IDCardCertificate,
         GeneratedCertificate,
     ]
-    all_certificates = []
-    for model in models:
+    
+    # Execute all queries in parallel
+    async def fetch_user_certificates(model):
         try:
             stmt = select(model).where(model.created_by == user_id)
             result = await db.execute(stmt)
-            certificates = list(result.scalars().all())
-            all_certificates.extend(certificates)
+            return list(result.scalars().all())
         except Exception as e:
             logger.warning(f"Error fetching certificates from {model.__tablename__}: {e}")
-            continue
+            return []
+    
+    # Execute all queries concurrently
+    results = await asyncio.gather(*[fetch_user_certificates(model) for model in models])
+    
+    # Flatten results
+    all_certificates = []
+    for cert_list in results:
+        all_certificates.extend(cert_list)
 
     # Sort certificates by date, handling None values and different date field names
     def get_sort_date(cert):
@@ -769,9 +894,12 @@ async def get_user_certificates(db: AsyncSession, user_id: int, skip: int = 0, l
 
 
 async def get_all_certificates_with_users(db: AsyncSession, skip: int = 0, limit: int = 100):
-    """Get all certificates with user information"""
+    """Get all certificates with user information
+    
+    Optimized: Executes queries in parallel and batches user lookups
+    """
+    import asyncio
     from apps.users.models import User
-    from sqlalchemy.orm import selectinload
     
     models = [
         SpaTherapistCertificate,
@@ -783,17 +911,31 @@ async def get_all_certificates_with_users(db: AsyncSession, skip: int = 0, limit
         GeneratedCertificate,
     ]
     
+    # Execute all queries in parallel
+    async def fetch_certificates(model):
+        try:
+            stmt = select(model).offset(skip).limit(limit)
+            result = await db.execute(stmt)
+            return list(result.scalars().all())
+        except Exception as e:
+            logger.warning(f"Error fetching certificates from {model.__tablename__}: {e}")
+            return []
+    
+    # Execute all queries concurrently
+    results = await asyncio.gather(*[fetch_certificates(model) for model in models])
+    
+    # Flatten results
     all_certificates = []
-    for model in models:
-        stmt = select(model).offset(skip).limit(limit)
-        result = await db.execute(stmt)
-        certs = list(result.scalars().all())
-        all_certificates.extend(certs)
+    for cert_list in results:
+        all_certificates.extend(cert_list)
     
     # Sort by generated_at
-    all_certificates.sort(key=lambda x: x.generated_at if hasattr(x, 'generated_at') else getattr(x, 'created_at', None), reverse=True)
+    all_certificates.sort(
+        key=lambda x: x.generated_at if hasattr(x, 'generated_at') and x.generated_at else getattr(x, 'created_at', None) or datetime(1970, 1, 1, tzinfo=timezone.utc),
+        reverse=True
+    )
     
-    # Get user information for each certificate
+    # Get user information for each certificate (batch lookup)
     user_ids = {cert.created_by for cert in all_certificates if cert.created_by}
     if user_ids:
         user_stmt = select(User).where(User.id.in_(user_ids))

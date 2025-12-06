@@ -1,5 +1,6 @@
 import React from 'react';
 import { CERTIFICATE_CATEGORIES, CERTIFICATE_FIELDS, INVOICE_ITEM_TEMPLATE } from '../../utils/certificateConstants';
+import { Input, DatePicker, Textarea, Button } from '../../ui';
 
 /**
  * Invoice/SPA Bill Form Component
@@ -21,35 +22,6 @@ const InvoiceCertificateForm = ({
 
   const getField = (name) => (config.fields || []).find((field) => field.name === name) || {};
 
-  const renderInput = (name, type = 'text') => {
-    const field = getField(name);
-    const commonProps = {
-      name,
-      value: formData[name] || '',
-      onChange: handleInputChange,
-      placeholder: field.placeholder,
-      className: 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent',
-    };
-
-    if (field.type === 'select') {
-      return (
-        <select {...commonProps}>
-          <option value="">Select</option>
-          {(field.options || []).map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-      );
-    }
-
-    if (field.type === 'textarea') {
-      return <textarea {...commonProps} rows="3" />;
-    }
-
-    return <input {...commonProps} type={type || field.type || 'text'} />;
-  };
 
   return (
     <div className="space-y-6">
@@ -61,35 +33,38 @@ const InvoiceCertificateForm = ({
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {getField('bill_number').label} <span className="text-red-500">*</span>
-            </label>
-            {renderInput('bill_number')}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {getField('bill_date').label} <span className="text-red-500">*</span>
-            </label>
-            {renderInput('bill_date', 'date')}
-          </div>
+          <Input
+            name="bill_number"
+            label={getField('bill_number').label}
+            placeholder={getField('bill_number').placeholder}
+            value={formData.bill_number}
+            onChange={handleInputChange}
+            required
+          />
+          <DatePicker
+            name="bill_date"
+            label={getField('bill_date').label}
+            value={formData.bill_date}
+            onChange={handleInputChange}
+            required
+          />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {getField('payment_mode').label}
-            </label>
-            {renderInput('payment_mode')}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {getField('card_number').label}
-            </label>
-            {renderInput('card_number')}
-          </div>
+          <Input
+            name="payment_mode"
+            label={getField('payment_mode').label}
+            placeholder={getField('payment_mode').placeholder}
+            value={formData.payment_mode}
+            onChange={handleInputChange}
+          />
+          <Input
+            name="card_number"
+            label={getField('card_number').label}
+            placeholder={getField('card_number').placeholder}
+            value={formData.card_number}
+            onChange={handleInputChange}
+          />
         </div>
       </div>
 
@@ -101,33 +76,33 @@ const InvoiceCertificateForm = ({
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {getField('customer_name').label} <span className="text-red-500">*</span>
-            </label>
-            {renderInput('customer_name')}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Customer Phone
-            </label>
-            <input
-              type="tel"
-              name="customer_phone"
-              value={formData.customer_phone || ''}
-              onChange={handleInputChange}
-              placeholder="Optional phone number"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
-            />
-          </div>
+          <Input
+            name="customer_name"
+            label={getField('customer_name').label}
+            placeholder={getField('customer_name').placeholder}
+            value={formData.customer_name}
+            onChange={handleInputChange}
+            required
+          />
+          <Input
+            name="customer_phone"
+            type="tel"
+            label="Customer Phone"
+            placeholder="Optional phone number"
+            value={formData.customer_phone}
+            onChange={handleInputChange}
+          />
         </div>
 
         <div className="mt-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {getField('customer_address').label}
-          </label>
-          {renderInput('customer_address')}
+          <Textarea
+            name="customer_address"
+            label={getField('customer_address').label}
+            placeholder={getField('customer_address').placeholder}
+            value={formData.customer_address}
+            onChange={handleInputChange}
+            rows={3}
+          />
         </div>
       </div>
 
@@ -199,13 +174,14 @@ const InvoiceCertificateForm = ({
                       ₹{lineAmount}
                     </td>
                     <td className="px-2 py-3 text-center">
-                      <button
+                      <Button
                         type="button"
                         onClick={() => handleRemoveInvoiceItem(index)}
-                        className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition text-xs"
+                        variant="danger"
+                        size="sm"
                       >
                         Remove
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 );
@@ -214,13 +190,15 @@ const InvoiceCertificateForm = ({
           </table>
         </div>
 
-        <button
+        <Button
           type="button"
           onClick={handleAddInvoiceItem}
-          className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium"
+          variant="primary"
+          size="md"
+          className="mt-4"
         >
           + Add Service/Item
-        </button>
+        </Button>
       </div>
 
       {/* Billing Summary Section */}
@@ -231,27 +209,22 @@ const InvoiceCertificateForm = ({
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {getField('subtotal').label}
-            </label>
-            <input
-              type="text"
-              name="subtotal"
-              value={formData.subtotal || ''}
-              onChange={handleInputChange}
-              readOnly={getField('subtotal').readOnly}
-              placeholder={getField('subtotal').placeholder}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-red-600"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {getField('amount_in_words').label}
-            </label>
-            {renderInput('amount_in_words')}
-          </div>
+          <Input
+            name="subtotal"
+            label={getField('subtotal').label}
+            placeholder={getField('subtotal').placeholder}
+            value={formData.subtotal}
+            onChange={handleInputChange}
+            disabled={getField('subtotal').readOnly}
+            helperText="Auto-calculated from items"
+          />
+          <Input
+            name="amount_in_words"
+            label={getField('amount_in_words').label}
+            placeholder={getField('amount_in_words').placeholder}
+            value={formData.amount_in_words}
+            onChange={handleInputChange}
+          />
         </div>
       </div>
     </div>

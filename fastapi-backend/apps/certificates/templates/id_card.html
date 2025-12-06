@@ -1,221 +1,147 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ID Card - {{#if spa_name}}{{ spa_name }}{{else}}Company{{/if}}</title>
+<meta charset="UTF-8" />
+<title>ID Card Template</title>
 
-    <!-- Bootstrap -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+<style>
+    @page {
+        size: 50mm 85mm;
+        margin: 0;
+    }
 
-    <style>
-        @page {
-            size: A4;
-            margin: 0;
-        }
+    body {
+        margin: 0;
+        padding: 10px;
+        background: #f5f5f5;
+        font-family: Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+    }
 
-        body {
-            margin: 0;
-            padding: 20px;
-            background: #f5f5f5;
-            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        }
+    /* Base card (fixed size) */
+    .id-card {
+        width: 50mm;
+        height: 85mm;
+        background: #ffffff;
+        border: 1px solid #ddd;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        text-align: center;
+    }
 
-        .id-card-container {
-            width: 210mm;
-            min-height: 297mm;
-            margin: 0 auto;
-            background: #ffffff;
-            padding: 20px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
+    /* Theme 1 */
+    .theme-1 {
+        --primary: #fce3e3;
+        --accent: #f7a100;
+        --text: #000000;
+    }
 
-        .id-card {
-            width: 85.6mm;
-            height: 53.98mm;
-            border: 2px solid #333;
-            border-radius: 8px;
-            padding: 10px;
-            margin: 10px auto;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #fff;
-            position: relative;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
+    .id-card .header-bar,
+    .id-card .bottom-bar {
+        background: var(--primary);
+    }
 
-        .id-card-front {
-            display: flex;
-            align-items: center;
-            height: 100%;
-        }
+    .id-card .yellow-strip,
+    .id-card .bottom-yellow {
+        background: var(--accent);
+    }
 
-        .id-card-photo {
-            width: 40mm;
-            height: 40mm;
-            border: 3px solid #fff;
-            border-radius: 4px;
-            object-fit: cover;
-            margin-right: 10px;
-            background: #fff;
-        }
+    .id-card {
+        color: var(--text);
+    }
 
-        .id-card-info {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            height: 100%;
-        }
+    .header-bar { height: 6mm; }
+    .yellow-strip { height: 3mm; }
 
-        .id-card-header {
-            text-align: center;
-            margin-bottom: 5px;
-        }
+    .logo-box img {
+        width: 22mm;
+        margin-top: 3mm;
+        border-radius: 2mm;
+    }
 
-        .id-card-logo {
-            max-width: 50px;
-            max-height: 30px;
-            object-fit: contain;
-            margin-bottom: 5px;
-        }
+    .photo-box img {
+        width: 18mm;
+        height: 24mm;
+        object-fit: cover;
+        border-radius: 2mm;
+        margin-bottom: 2mm;
+    }
 
-        .id-card-company {
-            font-size: 10px;
-            font-weight: bold;
-            margin: 0;
-        }
+    .name {
+        margin-top: 2mm;
+        font-size: 10px;
+        font-weight: bold;
+    }
 
-        .id-card-title {
-            font-size: 8px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin: 0;
-            opacity: 0.9;
-        }
+    .details {
+        margin-top: 2mm;
+        padding: 0 4mm;
+        font-size: 7.5px;
+        text-align: left;
+        line-height: 1.4;
+    }
 
-        .id-card-name {
-            font-size: 14px;
-            font-weight: bold;
-            margin: 5px 0;
-            text-transform: uppercase;
-        }
+    .details b {
+        display: inline-block;
+        width: 38%;
+    }
 
-        .id-card-details {
-            font-size: 9px;
-            margin: 2px 0;
-        }
+    .address {
+        margin-top: 2mm;
+        padding: 0 4mm;
+        font-size: 7px;
+        line-height: 1.25;
+        margin-bottom: 2mm;
+        text-align: center;
+    }
 
-        .id-card-label {
-            font-weight: bold;
-            display: inline-block;
-            width: 60px;
-        }
+    .bottom-bar {
+        height: 5mm;
+        margin-top: auto;
+    }
 
-        .id-card-back {
-            margin-top: 20px;
-            padding: 10px;
-            background: #f9f9f9;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-
-        .id-card-back-title {
-            font-size: 10px;
-            font-weight: bold;
-            text-align: center;
-            margin-bottom: 10px;
-            color: #333;
-        }
-
-        .id-card-back-content {
-            font-size: 8px;
-            color: #666;
-            line-height: 1.4;
-        }
-
-        .id-card-footer {
-            text-align: center;
-            font-size: 7px;
-            color: #999;
-            margin-top: 10px;
-        }
-
-        .page-break {
-            page-break-after: always;
-        }
-    </style>
+    .bottom-yellow {
+        height: 3mm;
+    }
+</style>
 </head>
-
 <body>
-    <div class="id-card-container">
-        <!-- Front of ID Card -->
-        <div class="id-card">
-            <div class="id-card-front">
-                {{#if candidate_photo}}
-                <img src="{{ candidate_photo }}" alt="Photo" class="id-card-photo">
-                {{else}}
-                <div class="id-card-photo" style="display: flex; align-items: center; justify-content: center; color: #999;">
-                    <span style="font-size: 10px;">No Photo</span>
-                </div>
-                {{/if}}
-                
-                <div class="id-card-info">
-                    <div class="id-card-header">
-                        {{#if spa_logo}}
-                        <img src="{{ spa_logo }}" alt="Logo" class="id-card-logo">
-                        {{/if}}
-                        <p class="id-card-company">{{#if spa_name}}{{ spa_name }}{{else}}Company Name{{/if}}</p>
-                        <p class="id-card-title">Identity Card</p>
-                    </div>
-                    
-                    <div>
-                        <div class="id-card-name">{{#if candidate_name}}{{ candidate_name }}{{else}}Name{{/if}}</div>
-                        <div class="id-card-details">
-                            <span class="id-card-label">Designation:</span>
-                            {{#if designation}}{{ designation }}{{else}}N/A{{/if}}
-                        </div>
-                        <div class="id-card-details">
-                            <span class="id-card-label">ID No:</span>
-                            {{#if contact_number}}{{ contact_number }}{{else}}N/A{{/if}}
-                        </div>
-                        <div class="id-card-details">
-                            <span class="id-card-label">DOJ:</span>
-                            {{#if date_of_joining}}{{ date_of_joining }}{{else}}N/A{{/if}}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Back of ID Card (Optional) -->
-        <div class="id-card-back">
-            <div class="id-card-back-title">Company Information</div>
-            <div class="id-card-back-content">
-                {{#if spa_name}}
-                <strong>{{ spa_name }}</strong><br>
-                {{/if}}
-                {{#if spa_address}}
-                {{ spa_address }}<br>
-                {{/if}}
-                {{#if spa_phone}}
-                Phone: {{ spa_phone }}{{#if spa_phone1}} | {{ spa_phone1 }}{{/if}}<br>
-                {{/if}}
-                {{#if spa_email}}
-                Email: {{ spa_email }}<br>
-                {{/if}}
-                <br>
-                <strong>Issue Date:</strong> {{#if issue_date}}{{ issue_date }}{{else}}N/A{{/if}}<br>
-                <br>
-                <em>This card is the property of {{#if spa_name}}{{ spa_name }}{{else}}the Company{{/if}} and must be returned upon termination of employment.</em>
-            </div>
-        </div>
+<!-- ONLY TEMPLATE 1 KEPT -->
+<div class="id-card theme-1">
+    <div class="header-bar"></div>
+    <div class="yellow-strip"></div>
 
-        <div class="id-card-footer">
-            Valid until further notice | Issued by {{#if spa_name}}{{ spa_name }}{{else}}Company{{/if}}
-        </div>
+    <div class="logo-box">
+
+        <img src="{{spa_logo}}" alt="Logo">
+     
     </div>
+
+    <div class="photo-box">
+      
+        <img src="{{candidate_photo}}" alt="Photo">
+      
+    </div>
+
+    <div class="name">{{candidate_name}}</div>
+
+    <div class="details">
+        <div><b>Date Of Joining:</b> {{date_of_joining}}</div>
+        <div><b>Designation:</b> {{designation}}</div>
+        <div><b>Contact No:</b> {{contact_number}}</div>
+        <div><b>Issue Date:</b> {{issue_date}}</div>
+    </div>
+
+    <div class="address">
+        {{spa_address}}
+    </div>
+
+    <div class="bottom-bar"></div>
+    <div class="bottom-yellow"></div>
+</div>
+
 </body>
-
 </html>
-

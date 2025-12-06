@@ -1,32 +1,10 @@
 import React from 'react';
 import { CERTIFICATE_CATEGORIES, CERTIFICATE_FIELDS } from '../../utils/certificateConstants';
 import SignatureUpload from './SignatureUpload';
+import { Input, Select, DatePicker, Textarea } from '../../ui';
 
 const OfferLetterForm = ({ formData, handleInputChange }) => {
   const config = CERTIFICATE_FIELDS[CERTIFICATE_CATEGORIES.OFFER_LETTER] || {};
-
-  const renderInput = (name, props = {}) => (
-    <input
-      type={props.type || 'text'}
-      name={name}
-      value={formData[name] || ''}
-      onChange={handleInputChange}
-      placeholder={props.placeholder}
-      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-600 focus:border-transparent"
-      required={props.required}
-    />
-  );
-
-  const renderTextarea = (name, props = {}) => (
-    <textarea
-      name={name}
-      value={formData[name] || ''}
-      onChange={handleInputChange}
-      placeholder={props.placeholder}
-      rows={props.rows || 3}
-      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-600 focus:border-transparent"
-    />
-  );
 
   return (
     <div className="space-y-6">
@@ -37,30 +15,40 @@ const OfferLetterForm = ({ formData, handleInputChange }) => {
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Candidate Name <span className="text-red-500">*</span>
-            </label>
-            {renderInput('employee_name', {
-              placeholder: 'Full Name',
-              required: true,
-            })}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Candidate Email</label>
-            {renderInput('candidate_email', { type: 'email', placeholder: 'candidate@example.com' })}
-          </div>
+          <Input
+            name="employee_name"
+            label="Candidate Name"
+            placeholder="Full Name"
+            value={formData.employee_name}
+            onChange={handleInputChange}
+            required
+          />
+          <Input
+            name="candidate_email"
+            type="email"
+            label="Candidate Email"
+            placeholder="candidate@example.com"
+            value={formData.candidate_email}
+            onChange={handleInputChange}
+          />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-            {renderInput('candidate_address', { placeholder: 'Residential address' })}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-            {renderInput('candidate_phone', { type: 'tel', placeholder: '+91 9876543210' })}
-          </div>
+          <Input
+            name="candidate_address"
+            label="Address"
+            placeholder="Residential address"
+            value={formData.candidate_address}
+            onChange={handleInputChange}
+          />
+          <Input
+            name="candidate_phone"
+            type="tel"
+            label="Phone Number"
+            placeholder="+91 9876543210"
+            value={formData.candidate_phone}
+            onChange={handleInputChange}
+          />
         </div>
       </div>
 
@@ -71,44 +59,38 @@ const OfferLetterForm = ({ formData, handleInputChange }) => {
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {config.fields?.find((f) => f.name === 'position')?.label || 'Position'}{' '}
-              <span className="text-red-500">*</span>
-            </label>
-            {renderInput('position', {
-              placeholder: config.fields?.find((f) => f.name === 'position')?.placeholder,
-              required: true,
-            })}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
-            {renderInput('department', { placeholder: 'Operations / Wellness / Front Desk' })}
-          </div>
+          <Input
+            name="position"
+            label={config.fields?.find((f) => f.name === 'position')?.label || 'Position'}
+            placeholder={config.fields?.find((f) => f.name === 'position')?.placeholder}
+            value={formData.position}
+            onChange={handleInputChange}
+            required
+          />
+          <Input
+            name="department"
+            label="Department"
+            placeholder="Operations / Wellness / Front Desk"
+            value={formData.department}
+            onChange={handleInputChange}
+          />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {config.fields?.find((f) => f.name === 'start_date')?.label || 'Start Date'}{' '}
-              <span className="text-red-500">*</span>
-            </label>
-            {renderInput('start_date', { type: 'date', required: true })}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Employment Type</label>
-            <select
-              name="employment_type"
-              value={formData.employment_type || 'Full-Time'}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-600 focus:border-transparent"
-            >
-              <option value="Full-Time">Full-Time</option>
-              <option value="Part-Time">Part-Time</option>
-              <option value="Contract">Contract</option>
-              <option value="Permanent">Permanent</option>
-            </select>
-          </div>
+          <DatePicker
+            name="start_date"
+            label={config.fields?.find((f) => f.name === 'start_date')?.label || 'Start Date'}
+            value={formData.start_date}
+            onChange={handleInputChange}
+            required
+          />
+          <Select
+            name="employment_type"
+            label="Employment Type"
+            options={['Full-Time', 'Part-Time', 'Contract', 'Permanent']}
+            value={formData.employment_type || 'Full-Time'}
+            onChange={handleInputChange}
+          />
         </div>
       </div>
 
@@ -119,31 +101,33 @@ const OfferLetterForm = ({ formData, handleInputChange }) => {
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {config.fields?.find((f) => f.name === 'salary')?.label || 'Monthly Salary'}{' '}
-              <span className="text-red-500">*</span>
-            </label>
-            {renderInput('salary', {
-              type: 'number',
-              placeholder: config.fields?.find((f) => f.name === 'salary')?.placeholder,
-              required: true,
-            })}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Salary Currency</label>
-            {renderInput('salary_currency', { placeholder: 'INR / USD / AED' })}
-          </div>
+          <Input
+            name="salary"
+            type="number"
+            label={config.fields?.find((f) => f.name === 'salary')?.label || 'Monthly Salary'}
+            placeholder={config.fields?.find((f) => f.name === 'salary')?.placeholder}
+            value={formData.salary}
+            onChange={handleInputChange}
+            required
+          />
+          <Input
+            name="salary_currency"
+            label="Salary Currency"
+            placeholder="INR / USD / AED"
+            value={formData.salary_currency}
+            onChange={handleInputChange}
+          />
         </div>
 
         <div className="mt-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Benefits & Allowances
-          </label>
-          {renderTextarea('benefits', {
-            placeholder: 'e.g., accommodation, meals, medical insurance, performance bonus',
-            rows: 4,
-          })}
+          <Textarea
+            name="benefits"
+            label="Benefits & Allowances"
+            placeholder="e.g., accommodation, meals, medical insurance, performance bonus"
+            value={formData.benefits}
+            onChange={handleInputChange}
+            rows={4}
+          />
         </div>
       </div>
 
@@ -153,22 +137,29 @@ const OfferLetterForm = ({ formData, handleInputChange }) => {
           Offer Terms
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Offer Expiry Date</label>
-            {renderInput('offer_expiry_date', { type: 'date' })}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Probation Period</label>
-            {renderInput('probation_period', { placeholder: 'e.g., 3 Months' })}
-          </div>
+          <DatePicker
+            name="offer_expiry_date"
+            label="Offer Expiry Date"
+            value={formData.offer_expiry_date}
+            onChange={handleInputChange}
+          />
+          <Input
+            name="probation_period"
+            label="Probation Period"
+            placeholder="e.g., 3 Months"
+            value={formData.probation_period}
+            onChange={handleInputChange}
+          />
         </div>
         <div className="mt-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Additional Terms & Conditions
-          </label>
-          {renderTextarea('terms', {
-            placeholder: 'Any additional terms, reporting structure, or conditions...',
-          })}
+          <Textarea
+            name="terms"
+            label="Additional Terms & Conditions"
+            placeholder="Any additional terms, reporting structure, or conditions..."
+            value={formData.terms}
+            onChange={handleInputChange}
+            rows={4}
+          />
         </div>
       </div>
 
@@ -178,27 +169,37 @@ const OfferLetterForm = ({ formData, handleInputChange }) => {
           SPA/Company Information
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">SPA Name</label>
-            {renderInput('spa_name', { placeholder: 'SPA/Company Name' })}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Manager Name <span className="text-red-500">*</span>
-            </label>
-            {renderInput('manager_name', { placeholder: 'Hiring Manager', required: true })}
-          </div>
+          <Input
+            name="spa_name"
+            label="SPA Name"
+            placeholder="SPA/Company Name"
+            value={formData.spa_name}
+            onChange={handleInputChange}
+          />
+          <Input
+            name="manager_name"
+            label="Manager Name"
+            placeholder="Hiring Manager"
+            value={formData.manager_name}
+            onChange={handleInputChange}
+            required
+          />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Manager Title</label>
-            {renderInput('manager_title', { placeholder: 'HR Manager' })}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Signature Date</label>
-            {renderInput('manager_signature_date', { type: 'date' })}
-          </div>
+          <Input
+            name="manager_title"
+            label="Manager Title"
+            placeholder="HR Manager"
+            value={formData.manager_title}
+            onChange={handleInputChange}
+          />
+          <DatePicker
+            name="manager_signature_date"
+            label="Signature Date"
+            value={formData.manager_signature_date}
+            onChange={handleInputChange}
+          />
         </div>
 
         <div className="mt-4">

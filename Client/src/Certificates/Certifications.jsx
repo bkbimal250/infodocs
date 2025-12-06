@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { certificateApi } from '../api/Certificates/certificateApi';
 import { getCategoryDisplayName } from '../utils/certificateUtils';
 import { HiDocumentText, HiTemplate, HiArrowRight } from 'react-icons/hi';
+import { Button, Card } from '../ui';
 
 /**
  * Certifications Landing Page
@@ -63,20 +64,10 @@ const Certifications = () => {
         {templates.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {templates.map((template) => (
-              <div
+              <Card
                 key={template.id}
-                className="rounded-lg shadow-md transition-shadow overflow-hidden"
-                style={{ 
-                  backgroundColor: 'var(--color-bg-primary)',
-                  borderColor: 'var(--color-border-primary)',
-                  borderWidth: '1px'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
-                }}
+                className="overflow-hidden hover:shadow-lg transition-shadow duration-200"
+                padding="p-0"
               >
                 {/* Template Image or Placeholder */}
                 <div 
@@ -134,21 +125,17 @@ const Certifications = () => {
                   )}
 
                   {/* Use Template Button */}
-                  <button
+                  <Button
                     onClick={() => navigate('/certificate-creation', { state: { templateId: template.id } })}
-                    className="w-full px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 font-medium"
-                    style={{ 
-                      backgroundColor: 'var(--color-info)',
-                      color: 'var(--color-text-inverse)'
-                    }}
-                    onMouseEnter={(e) => e.target.style.backgroundColor = 'var(--color-info-dark)'}
-                    onMouseLeave={(e) => e.target.style.backgroundColor = 'var(--color-info)'}
+                    variant="primary"
+                    fullWidth
+                    className="flex items-center justify-center gap-2"
                   >
                     <span>Use Template</span>
                     <HiArrowRight className="w-4 h-4" />
-                  </button>
+                  </Button>
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         ) : (

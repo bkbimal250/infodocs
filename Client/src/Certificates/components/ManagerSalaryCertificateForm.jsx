@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { CERTIFICATE_CATEGORIES, CERTIFICATE_FIELDS } from '../../utils/certificateConstants';
 import { numberToWords } from '../../utils/certificateUtils';
+import { Input, Select, DatePicker, Button } from '../../ui';
 
 /**
  * Manager Salary Certificate Form
@@ -209,106 +210,83 @@ const ManagerSalaryCertificateForm = ({ formData, handleInputChange }) => {
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {label('manager_name', 'Manager Name')} <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="manager_name"
-              value={formData.manager_name || ''}
-              onChange={handleInputChange}
-              placeholder={placeholder('manager_name', 'Full name of the manager')}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {label('position', 'Position / Designation')}
-            </label>
-            <select
-              name="position"
-              value={formData.position || ''}
-              onChange={(e) => handleInputChange({ target: { name: 'position', value: e.target.value } })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            >
-              <option value="">Select Position</option>
-              {positionOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </div>
+          <Input
+            name="manager_name"
+            label={label('manager_name', 'Manager Name')}
+            placeholder={placeholder('manager_name', 'Full name of the manager')}
+            value={formData.manager_name}
+            onChange={handleInputChange}
+            required
+          />
+          <Select
+            name="position"
+            label={label('position', 'Position / Designation')}
+            options={positionOptions}
+            value={formData.position}
+            onChange={handleInputChange}
+            placeholder="Select Position"
+          />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {label('joining_date', 'Joining Date')}
-            </label>
-            <input
-              type="date"
-              name="joining_date"
-              value={(() => {
-                // Convert formatted date back to YYYY-MM-DD for date input
-                if (!formData.joining_date) return '';
-                // Check if already in YYYY-MM-DD format
-                if (/^\d{4}-\d{2}-\d{2}$/.test(formData.joining_date)) {
-                  return formData.joining_date;
-                }
-                // Try to parse formatted date (e.g., "15th Oct, 2025")
-                const dateMatch = formData.joining_date.match(/(\d+)(?:st|nd|rd|th)?\s+(\w+),\s+(\d+)/);
-                if (dateMatch) {
-                  const day = parseInt(dateMatch[1]);
-                  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                  const monthIndex = monthNames.indexOf(dateMatch[2]);
-                  const year = parseInt(dateMatch[3]);
-                  if (monthIndex !== -1) {
-                    const date = new Date(year, monthIndex, day);
-                    if (!isNaN(date.getTime())) {
-                      const yearStr = date.getFullYear();
-                      const monthStr = String(date.getMonth() + 1).padStart(2, '0');
-                      const dayStr = String(date.getDate()).padStart(2, '0');
-                      return `${yearStr}-${monthStr}-${dayStr}`;
-                    }
-                  }
-                }
-                return '';
-              })()}
-              onChange={(e) => {
-                // Convert date to readable format (e.g., "15th Oct, 2025")
-                if (e.target.value) {
-                  const date = new Date(e.target.value);
+          <DatePicker
+            name="joining_date"
+            label={label('joining_date', 'Joining Date')}
+            value={(() => {
+              // Convert formatted date back to YYYY-MM-DD for date input
+              if (!formData.joining_date) return '';
+              // Check if already in YYYY-MM-DD format
+              if (/^\d{4}-\d{2}-\d{2}$/.test(formData.joining_date)) {
+                return formData.joining_date;
+              }
+              // Try to parse formatted date (e.g., "15th Oct, 2025")
+              const dateMatch = formData.joining_date.match(/(\d+)(?:st|nd|rd|th)?\s+(\w+),\s+(\d+)/);
+              if (dateMatch) {
+                const day = parseInt(dateMatch[1]);
+                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                const monthIndex = monthNames.indexOf(dateMatch[2]);
+                const year = parseInt(dateMatch[3]);
+                if (monthIndex !== -1) {
+                  const date = new Date(year, monthIndex, day);
                   if (!isNaN(date.getTime())) {
-                    const day = date.getDate();
-                    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                    const month = monthNames[date.getMonth()];
-                    const year = date.getFullYear();
-                    
-                    // Add suffix to day
-                    let daySuffix = 'th';
-                    if (day === 1 || day === 21 || day === 31) daySuffix = 'st';
-                    else if (day === 2 || day === 22) daySuffix = 'nd';
-                    else if (day === 3 || day === 23) daySuffix = 'rd';
-                    
-                    const formattedDate = `${day}${daySuffix} ${month}, ${year}`;
-                    handleInputChange({
-                      target: { name: 'joining_date', value: formattedDate, type: 'text' },
-                    });
+                    const yearStr = date.getFullYear();
+                    const monthStr = String(date.getMonth() + 1).padStart(2, '0');
+                    const dayStr = String(date.getDate()).padStart(2, '0');
+                    return `${yearStr}-${monthStr}-${dayStr}`;
                   }
-                } else {
-                  // Clear the date if input is cleared
+                }
+              }
+              return '';
+            })()}
+            onChange={(e) => {
+              // Convert date to readable format (e.g., "15th Oct, 2025")
+              if (e.target.value) {
+                const date = new Date(e.target.value);
+                if (!isNaN(date.getTime())) {
+                  const day = date.getDate();
+                  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                  const month = monthNames[date.getMonth()];
+                  const year = date.getFullYear();
+                  
+                  // Add suffix to day
+                  let daySuffix = 'th';
+                  if (day === 1 || day === 21 || day === 31) daySuffix = 'st';
+                  else if (day === 2 || day === 22) daySuffix = 'nd';
+                  else if (day === 3 || day === 23) daySuffix = 'rd';
+                  
+                  const formattedDate = `${day}${daySuffix} ${month}, ${year}`;
                   handleInputChange({
-                    target: { name: 'joining_date', value: '', type: 'text' },
+                    target: { name: 'joining_date', value: formattedDate, type: 'text' },
                   });
                 }
-              }}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            />
-          </div>
+              } else {
+                // Clear the date if input is cleared
+                handleInputChange({
+                  target: { name: 'joining_date', value: '', type: 'text' },
+                });
+              }
+            }}
+          />
         </div>
       </div>
 
@@ -320,34 +298,23 @@ const ManagerSalaryCertificateForm = ({ formData, handleInputChange }) => {
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {label('monthly_salary', 'Monthly Salary')} <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="monthly_salary"
-              value={formData.monthly_salary || ''}
-              onChange={handleInputChange}
-              placeholder={placeholder('monthly_salary', '60000')}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {label('monthly_salary_in_words', 'Salary in Words')}
-            </label>
-            <input
-              type="text"
-              name="monthly_salary_in_words"
-              value={formData.monthly_salary_in_words || ''}
-              disabled
-              placeholder={placeholder('monthly_salary_in_words', 'Rupees Sixty Thousand Only')}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            />
-          </div>
+          <Input
+            name="monthly_salary"
+            label={label('monthly_salary', 'Monthly Salary')}
+            placeholder={placeholder('monthly_salary', '60000')}
+            value={formData.monthly_salary}
+            onChange={handleInputChange}
+            required
+          />
+          <Input
+            name="monthly_salary_in_words"
+            label={label('monthly_salary_in_words', 'Salary in Words')}
+            placeholder={placeholder('monthly_salary_in_words', 'Rupees Sixty Thousand Only')}
+            value={formData.monthly_salary_in_words}
+            onChange={handleInputChange}
+            disabled
+            helperText="Auto-calculated from monthly salary"
+          />
         </div>
       </div>
 
@@ -394,13 +361,14 @@ const ManagerSalaryCertificateForm = ({ formData, handleInputChange }) => {
                     />
                   </td>
                   <td className="px-3 py-2 text-center">
-                    <button
+                    <Button
                       type="button"
                       onClick={() => removeRow(index)}
-                      className="inline-flex items-center justify-center px-2 py-1 text-xs font-semibold text-red-600 bg-red-50 rounded hover:bg-red-100"
+                      variant="danger"
+                      size="sm"
                     >
                       Remove
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               ))}
@@ -408,13 +376,15 @@ const ManagerSalaryCertificateForm = ({ formData, handleInputChange }) => {
           </table>
         </div>
 
-        <button
+        <Button
           type="button"
           onClick={addRow}
-          className="mt-4 inline-flex items-center px-3 py-2 border border-green-600 text-sm font-medium rounded-md text-green-700 bg-white hover:bg-green-50"
+          variant="outline"
+          size="md"
+          className="mt-4"
         >
           + Add Month
-        </button>
+        </Button>
       </div>
     </div>
   );

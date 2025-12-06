@@ -157,6 +157,7 @@ const CreateCertifications = () => {
         spa_website: spa.website || '',
         location: spa.city || spa.state || '',
         spa_name_appointment: spa.name || '',
+        spa_logo: spa.logo || '',
         spa_address_appointment: formattedAddress || '',
         spa_phone_appointment: spa.phone_number || '',
         spa_phone1_appointment: spa.alternate_number || '',

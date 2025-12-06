@@ -43,9 +43,11 @@ class CertificateTemplate(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(255), nullable=False)
-    category = Column(SQLEnum(CertificateCategory), nullable=False)
+    # Use native_enum=False to store enum values (e.g., 'id_card') instead of enum names (e.g., 'ID_CARD')
+    # create_constraint=False prevents SQLAlchemy from creating a CHECK constraint
+    category = Column(SQLEnum(CertificateCategory, native_enum=False, length=50, create_constraint=False), nullable=False)
 
-    template_type = Column(SQLEnum(TemplateType), default=TemplateType.IMAGE, nullable=False)
+    template_type = Column(SQLEnum(TemplateType, native_enum=False, length=20, create_constraint=False), default=TemplateType.IMAGE, nullable=False)
     template_image = Column(String(500), nullable=True)
     template_html = Column(Text, nullable=True)
     template_config = Column(JSON, default=dict, nullable=False)
@@ -107,7 +109,7 @@ class CertificateBase(Base):
 class SpaTherapistCertificate(CertificateBase):
     __tablename__ = "spa_therapist_certificates"
 
-    category = Column(SQLEnum(CertificateCategory), default=CertificateCategory.SPA_THERAPIST, nullable=False)
+    category = Column(SQLEnum(CertificateCategory, native_enum=False, length=50, create_constraint=False), default=CertificateCategory.SPA_THERAPIST, nullable=False)
 
     candidate_name = Column(String(255), nullable=True)
     course_name = Column(String(255), nullable=True)
@@ -126,7 +128,7 @@ class SpaTherapistCertificate(CertificateBase):
 class ManagerSalaryCertificate(CertificateBase):
     __tablename__ = "manager_salary_certificates"
 
-    category = Column(SQLEnum(CertificateCategory), default=CertificateCategory.MANAGER_SALARY, nullable=False)
+    category = Column(SQLEnum(CertificateCategory, native_enum=False, length=50, create_constraint=False), default=CertificateCategory.MANAGER_SALARY, nullable=False)
 
     spa_id = Column(Integer, ForeignKey("spas.id"), nullable=True)
     spa = relationship("SPA", back_populates="manager_salary_certificates")
@@ -149,7 +151,7 @@ class ManagerSalaryCertificate(CertificateBase):
 class ExperienceLetterCertificate(CertificateBase):
     __tablename__ = "experience_letter_certificates"
 
-    category = Column(SQLEnum(CertificateCategory), default=CertificateCategory.EXPERIENCE_LETTER, nullable=False)
+    category = Column(SQLEnum(CertificateCategory, native_enum=False, length=50, create_constraint=False), default=CertificateCategory.EXPERIENCE_LETTER, nullable=False)
 
     spa_id = Column(Integer, ForeignKey("spas.id"))
     spa = relationship("SPA", back_populates="experience_letter_certificates")
@@ -170,7 +172,7 @@ class ExperienceLetterCertificate(CertificateBase):
 class AppointmentLetterCertificate(CertificateBase):
     __tablename__ = "appointment_letter_certificates"
 
-    category = Column(SQLEnum(CertificateCategory), default=CertificateCategory.APPOINTMENT_LETTER)
+    category = Column(SQLEnum(CertificateCategory, native_enum=False, length=50, create_constraint=False), default=CertificateCategory.APPOINTMENT_LETTER)
 
     employee_name = Column(String(255))
     spa_id = Column(Integer, ForeignKey("spas.id"))
@@ -190,7 +192,7 @@ class AppointmentLetterCertificate(CertificateBase):
 class InvoiceSpaBillCertificate(CertificateBase):
     __tablename__ = "invoice_spa_bill_certificates"
 
-    category = Column(SQLEnum(CertificateCategory), default=CertificateCategory.INVOICE_SPA_BILL)
+    category = Column(SQLEnum(CertificateCategory, native_enum=False, length=50, create_constraint=False), default=CertificateCategory.INVOICE_SPA_BILL)
 
     spa_id = Column(Integer, ForeignKey("spas.id"))
     spa = relationship("SPA", back_populates="invoice_spa_bill_certificates")
@@ -245,7 +247,7 @@ class IDCardCertificate(CertificateBase):
 class GeneratedCertificate(CertificateBase):
     __tablename__ = "generated_certificates"
 
-    category = Column(SQLEnum(CertificateCategory))
+    category = Column(SQLEnum(CertificateCategory, native_enum=False, length=50, create_constraint=False))
 
     template = relationship("CertificateTemplate", back_populates="generated_certificates")
 

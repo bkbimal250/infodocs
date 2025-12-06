@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { CERTIFICATE_CATEGORIES, CERTIFICATE_FIELDS } from '../../utils/certificateConstants';
+import { Input, Select, DatePicker } from '../../ui';
 
 const positionOptions = [
   "Manager",
@@ -124,29 +125,23 @@ const ExperienceLetterForm = ({ formData, handleInputChange }) => {
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {findField('candidate_name').label || 'Employee Name'}{' '}
-              <span className="text-red-500">*</span>
-            </label>
-            {renderInput('candidate_name')}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {findField('position').label || 'Position'} <span className="text-red-500">*</span>
-            </label>
-            <select
-              name="position"
-              value={formData.position || ''}
-              onChange={(e) => handleInputChange({ target: { name: 'position', value: e.target.value } })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
-            >
-              <option value="">Select Position</option>
-              {positionOptions.map((option) => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
-          </div>
+          <Input
+            name="candidate_name"
+            label={findField('candidate_name').label || 'Employee Name'}
+            placeholder={findField('candidate_name').placeholder}
+            value={formData.candidate_name}
+            onChange={handleInputChange}
+            required
+          />
+          <Select
+            name="position"
+            label={findField('position').label || 'Position'}
+            options={positionOptions}
+            value={formData.position}
+            onChange={handleInputChange}
+            placeholder="Select Position"
+            required
+          />
         </div>
       </div>
 
@@ -157,157 +152,141 @@ const ExperienceLetterForm = ({ formData, handleInputChange }) => {
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {findField('joining_date').label || 'Joining Date'}{' '}
-              <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="date"
-              name="joining_date"
-              value={(() => {
-                // Convert formatted date back to YYYY-MM-DD for date input
-                if (!formData.joining_date) return '';
-                // Check if already in YYYY-MM-DD format
-                if (/^\d{4}-\d{2}-\d{2}$/.test(formData.joining_date)) {
-                  return formData.joining_date;
-                }
-                // Try to parse formatted date (e.g., "15th Oct, 2025")
-                const dateMatch = formData.joining_date.match(/(\d+)(?:st|nd|rd|th)?\s+(\w+),\s+(\d+)/);
-                if (dateMatch) {
-                  const day = parseInt(dateMatch[1]);
-                  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                  const monthIndex = monthNames.indexOf(dateMatch[2]);
-                  const year = parseInt(dateMatch[3]);
-                  if (monthIndex !== -1) {
-                    const date = new Date(year, monthIndex, day);
-                    if (!isNaN(date.getTime())) {
-                      const yearStr = date.getFullYear();
-                      const monthStr = String(date.getMonth() + 1).padStart(2, '0');
-                      const dayStr = String(date.getDate()).padStart(2, '0');
-                      return `${yearStr}-${monthStr}-${dayStr}`;
-                    }
-                  }
-                }
-                return '';
-              })()}
-              onChange={(e) => {
-                // Convert date to readable format (e.g., "15th Oct, 2025")
-                if (e.target.value) {
-                  const date = new Date(e.target.value);
+          <DatePicker
+            name="joining_date"
+            label={findField('joining_date').label || 'Joining Date'}
+            value={(() => {
+              // Convert formatted date back to YYYY-MM-DD for date input
+              if (!formData.joining_date) return '';
+              // Check if already in YYYY-MM-DD format
+              if (/^\d{4}-\d{2}-\d{2}$/.test(formData.joining_date)) {
+                return formData.joining_date;
+              }
+              // Try to parse formatted date (e.g., "15th Oct, 2025")
+              const dateMatch = formData.joining_date.match(/(\d+)(?:st|nd|rd|th)?\s+(\w+),\s+(\d+)/);
+              if (dateMatch) {
+                const day = parseInt(dateMatch[1]);
+                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                const monthIndex = monthNames.indexOf(dateMatch[2]);
+                const year = parseInt(dateMatch[3]);
+                if (monthIndex !== -1) {
+                  const date = new Date(year, monthIndex, day);
                   if (!isNaN(date.getTime())) {
-                    const day = date.getDate();
-                    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                    const month = monthNames[date.getMonth()];
-                    const year = date.getFullYear();
-                    
-                    // Add suffix to day
-                    let daySuffix = 'th';
-                    if (day === 1 || day === 21 || day === 31) daySuffix = 'st';
-                    else if (day === 2 || day === 22) daySuffix = 'nd';
-                    else if (day === 3 || day === 23) daySuffix = 'rd';
-                    
-                    const formattedDate = `${day}${daySuffix} ${month}, ${year}`;
-                    handleInputChange({
-                      target: { name: 'joining_date', value: formattedDate, type: 'text' },
-                    });
+                    const yearStr = date.getFullYear();
+                    const monthStr = String(date.getMonth() + 1).padStart(2, '0');
+                    const dayStr = String(date.getDate()).padStart(2, '0');
+                    return `${yearStr}-${monthStr}-${dayStr}`;
                   }
-                } else {
+                }
+              }
+              return '';
+            })()}
+            onChange={(e) => {
+              // Convert date to readable format (e.g., "15th Oct, 2025")
+              if (e.target.value) {
+                const date = new Date(e.target.value);
+                if (!isNaN(date.getTime())) {
+                  const day = date.getDate();
+                  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                  const month = monthNames[date.getMonth()];
+                  const year = date.getFullYear();
+                  
+                  // Add suffix to day
+                  let daySuffix = 'th';
+                  if (day === 1 || day === 21 || day === 31) daySuffix = 'st';
+                  else if (day === 2 || day === 22) daySuffix = 'nd';
+                  else if (day === 3 || day === 23) daySuffix = 'rd';
+                  
+                  const formattedDate = `${day}${daySuffix} ${month}, ${year}`;
                   handleInputChange({
-                    target: { name: 'joining_date', value: '', type: 'text' },
+                    target: { name: 'joining_date', value: formattedDate, type: 'text' },
                   });
                 }
-              }}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {findField('end_date').label || 'End Date'} <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="date"
-              name="end_date"
-              value={(() => {
-                // Convert formatted date back to YYYY-MM-DD for date input
-                if (!formData.end_date) return '';
-                // Check if already in YYYY-MM-DD format
-                if (/^\d{4}-\d{2}-\d{2}$/.test(formData.end_date)) {
-                  return formData.end_date;
-                }
-                // Try to parse formatted date (e.g., "15th Oct, 2025")
-                const dateMatch = formData.end_date.match(/(\d+)(?:st|nd|rd|th)?\s+(\w+),\s+(\d+)/);
-                if (dateMatch) {
-                  const day = parseInt(dateMatch[1]);
-                  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                  const monthIndex = monthNames.indexOf(dateMatch[2]);
-                  const year = parseInt(dateMatch[3]);
-                  if (monthIndex !== -1) {
-                    const date = new Date(year, monthIndex, day);
-                    if (!isNaN(date.getTime())) {
-                      const yearStr = date.getFullYear();
-                      const monthStr = String(date.getMonth() + 1).padStart(2, '0');
-                      const dayStr = String(date.getDate()).padStart(2, '0');
-                      return `${yearStr}-${monthStr}-${dayStr}`;
-                    }
-                  }
-                }
-                return '';
-              })()}
-              onChange={(e) => {
-                // Convert date to readable format (e.g., "15th Oct, 2025")
-                if (e.target.value) {
-                  const date = new Date(e.target.value);
+              } else {
+                handleInputChange({
+                  target: { name: 'joining_date', value: '', type: 'text' },
+                });
+              }
+            }}
+            required
+          />
+          <DatePicker
+            name="end_date"
+            label={findField('end_date').label || 'End Date'}
+            value={(() => {
+              // Convert formatted date back to YYYY-MM-DD for date input
+              if (!formData.end_date) return '';
+              // Check if already in YYYY-MM-DD format
+              if (/^\d{4}-\d{2}-\d{2}$/.test(formData.end_date)) {
+                return formData.end_date;
+              }
+              // Try to parse formatted date (e.g., "15th Oct, 2025")
+              const dateMatch = formData.end_date.match(/(\d+)(?:st|nd|rd|th)?\s+(\w+),\s+(\d+)/);
+              if (dateMatch) {
+                const day = parseInt(dateMatch[1]);
+                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                const monthIndex = monthNames.indexOf(dateMatch[2]);
+                const year = parseInt(dateMatch[3]);
+                if (monthIndex !== -1) {
+                  const date = new Date(year, monthIndex, day);
                   if (!isNaN(date.getTime())) {
-                    const day = date.getDate();
-                    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                    const month = monthNames[date.getMonth()];
-                    const year = date.getFullYear();
-                    
-                    // Add suffix to day
-                    let daySuffix = 'th';
-                    if (day === 1 || day === 21 || day === 31) daySuffix = 'st';
-                    else if (day === 2 || day === 22) daySuffix = 'nd';
-                    else if (day === 3 || day === 23) daySuffix = 'rd';
-                    
-                    const formattedDate = `${day}${daySuffix} ${month}, ${year}`;
-                    handleInputChange({
-                      target: { name: 'end_date', value: formattedDate, type: 'text' },
-                    });
+                    const yearStr = date.getFullYear();
+                    const monthStr = String(date.getMonth() + 1).padStart(2, '0');
+                    const dayStr = String(date.getDate()).padStart(2, '0');
+                    return `${yearStr}-${monthStr}-${dayStr}`;
                   }
-                } else {
+                }
+              }
+              return '';
+            })()}
+            onChange={(e) => {
+              // Convert date to readable format (e.g., "15th Oct, 2025")
+              if (e.target.value) {
+                const date = new Date(e.target.value);
+                if (!isNaN(date.getTime())) {
+                  const day = date.getDate();
+                  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                  const month = monthNames[date.getMonth()];
+                  const year = date.getFullYear();
+                  
+                  // Add suffix to day
+                  let daySuffix = 'th';
+                  if (day === 1 || day === 21 || day === 31) daySuffix = 'st';
+                  else if (day === 2 || day === 22) daySuffix = 'nd';
+                  else if (day === 3 || day === 23) daySuffix = 'rd';
+                  
+                  const formattedDate = `${day}${daySuffix} ${month}, ${year}`;
                   handleInputChange({
-                    target: { name: 'end_date', value: '', type: 'text' },
+                    target: { name: 'end_date', value: formattedDate, type: 'text' },
                   });
                 }
-              }}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
-              required
-            />
-          </div>
+              } else {
+                handleInputChange({
+                  target: { name: 'end_date', value: '', type: 'text' },
+                });
+              }
+            }}
+            required
+          />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {findField('duration').label || 'Duration'}
-            </label>
-            <input
-              name="duration"
-              value={formData.duration || ''}
-              readOnly
-              disabled
-              placeholder="Auto-calculated from dates"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {findField('salary').label || 'Salary'}
-            </label>
-            {renderInput('salary')}
-          </div>
+          <Input
+            name="duration"
+            label={findField('duration').label || 'Duration'}
+            value={formData.duration || ''}
+            onChange={handleInputChange}
+            placeholder="Auto-calculated from dates"
+            disabled
+            helperText="Auto-calculated from dates"
+          />
+          <Input
+            name="salary"
+            label={findField('salary').label || 'Salary'}
+            placeholder={findField('salary').placeholder}
+            value={formData.salary}
+            onChange={handleInputChange}
+          />
         </div>
       </div>
 

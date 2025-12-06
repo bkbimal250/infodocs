@@ -1,6 +1,7 @@
 import React from 'react';
 import { CERTIFICATE_CATEGORIES, CERTIFICATE_FIELDS } from '../../utils/certificateConstants';
 import SignatureUpload from './SignatureUpload';
+import { Input, DatePicker, Textarea } from '../../ui';
 
 /**
  * Appointment Letter Form Component
@@ -21,36 +22,21 @@ const AppointmentLetterForm = ({ formData, handleInputChange }) => {
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {(fields.employee_name?.label || 'Employee Name')} <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="employee_name"
-              value={formData.employee_name || ''}
-              onChange={handleInputChange}
-              placeholder={fields.employee_name?.placeholder || 'Full Name'}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {(fields.position?.label || 'Position')}
-            </label>
-            <input
-              type="text"
-              name="position"
-              value={formData.position || ''}
-              onChange={handleInputChange}
-              placeholder={fields.position?.placeholder || 'Job Position'}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent"
-            />
-          </div>
-
-          
+          <Input
+            name="employee_name"
+            label={fields.employee_name?.label || 'Employee Name'}
+            placeholder={fields.employee_name?.placeholder || 'Full Name'}
+            value={formData.employee_name}
+            onChange={handleInputChange}
+            required
+          />
+          <Input
+            name="position"
+            label={fields.position?.label || 'Position'}
+            placeholder={fields.position?.placeholder || 'Job Position'}
+            value={formData.position}
+            onChange={handleInputChange}
+          />
         </div>
 
         
@@ -64,32 +50,19 @@ const AppointmentLetterForm = ({ formData, handleInputChange }) => {
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {(fields.start_date?.label || 'Start Date')}
-            </label>
-            <input
-              type="date"
-              name="start_date"
-              value={formData.start_date || ''}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {(fields.salary?.label || 'Monthly Salary')}
-            </label>
-            <input
-              type="text"
-              name="salary"
-              value={formData.salary || ''}
-              onChange={handleInputChange}
-              placeholder={fields.salary?.placeholder || '₹30,000.00 per Month'}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent"
-            />
-          </div>
+          <DatePicker
+            name="start_date"
+            label={fields.start_date?.label || 'Start Date'}
+            value={formData.start_date}
+            onChange={handleInputChange}
+          />
+          <Input
+            name="salary"
+            label={fields.salary?.label || 'Monthly Salary'}
+            placeholder={fields.salary?.placeholder || '₹30,000.00 per Month'}
+            value={formData.salary}
+            onChange={handleInputChange}
+          />
         </div>
 
         
