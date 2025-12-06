@@ -75,7 +75,7 @@ const Header = ({ user, onLogout }) => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center">
-            <span className="text-2xl font-bold text-blue-600">spacertificate</span>
+            <span className="text-2xl font-bold text-blue-600">info docs</span>
           </Link>
 
           {/* Desktop Navigation */}
