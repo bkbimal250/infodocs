@@ -64,12 +64,10 @@ const SpaTable = ({
               Name
             </th>
             <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-              Area
+              Location
             </th>
 
-            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-              City
-            </th>
+
             <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
               State
             </th>
@@ -102,18 +100,19 @@ const SpaTable = ({
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="text-sm text-[var(--color-text-secondary)]">{spa.area || '-'}</div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
                 <div className="text-sm text-[var(--color-text-secondary)]">{spa.city || '-'}</div>
+
               </td>
+
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="text-sm text-[var(--color-text-secondary)]">{spa.state || '-'}</div>
               </td>
+
               <td className="px-6 py-4 whitespace-nowrap">
                 <span
                   className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${spa.is_active
-                      ? 'bg-[var(--color-success-light)] text-[var(--color-success-dark)]'
-                      : 'bg-[var(--color-gray-100)] text-[var(--color-gray-800)]'
+                    ? 'bg-[var(--color-success-light)] text-[var(--color-success-dark)]'
+                    : 'bg-[var(--color-gray-100)] text-[var(--color-gray-800)]'
                     }`}
                 >
                   <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${spa.is_active ? 'bg-[var(--color-success)]' : 'bg-[var(--color-gray-400)]'}`}></span>
