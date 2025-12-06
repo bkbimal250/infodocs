@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { HiArrowLeft } from 'react-icons/hi';
-import { managerApi } from '../../../api/manager/managerApi';
+import { managerApi } from '../../../api/Manager/managerApi';
 
 /**
  * View Hiring Details Component

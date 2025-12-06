@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { managerApi } from '../../../api/manager/managerApi';
+import { managerApi } from '../../../api/Manager/managerApi';
 import PrintApplicationDetails from './components/PrintApplicationDetails';
 import PrintUdertakingDetails from './components/PrintUdertakingDetails';
 

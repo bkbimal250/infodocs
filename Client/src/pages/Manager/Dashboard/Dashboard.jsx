@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { HiArrowRight, HiOutlineBell, HiOutlineClock, HiOutlineBriefcase } from 'react-icons/hi';
-import { managerApi } from '../../../api/manager/managerApi';
+import { managerApi } from '../../../api/Manager/managerApi';
 import { usersApi } from '../../../api/Users/usersApi';
 
 /**

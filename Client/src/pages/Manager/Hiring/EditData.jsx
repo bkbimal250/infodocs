@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import apiClient from '../../../utils/apiConfig';
-import { managerApi } from '../../../api/manager/managerApi';
+import { managerApi } from '../../../api/Manager/managerApi';
 import toast from 'react-hot-toast';
 
 /**

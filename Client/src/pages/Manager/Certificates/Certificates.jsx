@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { HiOutlineDocumentText } from 'react-icons/hi';
 import { authApi } from '../../../api/Auth/authApi';
-import { managerApi } from '../../../api/manager/managerApi';
+import { managerApi } from '../../../api/Manager/managerApi';
 import apiClient from '../../../utils/apiConfig';
 import CertificateTable from './certificateTable';
 

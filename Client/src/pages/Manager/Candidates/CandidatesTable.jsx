@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { managerApi } from '../../../api/manager/managerApi';
+import { managerApi } from '../../../api/Manager/managerApi';
 import { Link } from 'react-router-dom';
 import { HiPencil, HiTrash } from 'react-icons/hi';
 import toast from 'react-hot-toast';

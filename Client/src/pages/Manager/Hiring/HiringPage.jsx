@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { HiBriefcase, HiLocationMarker, HiCalendar } from 'react-icons/hi';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { managerApi } from '../../../api/manager/managerApi';
+import { managerApi } from '../../../api/Manager/managerApi';
 import HiringTable from './HiringTable';
 import Hiringfilter from './Hiringfilter';
 import EditData from './EditData';

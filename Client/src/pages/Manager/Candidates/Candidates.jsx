@@ -8,7 +8,7 @@ import {
 } from 'react-icons/hi';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { managerApi } from '../../../api/manager/managerApi';
+import { managerApi } from '../../../api/Manager/managerApi';
 import CandidatesTable from './CandidatesTable';
 
 /**
