@@ -1,5 +1,4 @@
 import { useState, useRef } from 'react';
-import { removeBackground } from '@imgly/background-removal';
 import ImageCrop from './ImageCrop';
 import { HiUpload, HiX, HiSparkles } from 'react-icons/hi';
 import toast from 'react-hot-toast';
@@ -41,6 +40,9 @@ const SignatureUpload = ({ value, onChange, label = 'Signature', required = fals
     try {
       setProcessing(true);
       toast.loading('Removing background...', { id: 'bg-removal' });
+
+      // Dynamically import background removal library (large ONNX Runtime)
+      const { removeBackground } = await import('@imgly/background-removal');
 
       // Convert data URL to blob
       const response = await fetch(croppedImageUrl);

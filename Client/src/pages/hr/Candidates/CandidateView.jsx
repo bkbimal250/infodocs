@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { hrApi } from '../../../api/hr/hrApi';
-import PrintApplicationDetails from './components/PrintApplicationDetails';
-import PrintUdertakingDetails from './components/PrintUdertakingDetails';
+import PrintApplicationDetails from './Components/PrintApplicationDetails';
+import PrintUdertakingDetails from './Components/PrintUdertakingDetails';
 
 /**
  * Candidate View Details Component

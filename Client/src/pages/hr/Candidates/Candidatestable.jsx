@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useState, useRef } from 'react';
-import PrintApplicationDetails from './components/PrintApplicationDetails';
-import PrintUdertakingDetails from './components/PrintUdertakingDetails';
+import PrintApplicationDetails from './Components/PrintApplicationDetails';
+import PrintUdertakingDetails from './Components/PrintUdertakingDetails';
 
 /**
  * HR Candidates Table Component
