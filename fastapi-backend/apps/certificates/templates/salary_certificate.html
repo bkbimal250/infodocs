@@ -19,118 +19,161 @@
             margin: 0;
         }
 
+        html,
         body {
-            margin-top: 10px;
+            height: 100%;
+        }
+
+        body {
+            margin: 0;
             background: #e8e8e8;
             font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 0.9rem;
         }
 
         .certificate-container {
             width: 210mm;
-            height: 297mm;
+            height: 280mm; /* a bit smaller than A4 so everything fits */
             margin: 10px auto;
             background: #ffffff;
             position: relative;
             box-shadow: 0 0 25px rgba(0, 0, 0, 0.15);
-            padding: 55px 60px;
-            border: 12px solid #d4a955;
+            padding: 35px 40px 30px;
+            border: 10px solid #d4a955;
+            page-break-inside: avoid;
+            box-sizing: border-box;
+        }
+
+        .certificate-container::before {
+            content: "";
+            position: absolute;
+            inset: 16px;
+            border: 1px solid #eed39a;
+            pointer-events: none;
         }
 
         .header-title {
-            font-size: 3.3rem;
+            font-size: 2.6rem;
             font-weight: 700;
             color: #c98d54;
             text-align: center;
-            letter-spacing: 4px;
-            margin-bottom: 5px;
+            letter-spacing: 3px;
+            margin-bottom: 2px;
         }
 
         .header-subtitle {
-            font-weight: bold;
-            font-size: 1.4rem;
+            font-weight: 700;
+            font-size: 1.1rem;
             color: #b35d51;
             letter-spacing: 2px;
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 18px;
         }
 
         .date-text {
-            font-size: 1.2rem;
+            font-size: 0.95rem;
             font-weight: 600;
-            margin-top: -15px;
             text-align: right;
         }
 
         .section-title {
-            font-size: 1.7rem;
+            font-size: 1.3rem;
             font-weight: 700;
             text-decoration: underline;
             text-align: center;
-            margin: 15px 0;
+            margin: 18px 0 14px;
         }
 
         .certificate-body {
-            font-size: 1.1rem;
-            line-height: 1.9;
+            font-size: 0.95rem;
+            line-height: 1.7;
             text-align: justify;
         }
 
         .salary-table {
-            margin: 10px auto;
-            max-width: 420px;
+            margin: 14px auto 8px;
+            max-width: 380px;
             border: 2px solid #333;
         }
 
         .salary-table th,
         .salary-table td {
             border: 2px solid #333 !important;
-            padding: 10px 15px;
-            font-size: 1.05rem;
+            padding: 6px 10px;
+            font-size: 0.9rem;
             font-weight: 600;
+            text-align: center;
         }
 
         .footer-note {
-            font-size: 1.05rem;
-            margin-top: 15px;
+            font-size: 0.9rem;
+            margin-top: 12px;
         }
 
-        .signature-block {
-            margin-top: 40px;
+        /* Bottom area (signature + contact) */
+        .bottom-section {
+            margin-top: 28px;
+            padding-top: 14px;
+            border-top: 1px solid #d7d7d7;
+        }
+
+        .signature-label {
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+        }
+
+        .signature-wrapper {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .signature-image {
+            margin: 0;
+            width: 120px;
+            height: 120px;
         }
 
         .signature-name {
-            font-weight: bold;
-            font-size: 1.2rem;
-            margin-top: -63px;
+            margin-top: -4px;
+            font-weight: 700;
+            font-size: 1rem;
         }
 
-
-        .signature-image {
-            width: 200px;
-            margin-left: -36px;
-            height: auto;
-            margin-top: -67px;
+        .signature-role {
+            font-size: 0.85rem;
         }
-
 
         .contact-section {
-            position: absolute;
-            bottom: 20px;
-            right: 40px;
-            font-size: 1rem;
-            padding: 18px 25px;
+            font-size: 0.85rem;
         }
 
         .contact-item {
             display: flex;
             align-items: flex-start;
-            margin-bottom: 12px;
+            margin-bottom: 6px;
         }
 
         .contact-icon {
-            font-size: 1.3rem;
-            margin-right: 10px;
-            color: #ffd479;
+            font-size: 1rem;
+            margin-right: 6px;
+            color: #c98d54;
+            line-height: 1.1;
+        }
+
+        /* Print adjustments */
+        @media print {
+            body {
+                background: #ffffff;
+                margin: 0;
+            }
+
+            .certificate-container {
+                margin: 0;
+                box-shadow: none;
+                width: 210mm;
+                height: 297mm;
+            }
         }
     </style>
 </head>
@@ -140,7 +183,7 @@
     <div class="certificate-container">
 
         <!-- Header -->
-        <div class="header-title"> {{ spa_name }} </div>
+        <div class="header-title">{{ spa_name }}</div>
         <div class="header-subtitle">SALARY CERTIFICATE</div>
 
         <div class="date-text">DATE: <strong>{{ date }}</strong></div>
@@ -152,7 +195,7 @@
             <p>
                 This is to certify <strong>{{ manager_name }}</strong> is working as
                 <strong>{{ position }}</strong> at <strong>{{ spa_name }}</strong>,
-                located at {{ spa_address }} . The Monthly Net Salary is
+                located at {{ spa_address }}. The Monthly Net Salary is
                 <strong>Rs. {{ monthly_salary }}{{#if monthly_salary_in_words}} ({{ monthly_salary_in_words }}){{/if}}</strong>.
                 Joining date: <strong>{{ joining_date }}</strong>.
             </p>
@@ -177,7 +220,6 @@
                         </tr>
                     {{/if}}
                 </tbody>
-
             </table>
         </div>
 
@@ -186,35 +228,41 @@
             This certificate may be used for loan applications and other official purposes.
         </div>
 
-        <!-- Signature -->
-        <div class="signature-block">
-            <div>Best regards,</div>
-            {{#if default_signature_image}}
-            <img src="{{ default_signature_image }}" alt="Signature" class="signature-image">
-            {{else}}
-            <img src="{{static_base_url}}/images/Bhim Sir Signature.png" alt="Signature" class="signature-image">
-            {{/if}}
-            <div class="signature-name">BhimaSingh Naik</div>
-        </div>
-
-        <!-- Contact box -->
-        <div class="contact-section">
-            <div class="contact-item">
-                <i class="bi bi-telephone-fill contact-icon"></i>
-                <!-- spa phone and alternate number -->
-                <div><strong>{{ spa_phone }}{{#if spa_phone1}} | {{ spa_phone1 }}{{/if}}</strong></div>
+        <!-- Bottom: Signature + Contact -->
+        <div class="bottom-section row">
+            <!-- Signature -->
+            <div class="col-7">
+                <div class="signature-label">Best regards,</div>
+                <div class="signature-wrapper">
+                    {{#if default_signature_image}}
+                        <img src="{{ default_signature_image }}" alt="Signature" class="signature-image">
+                    {{else}}
+                        <img src="{{static_base_url}}/images/Bhim Sir Signature.png" alt="Signature"
+                            class="signature-image">
+                    {{/if}}
+                    <div class="signature-name">BhimaSingh Naik</div>
+                    <div class="signature-role">Owner / Authorized Signatory</div>
+                </div>
             </div>
 
-            <div class="contact-item">
-                <i class="bi bi-geo-alt-fill contact-icon"></i>
-                <div>
-                    <strong>
-                        <!-- make sure spa address show -->
-                        {{ spa_address }}
-                    </strong>
+            <!-- Contact box -->
+            <div class="col-5">
+                <div class="contact-section">
+                    <div class="contact-item">
+                        <i class="bi bi-telephone-fill contact-icon"></i>
+                        <div><strong>{{ spa_phone }}{{#if spa_phone1}} | {{ spa_phone1 }}{{/if}}</strong></div>
+                    </div>
+
+                    <div class="contact-item">
+                        <i class="bi bi-geo-alt-fill contact-icon"></i>
+                        <div>
+                            <strong>{{ spa_address }}</strong>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
+
     </div>
 
 </body>
