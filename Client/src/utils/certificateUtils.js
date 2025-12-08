@@ -37,69 +37,6 @@ export const blobToBase64 = async (blobUrl) => {
   }
 };
 
-/**
- * Convert all blob URLs in certificate data to base64
- * Recursively processes nested objects and arrays
- * @param {Object|Array|string} data - Data to process
- * @param {boolean} convertForPDF - If true, convert blob URLs to base64 (for PDF generation)
- * @returns {Promise<Object|Array|string>} Data with blob URLs converted to base64
- */
-export const convertBlobUrlsToBase64 = async (data, convertForPDF = false) => {
-  if (!convertForPDF) {
-    // For preview, keep blob URLs as they work in browsers
-    return data;
-  }
-
-  if (typeof data === 'string' && data.startsWith('blob:')) {
-    // Convert blob URL to base64
-    return await blobToBase64(data);
-  }
-
-  if (Array.isArray(data)) {
-    // Process array items
-    return Promise.all(data.map(item => convertBlobUrlsToBase64(item, convertForPDF)));
-  }
-
-  if (data && typeof data === 'object') {
-    // Process object properties
-    const result = {};
-    for (const [key, value] of Object.entries(data)) {
-      result[key] = await convertBlobUrlsToBase64(value, convertForPDF);
-    }
-    return result;
-  }
-
-  // Primitive value, return as is
-  return data;
-};
-
-/**
- * Convert blob URL to base64 data URL
- * Needed for PDF generation as blob URLs don't work server-side
- * @param {string} blobUrl - Blob URL (blob:http://...)
- * @returns {Promise<string>} Base64 data URL (data:image/...)
- */
-export const blobToBase64 = async (blobUrl) => {
-  if (!blobUrl || !blobUrl.startsWith('blob:')) {
-    // Already base64 or other format, return as is
-    return blobUrl;
-  }
-
-  try {
-    const response = await fetch(blobUrl);
-    const blob = await response.blob();
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  } catch (error) {
-    console.error('Error converting blob URL to base64:', error);
-    // Return empty string on error to avoid broken images
-    return '';
-  }
-};
 
 /**
  * Convert all blob URLs in an object to base64

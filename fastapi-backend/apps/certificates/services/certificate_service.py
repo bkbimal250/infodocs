@@ -489,25 +489,32 @@ async def prepare_certificate_data(template: CertificateTemplate, certificate_da
                     data["candidate_photo"] = photo
                     logger.debug("Keeping base64 image for preview")
                 else:
-                    # For PDF: WeasyPrint can't handle base64, need to convert to file
-                    # This should have been saved already, but handle it just in case
-                    logger.warning("Base64 image found during PDF generation for ID_CARD. Image should be saved as file first.")
-                    # Try to extract and save if we have certificate_id
-                    if certificate_data.get("certificate_id"):
-                        temp_path = await save_base64_image(photo, certificate_data["certificate_id"], "id_card_photo_temp")
-                        if temp_path:
-                            photo = temp_path
-                            # Check both uploads and media
-                            uploads_photo_path = uploads_base_path / temp_path
-                            if uploads_photo_path.exists():
-                                data["candidate_photo"] = f"file:///{uploads_base_path_str}/{temp_path}"
-                            else:
-                                data["candidate_photo"] = f"file:///{media_base_path_str}/{temp_path}"
-                            logger.info(f"Converted base64 to file path: {temp_path}")
+                    # For PDF: WeasyPrint can't handle base64 directly, need to convert to file
+                    # Try to save to a temporary file if we have certificate_id
+                    # Otherwise, try to use a temp file with a unique name
+                    import uuid
+                    temp_id = certificate_data.get("certificate_id") or int(uuid.uuid4().int % 1000000)
+                    temp_path = await save_base64_image(photo, temp_id, "id_card_photo_temp")
+                    if temp_path:
+                        # Check both uploads and media directories
+                        # save_base64_image saves to media/certificates/, so check there first
+                        media_photo_path = Path(media_base_path) / temp_path
+                        uploads_photo_path = uploads_base_path / temp_path
+                        media_base_path_str_clean = media_base_path_str.lstrip("/")
+                        
+                        if media_photo_path.exists():
+                            data["candidate_photo"] = f"file:///{media_base_path_str_clean}/{temp_path}"
+                            logger.info(f"PDF: Converted base64 to file path (media): {data['candidate_photo']}")
+                        elif uploads_photo_path.exists():
+                            data["candidate_photo"] = f"file:///{uploads_base_path_str}/{temp_path}"
+                            logger.info(f"PDF: Converted base64 to file path (uploads): {data['candidate_photo']}")
                         else:
-                            data["candidate_photo"] = ""
+                            # File was just saved, use media path (where save_base64_image saves)
+                            data["candidate_photo"] = f"file:///{media_base_path_str_clean}/{temp_path}"
+                            logger.warning(f"PDF: Using saved file path (may not exist yet): {data['candidate_photo']}")
                     else:
-                        data["candidate_photo"] = ""
+                        logger.error("Failed to save base64 image to file for PDF generation")
+                        data["candidate_photo"] = ""  # Empty to avoid broken image
             # If it's a relative file path (certificates/filename.jpg), convert to appropriate URL
             elif photo.startswith("certificates/"):
                 if use_http_urls:
@@ -515,28 +522,35 @@ async def prepare_certificate_data(template: CertificateTemplate, certificate_da
                     uploads_photo_path = uploads_base_path / photo
                     if uploads_photo_path.exists():
                         data["candidate_photo"] = f"{base_url}/uploads/{photo}"
+                        logger.debug(f"Preview: Found in uploads: {data['candidate_photo']}")
                     else:
                         data["candidate_photo"] = f"{base_url}/media/{photo}"
-                    logger.debug(f"Preview: converted to HTTP URL: {data['candidate_photo']}")
+                        logger.debug(f"Preview: Using media URL: {data['candidate_photo']}")
                 else:
-                    # For PDF: use file:// path (absolute path) - try uploads first
-                    uploads_photo_path = uploads_base_path / photo
+                    # For PDF: use file:// path (absolute path)
+                    # save_base64_image saves to media/certificates/, so check media first
                     media_photo_path = Path(media_base_path) / photo
+                    uploads_photo_path = uploads_base_path / photo
                     
                     media_base_path_str_clean = media_base_path_str.lstrip("/")
-                    if uploads_photo_path.exists():
-                        file_url = f"file:///{uploads_base_path_str}/{photo}"
-                        data["candidate_photo"] = file_url
-                        logger.info(f"PDF: Using existing file path in uploads: {file_url}")
-                    elif media_photo_path.exists():
+                    
+                    # Check media first (where save_base64_image saves files)
+                    if media_photo_path.exists():
                         file_url = f"file:///{media_base_path_str_clean}/{photo}"
                         data["candidate_photo"] = file_url
-                        logger.info(f"PDF: Using existing file path in media: {file_url}")
-                    else:
-                        # Try uploads anyway - might work if path is correct
+                        logger.info(f"PDF: Found file in media: {file_url}")
+                    elif uploads_photo_path.exists():
                         file_url = f"file:///{uploads_base_path_str}/{photo}"
                         data["candidate_photo"] = file_url
-                        logger.warning(f"PDF: File not found in uploads or media, using uploads path: {file_url}")
+                        logger.info(f"PDF: Found file in uploads: {file_url}")
+                    else:
+                        # File should exist in media (where save_base64_image saves)
+                        # Use media path even if file check fails (might be a timing issue)
+                        file_url = f"file:///{media_base_path_str_clean}/{photo}"
+                        data["candidate_photo"] = file_url
+                        logger.warning(f"PDF: File not found in uploads or media, using media path: {file_url}")
+                        logger.warning(f"PDF: Expected file at: {media_photo_path}")
+                        logger.warning(f"PDF: Also checked: {uploads_photo_path}")
             # Handle blob URLs (browser-specific, can't be used for PDF)
             elif photo.startswith("blob:"):
                 if use_http_urls:
@@ -882,15 +896,20 @@ async def create_generated_certificate(
         # Use saved photo path from database if available
         if certificate.candidate_photo:
             certificate_payload["candidate_photo"] = certificate.candidate_photo
+            logger.info(f"Using saved candidate_photo from database: {certificate.candidate_photo}")
         # If still base64 in payload (shouldn't happen after save, but handle it)
         elif certificate_payload.get("candidate_photo") and certificate_payload["candidate_photo"].startswith("data:image"):
             # Convert base64 to file path if not already saved
+            logger.warning("Base64 candidate_photo found in payload during PDF generation, converting to file...")
             photo_path = await save_base64_image(certificate_payload["candidate_photo"], certificate.id, "id_card_photo")
             if photo_path:
                 certificate.candidate_photo = photo_path
                 certificate_payload["candidate_photo"] = photo_path
                 await db.commit()
                 await db.refresh(certificate)
+                logger.info(f"Converted base64 to file path: {photo_path}")
+            else:
+                logger.error("Failed to save base64 candidate_photo to file")
     
     data = await prepare_certificate_data(template, certificate_payload, display_name, use_http_urls=False)
 
@@ -1226,3 +1245,4 @@ async def get_certificate_statistics(db: AsyncSession):
         "by_category": category_counts,
         "by_user": list(user_details.values())
     }
+
