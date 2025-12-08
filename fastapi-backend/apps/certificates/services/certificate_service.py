@@ -439,7 +439,14 @@ async def prepare_certificate_data(template: CertificateTemplate, certificate_da
                             rows.append(f"<tr><td>{month}</td><td>{salary}</td></tr>")
                 data[k] = "".join(rows) if rows else "<tr><td>-</td><td>-</td></tr>"
             elif k not in data:
-                data[k] = v
+                # For signature fields, only include if value is not empty
+                # This allows template fallback to default_signature_image to work
+                if k in ("manager_signature", "signatory_signature", "candidate_signature"):
+                    if v and str(v).strip():
+                        data[k] = v
+                    # If empty, don't set it so template can use default_signature_image
+                else:
+                    data[k] = v
     
     # For SPA_THERAPIST, handle image paths/URLs (using cached paths)
     if template.category == CertificateCategory.SPA_THERAPIST:

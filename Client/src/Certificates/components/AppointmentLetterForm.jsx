@@ -78,9 +78,9 @@ const AppointmentLetterForm = ({ formData, handleInputChange }) => {
         </h3>
         <SignatureUpload
           name="manager_signature"
-          value={formData.manager_signature || ""}
+          value={formData.manager_signature }
           onChange={handleInputChange}
-          label={signatureField.label || "Manager Signature"}
+          label={signatureField.label}
         />
       </div>
     </div>

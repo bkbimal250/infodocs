@@ -247,10 +247,17 @@
 
                 <!-- Signature block (structure kept, styling improved) -->
                 <div class="signature-block">
-                    <img src="{{ manager_signature or default_signature_image or '/static/images/Bhim Sir Signature.png' }}"
-                         class="signature-image" alt="Signature">
+                    {{#if manager_signature}}
+                        <img src="{{ manager_signature }}" class="signature-image" alt="Signature">
+                    {{else}}
+                        <img src="{{ default_signature_image }}" class="signature-image" alt="Signature">
+                    {{/if}}
                     <div class="signature-name">
-                        {{ signatory_name or 'Authorized Signatory' }}
+                        {{#if signatory_name}}
+                            {{ signatory_name }}
+                        {{else}}
+                            Authorized Signatory
+                        {{/if}}
                     </div>
                 </div>
 
