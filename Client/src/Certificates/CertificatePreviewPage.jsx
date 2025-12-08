@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { certificateApi } from '../api/Certificates/certificateApi';
-import { generateCertificateFilename, downloadFile } from '../utils/certificateUtils';
+import { generateCertificateFilename, downloadFile, convertBlobUrlsInData } from '../utils/certificateUtils';
 import { FORM_STATES } from '../utils/certificateConstants';
 
 /**
@@ -131,7 +131,13 @@ const CertificatePreviewPage = () => {
       setState(FORM_STATES.GENERATING);
       setError(null);
       
-      const response = await certificateApi.generateCertificate(generationData);
+      // Convert blob URLs to base64 for PDF generation
+      const processedData = {
+        ...generationData,
+        certificate_data: await convertBlobUrlsInData(generationData.certificate_data || {})
+      };
+      
+      const response = await certificateApi.generateCertificate(processedData);
       
       const filename = generateCertificateFilename(
         'certificate',

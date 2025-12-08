@@ -14,7 +14,7 @@ import {
   SPA_REQUIRED_CATEGORIES,
 } from '../utils/certificateConstants';
 
-import { prepareCertificateData, calculateInvoiceTotal, generateCertificateFilename, downloadFile, getCategoryDisplayName } from '../utils/certificateUtils';
+import { prepareCertificateData, calculateInvoiceTotal, generateCertificateFilename, downloadFile, getCategoryDisplayName, convertBlobUrlsInData } from '../utils/certificateUtils';
 import { getCertificateFormComponent } from './components';
 
 const CreateCertifications = () => {
@@ -382,7 +382,10 @@ const CreateCertifications = () => {
     try {
       setState(FORM_STATES.GENERATING);
       setError(null);
-      const data = prepareCertificateData(categoryKey, formData, invoiceItems);
+      let data = prepareCertificateData(categoryKey, formData, invoiceItems);
+      
+      // Convert blob URLs to base64 for PDF generation
+      data = await convertBlobUrlsInData(data);
 
       const response = await certificateApi.generateCertificate({
         template_id: selectedTemplate.id,
