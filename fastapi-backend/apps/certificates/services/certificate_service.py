@@ -413,7 +413,10 @@ async def prepare_certificate_data(template: CertificateTemplate, certificate_da
         "certificate_stamp_image": stamp_image,
         "certificate_signatory_image": signatory_image,
         # Default signature image path
-        "default_signature_image": f"{base_url}/static/images/Bhim Sir signature.png" if use_http_urls else f"file:///{static_base_path_str}/images/Bhim Sir signature.png",
+        # Note: File name is "Bhim Sir Signature.png" (capital S in Signature)
+        "default_signature_image": f"{base_url}/static/images/Bhim Sir Signature.png" if use_http_urls else f"file:///{static_base_path_str}/images/Bhim Sir Signature.png",
+        # Also provide static_base_url for templates that use it directly
+        "static_base_url": base_url if use_http_urls else f"file:///{static_base_path_str}",
     }
 
     # Merge additional certificate_data without overwriting existing keys

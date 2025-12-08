@@ -358,7 +358,7 @@
 
 <!-- signature part no change -->
             <div class="signature-block">
-                <img src="{{ manager_signature or signatory_signature or '/Bhim Sir signature.png' }}" class="signature-image" alt="Signature">
+                <img src="{{ manager_signature or signatory_signature or default_signature_image or '/static/images/Bhim Sir Signature.png' }}" class="signature-image" alt="Signature">
                 <div class="signature-name">{{ signatory_name or 'Authorized Signatory' }}</div>
             </div>
 
