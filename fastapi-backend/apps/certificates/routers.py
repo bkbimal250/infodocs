@@ -99,29 +99,41 @@ async def preview_certificate(
     cert_data = certificate_data.certificate_data or {}
     cert_data['base_url'] = base_url
     
-    # Load SPA data from database if spa_id is provided but spa object is missing
-    if certificate_data.spa_id and not cert_data.get("spa"):
+    # Load SPA data from database if spa_id is provided
+    # Always load from database to ensure logo is included, even if spa object is provided
+    if certificate_data.spa_id:
         from apps.forms_app.models import SPA
         from sqlalchemy import select
         spa_stmt = select(SPA).where(SPA.id == certificate_data.spa_id)
         spa_result = await db.execute(spa_stmt)
         spa_obj = spa_result.scalar_one_or_none()
         if spa_obj:
-            cert_data["spa"] = {
-                "id": spa_obj.id,
-                "name": spa_obj.name or "",
-                "address": spa_obj.address or "",
-                "area": spa_obj.area or "",
-                "city": spa_obj.city or "",
-                "state": spa_obj.state or "",
-                "country": spa_obj.country or "",
-                "pincode": spa_obj.pincode or "",
-                "phone_number": spa_obj.phone_number or "",
-                "alternate_number": spa_obj.alternate_number or "",
-                "email": spa_obj.email or "",
-                "website": spa_obj.website or "",
-                "logo": spa_obj.logo or "",
-            }
+            # If spa object already exists, merge logo from database
+            # Otherwise, create full spa object from database
+            if cert_data.get("spa"):
+                # Merge logo from database into existing spa object
+                cert_data["spa"]["logo"] = spa_obj.logo or cert_data["spa"].get("logo", "")
+                # Also ensure other fields are up to date from database
+                cert_data["spa"]["id"] = spa_obj.id
+                cert_data["spa"]["name"] = spa_obj.name or cert_data["spa"].get("name", "")
+                cert_data["spa"]["address"] = spa_obj.address or cert_data["spa"].get("address", "")
+            else:
+                # Create full spa object from database
+                cert_data["spa"] = {
+                    "id": spa_obj.id,
+                    "name": spa_obj.name or "",
+                    "address": spa_obj.address or "",
+                    "area": spa_obj.area or "",
+                    "city": spa_obj.city or "",
+                    "state": spa_obj.state or "",
+                    "country": spa_obj.country or "",
+                    "pincode": spa_obj.pincode or "",
+                    "phone_number": spa_obj.phone_number or "",
+                    "alternate_number": spa_obj.alternate_number or "",
+                    "email": spa_obj.email or "",
+                    "website": spa_obj.website or "",
+                    "logo": spa_obj.logo or "",
+                }
             cert_data["spa_id"] = spa_obj.id
     
     data = await prepare_certificate_data(template, cert_data, certificate_data.name, use_http_urls=True)
@@ -170,28 +182,40 @@ async def generate_certificate(
         
         # Load SPA data from database if spa_id is provided but spa object is missing
         cert_data = certificate.certificate_data or {}
-        if certificate_data.spa_id and not cert_data.get("spa"):
+        # Always load SPA from database if spa_id is provided to ensure logo is included
+        if certificate_data.spa_id:
             from apps.forms_app.models import SPA
             from sqlalchemy import select
             spa_stmt = select(SPA).where(SPA.id == certificate_data.spa_id)
             spa_result = await db.execute(spa_stmt)
             spa_obj = spa_result.scalar_one_or_none()
             if spa_obj:
-                cert_data["spa"] = {
-                    "id": spa_obj.id,
-                    "name": spa_obj.name or "",
-                    "address": spa_obj.address or "",
-                    "area": spa_obj.area or "",
-                    "city": spa_obj.city or "",
-                    "state": spa_obj.state or "",
-                    "country": spa_obj.country or "",
-                    "pincode": spa_obj.pincode or "",
-                    "phone_number": spa_obj.phone_number or "",
-                    "alternate_number": spa_obj.alternate_number or "",
-                    "email": spa_obj.email or "",
-                    "website": spa_obj.website or "",
-                    "logo": spa_obj.logo or "",
-                }
+                # If spa object already exists, merge logo from database
+                # Otherwise, create full spa object from database
+                if cert_data.get("spa"):
+                    # Merge logo from database into existing spa object
+                    cert_data["spa"]["logo"] = spa_obj.logo or cert_data["spa"].get("logo", "")
+                    # Also ensure other fields are up to date from database
+                    cert_data["spa"]["id"] = spa_obj.id
+                    cert_data["spa"]["name"] = spa_obj.name or cert_data["spa"].get("name", "")
+                    cert_data["spa"]["address"] = spa_obj.address or cert_data["spa"].get("address", "")
+                else:
+                    # Create full spa object from database
+                    cert_data["spa"] = {
+                        "id": spa_obj.id,
+                        "name": spa_obj.name or "",
+                        "address": spa_obj.address or "",
+                        "area": spa_obj.area or "",
+                        "city": spa_obj.city or "",
+                        "state": spa_obj.state or "",
+                        "country": spa_obj.country or "",
+                        "pincode": spa_obj.pincode or "",
+                        "phone_number": spa_obj.phone_number or "",
+                        "alternate_number": spa_obj.alternate_number or "",
+                        "email": spa_obj.email or "",
+                        "website": spa_obj.website or "",
+                        "logo": spa_obj.logo or "",
+                    }
                 cert_data["spa_id"] = spa_obj.id
         
         # For PDF generation, use file:// paths (not HTTP URLs)
@@ -425,28 +449,40 @@ async def download_certificate_pdf(
             cert_data["contact_number"] = certificate.contact_number or cert_data.get("contact_number")
             cert_data["issue_date"] = certificate.issue_date or cert_data.get("issue_date")
     
-    if hasattr(certificate, 'spa_id') and certificate.spa_id and not cert_data.get("spa"):
+    # Always load SPA from database if spa_id exists to ensure logo is included
+    if hasattr(certificate, 'spa_id') and certificate.spa_id:
         from apps.forms_app.models import SPA
         from sqlalchemy import select
         spa_stmt = select(SPA).where(SPA.id == certificate.spa_id)
         spa_result = await db.execute(spa_stmt)
         spa_obj = spa_result.scalar_one_or_none()
         if spa_obj:
-            cert_data["spa"] = {
-                "id": spa_obj.id,
-                "name": spa_obj.name or "",
-                "address": spa_obj.address or "",
-                "area": spa_obj.area or "",
-                "city": spa_obj.city or "",
-                "state": spa_obj.state or "",
-                "country": spa_obj.country or "",
-                "pincode": spa_obj.pincode or "",
-                "phone_number": spa_obj.phone_number or "",
-                "alternate_number": spa_obj.alternate_number or "",
-                "email": spa_obj.email or "",
-                "website": spa_obj.website or "",
-                "logo": spa_obj.logo or "",
-            }
+            # If spa object already exists, merge logo from database
+            # Otherwise, create full spa object from database
+            if cert_data.get("spa"):
+                # Merge logo from database into existing spa object
+                cert_data["spa"]["logo"] = spa_obj.logo or cert_data["spa"].get("logo", "")
+                # Also ensure other fields are up to date from database
+                cert_data["spa"]["id"] = spa_obj.id
+                cert_data["spa"]["name"] = spa_obj.name or cert_data["spa"].get("name", "")
+                cert_data["spa"]["address"] = spa_obj.address or cert_data["spa"].get("address", "")
+            else:
+                # Create full spa object from database
+                cert_data["spa"] = {
+                    "id": spa_obj.id,
+                    "name": spa_obj.name or "",
+                    "address": spa_obj.address or "",
+                    "area": spa_obj.area or "",
+                    "city": spa_obj.city or "",
+                    "state": spa_obj.state or "",
+                    "country": spa_obj.country or "",
+                    "pincode": spa_obj.pincode or "",
+                    "phone_number": spa_obj.phone_number or "",
+                    "alternate_number": spa_obj.alternate_number or "",
+                    "email": spa_obj.email or "",
+                    "website": spa_obj.website or "",
+                    "logo": spa_obj.logo or "",
+                }
             cert_data["spa_id"] = spa_obj.id
     
     # Get the name for this certificate type
@@ -561,28 +597,40 @@ async def download_certificate_image(
             cert_data["contact_number"] = certificate.contact_number or cert_data.get("contact_number")
             cert_data["issue_date"] = certificate.issue_date or cert_data.get("issue_date")
     
-    if hasattr(certificate, 'spa_id') and certificate.spa_id and not cert_data.get("spa"):
+    # Always load SPA from database if spa_id exists to ensure logo is included
+    if hasattr(certificate, 'spa_id') and certificate.spa_id:
         from apps.forms_app.models import SPA
         from sqlalchemy import select
         spa_stmt = select(SPA).where(SPA.id == certificate.spa_id)
         spa_result = await db.execute(spa_stmt)
         spa_obj = spa_result.scalar_one_or_none()
         if spa_obj:
-            cert_data["spa"] = {
-                "id": spa_obj.id,
-                "name": spa_obj.name or "",
-                "address": spa_obj.address or "",
-                "area": spa_obj.area or "",
-                "city": spa_obj.city or "",
-                "state": spa_obj.state or "",
-                "country": spa_obj.country or "",
-                "pincode": spa_obj.pincode or "",
-                "phone_number": spa_obj.phone_number or "",
-                "alternate_number": spa_obj.alternate_number or "",
-                "email": spa_obj.email or "",
-                "website": spa_obj.website or "",
-                "logo": spa_obj.logo or "",
-            }
+            # If spa object already exists, merge logo from database
+            # Otherwise, create full spa object from database
+            if cert_data.get("spa"):
+                # Merge logo from database into existing spa object
+                cert_data["spa"]["logo"] = spa_obj.logo or cert_data["spa"].get("logo", "")
+                # Also ensure other fields are up to date from database
+                cert_data["spa"]["id"] = spa_obj.id
+                cert_data["spa"]["name"] = spa_obj.name or cert_data["spa"].get("name", "")
+                cert_data["spa"]["address"] = spa_obj.address or cert_data["spa"].get("address", "")
+            else:
+                # Create full spa object from database
+                cert_data["spa"] = {
+                    "id": spa_obj.id,
+                    "name": spa_obj.name or "",
+                    "address": spa_obj.address or "",
+                    "area": spa_obj.area or "",
+                    "city": spa_obj.city or "",
+                    "state": spa_obj.state or "",
+                    "country": spa_obj.country or "",
+                    "pincode": spa_obj.pincode or "",
+                    "phone_number": spa_obj.phone_number or "",
+                    "alternate_number": spa_obj.alternate_number or "",
+                    "email": spa_obj.email or "",
+                    "website": spa_obj.website or "",
+                    "logo": spa_obj.logo or "",
+                }
             cert_data["spa_id"] = spa_obj.id
     
     # Get the name for this certificate type

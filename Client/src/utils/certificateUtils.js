@@ -23,6 +23,7 @@ const buildSpaPayload = (formData = {}) => {
     alternate_number: formData.spa_phone1 || '',
     email: formData.spa_email || '',
     website: formData.spa_website || '',
+    logo: formData.spa_logo || '', // Include logo if available
   };
 
   const hasValue = Object.values(spaData).some((value) => Boolean(value));

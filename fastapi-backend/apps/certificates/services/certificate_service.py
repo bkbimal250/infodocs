@@ -331,6 +331,8 @@ async def prepare_certificate_data(template: CertificateTemplate, certificate_da
     uploads_base_path_str = str(uploads_base_path.resolve()).replace("\\", "/")
     
     spa_logo = spa.get("logo", "")
+    logger.debug(f"SPA logo from data: {spa_logo[:100] if spa_logo else 'None'}")
+    
     if spa_logo and spa_logo.strip():
         # If logo is a relative path (spa_logos/filename.jpg), convert to appropriate URL
         if not spa_logo.startswith("http") and not spa_logo.startswith("file://") and not spa_logo.startswith("/"):
@@ -341,29 +343,34 @@ async def prepare_certificate_data(template: CertificateTemplate, certificate_da
                 uploads_logo_path = uploads_base_path / spa_logo
                 if uploads_logo_path.exists():
                     spa_logo = f"{base_url}/uploads/{spa_logo}"
+                    logger.debug(f"Preview: Using uploads logo URL: {spa_logo}")
                 else:
                     # Fallback to media
                     spa_logo = f"{base_url}/media/{spa_logo}"
+                    logger.debug(f"Preview: Using media logo URL: {spa_logo}")
             else:
                 # For PDF: use file:// path (absolute path)
                 # Try uploads first (where files are actually saved)
                 uploads_logo_path = uploads_base_path / spa_logo
                 if uploads_logo_path.exists():
                     spa_logo = f"file:///{uploads_base_path_str}/{spa_logo}"
-                    logger.debug(f"Found logo in uploads: {spa_logo}")
+                    logger.info(f"PDF: Found logo in uploads: {spa_logo}")
                 else:
                     # Fallback to media directory
                     media_logo_path = Path(media_base_path) / spa_logo
                     if media_logo_path.exists():
                         spa_logo = f"file:///{media_base_path_str}/{spa_logo}"
-                        logger.debug(f"Found logo in media: {spa_logo}")
+                        logger.info(f"PDF: Found logo in media: {spa_logo}")
                     else:
                         # Try uploads anyway (might work if path is correct)
                         spa_logo = f"file:///{uploads_base_path_str}/{spa_logo}"
-                        logger.warning(f"Logo not found in uploads or media, using uploads path: {spa_logo}")
+                        logger.warning(f"PDF: Logo not found in uploads or media, using uploads path anyway: {spa_logo}")
         # If it's already a full URL or file:// path, keep it as is
+        else:
+            logger.debug(f"Logo is already a full URL/path: {spa_logo[:100]}")
     else:
         spa_logo = ""  # Empty string if no logo
+        logger.warning(f"No SPA logo found in spa data. SPA object: {spa.get('name', 'Unknown')}")
     
     # Use address field directly from model (already contains full address)
     spa_address = spa.get("address", "").strip() if spa.get("address") else ""
