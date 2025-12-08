@@ -62,6 +62,11 @@ media_dir = Path(settings.UPLOAD_DIR)
 if media_dir.exists():
     app.mount("/media", StaticFiles(directory=str(media_dir)), name="media")
 
+# Mount uploads directory (where files are actually saved by forms_app)
+uploads_dir = Path(__file__).parent / "uploads"
+if uploads_dir.exists():
+    app.mount("/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
+
 # CORS Middleware
 # Ensure CORS_ORIGINS is a list (validator handles string to list conversion)
 cors_origins = settings.CORS_ORIGINS

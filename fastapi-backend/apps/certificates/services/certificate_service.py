@@ -319,9 +319,16 @@ async def prepare_certificate_data(template: CertificateTemplate, certificate_da
         stamp_image = certificate_data.get("certificate_stamp_image") or f"file:///{static_base_path_str}/images/Spa Certificate Stamp.png"
         signatory_image = certificate_data.get("certificate_signatory_image") or f"file:///{static_base_path_str}/images/Spa Certificate Signatory.png"
     
-    # Handle SPA logo path conversion (using cached media path)
+    # Handle SPA logo path conversion
+    # Note: Files are saved to uploads/ but settings.UPLOAD_DIR might be "media"
+    # Check both locations to handle the mismatch
     media_base_path = _get_media_path()
     media_base_path_str = str(media_base_path).replace("\\", "/")
+    
+    # Also check uploads directory (where files are actually saved)
+    base_dir = Path(__file__).parent.parent.parent
+    uploads_base_path = base_dir / "uploads"
+    uploads_base_path_str = str(uploads_base_path.resolve()).replace("\\", "/")
     
     spa_logo = spa.get("logo", "")
     if spa_logo and spa_logo.strip():
@@ -329,17 +336,31 @@ async def prepare_certificate_data(template: CertificateTemplate, certificate_da
         if not spa_logo.startswith("http") and not spa_logo.startswith("file://") and not spa_logo.startswith("/"):
             # For PDF generation, use file:// path
             if use_http_urls:
-                # For preview: use HTTP URL
-                spa_logo = f"{base_url}/media/{spa_logo}"
+                # For preview: use HTTP URL - try uploads first, then media
+                # Check if file exists in uploads
+                uploads_logo_path = uploads_base_path / spa_logo
+                if uploads_logo_path.exists():
+                    spa_logo = f"{base_url}/uploads/{spa_logo}"
+                else:
+                    # Fallback to media
+                    spa_logo = f"{base_url}/media/{spa_logo}"
             else:
                 # For PDF: use file:// path (absolute path)
-                # Ensure the path exists, if not, still try to use it
-                logo_path = Path(media_base_path) / spa_logo
-                if logo_path.exists():
-                    spa_logo = f"file:///{media_base_path_str}/{spa_logo}"
+                # Try uploads first (where files are actually saved)
+                uploads_logo_path = uploads_base_path / spa_logo
+                if uploads_logo_path.exists():
+                    spa_logo = f"file:///{uploads_base_path_str}/{spa_logo}"
+                    logger.debug(f"Found logo in uploads: {spa_logo}")
                 else:
-                    # Try anyway - might work if path is correct
-                    spa_logo = f"file:///{media_base_path_str}/{spa_logo}"
+                    # Fallback to media directory
+                    media_logo_path = Path(media_base_path) / spa_logo
+                    if media_logo_path.exists():
+                        spa_logo = f"file:///{media_base_path_str}/{spa_logo}"
+                        logger.debug(f"Found logo in media: {spa_logo}")
+                    else:
+                        # Try uploads anyway (might work if path is correct)
+                        spa_logo = f"file:///{uploads_base_path_str}/{spa_logo}"
+                        logger.warning(f"Logo not found in uploads or media, using uploads path: {spa_logo}")
         # If it's already a full URL or file:// path, keep it as is
     else:
         spa_logo = ""  # Empty string if no logo
@@ -427,11 +448,16 @@ async def prepare_certificate_data(template: CertificateTemplate, certificate_da
                     data["candidate_signature"] = f"file:///{media_base_path_str}/{sig}"
             # If it's base64 (for preview), keep it as is - it works in HTML
     
-    # For ID_CARD, handle candidate_photo image paths/URLs (using cached paths)
+    # For ID_CARD, handle candidate_photo image paths/URLs
     if template.category == CertificateCategory.ID_CARD:
         base_url = certificate_data.get("base_url", settings.API_BASE_URL)
         media_base_path = _get_media_path()
         media_base_path_str = str(media_base_path).replace("\\", "/")
+        
+        # Also check uploads directory (where files are actually saved)
+        base_dir = Path(__file__).parent.parent.parent
+        uploads_base_path = base_dir / "uploads"
+        uploads_base_path_str = str(uploads_base_path.resolve()).replace("\\", "/")
         
         # Handle candidate_photo
         if data.get("candidate_photo"):
@@ -453,7 +479,12 @@ async def prepare_certificate_data(template: CertificateTemplate, certificate_da
                         temp_path = await save_base64_image(photo, certificate_data["certificate_id"], "id_card_photo_temp")
                         if temp_path:
                             photo = temp_path
-                            data["candidate_photo"] = f"file:///{media_base_path_str}/{temp_path}"
+                            # Check both uploads and media
+                            uploads_photo_path = uploads_base_path / temp_path
+                            if uploads_photo_path.exists():
+                                data["candidate_photo"] = f"file:///{uploads_base_path_str}/{temp_path}"
+                            else:
+                                data["candidate_photo"] = f"file:///{media_base_path_str}/{temp_path}"
                             logger.info(f"Converted base64 to file path: {temp_path}")
                         else:
                             data["candidate_photo"] = ""
@@ -462,20 +493,31 @@ async def prepare_certificate_data(template: CertificateTemplate, certificate_da
             # If it's a relative file path (certificates/filename.jpg), convert to appropriate URL
             elif photo.startswith("certificates/"):
                 if use_http_urls:
-                    # For preview: use HTTP URL
-                    data["candidate_photo"] = f"{base_url}/media/{photo}"
+                    # For preview: use HTTP URL - try uploads first, then media
+                    uploads_photo_path = uploads_base_path / photo
+                    if uploads_photo_path.exists():
+                        data["candidate_photo"] = f"{base_url}/uploads/{photo}"
+                    else:
+                        data["candidate_photo"] = f"{base_url}/media/{photo}"
                     logger.debug(f"Preview: converted to HTTP URL: {data['candidate_photo']}")
                 else:
-                    # For PDF: use file:// path (absolute path)
-                    photo_path = Path(media_base_path) / photo
-                    file_url = f"file:///{media_base_path_str}/{photo}"
-                    if photo_path.exists():
+                    # For PDF: use file:// path (absolute path) - try uploads first
+                    uploads_photo_path = uploads_base_path / photo
+                    media_photo_path = Path(media_base_path) / photo
+                    
+                    if uploads_photo_path.exists():
+                        file_url = f"file:///{uploads_base_path_str}/{photo}"
                         data["candidate_photo"] = file_url
-                        logger.info(f"PDF: Using existing file path: {file_url}")
+                        logger.info(f"PDF: Using existing file path in uploads: {file_url}")
+                    elif media_photo_path.exists():
+                        file_url = f"file:///{media_base_path_str}/{photo}"
+                        data["candidate_photo"] = file_url
+                        logger.info(f"PDF: Using existing file path in media: {file_url}")
                     else:
-                        # Try anyway - might work if path is correct
+                        # Try uploads anyway - might work if path is correct
+                        file_url = f"file:///{uploads_base_path_str}/{photo}"
                         data["candidate_photo"] = file_url
-                        logger.warning(f"PDF: File not found at {photo_path}, but using path anyway: {file_url}")
+                        logger.warning(f"PDF: File not found in uploads or media, using uploads path: {file_url}")
             # If it's already a full URL or file:// path, keep it as is
             elif photo.startswith("http://") or photo.startswith("https://") or photo.startswith("file://"):
                 data["candidate_photo"] = photo
