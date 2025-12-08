@@ -68,6 +68,17 @@ cors_origins = settings.CORS_ORIGINS
 if isinstance(cors_origins, str):
     cors_origins = [origin.strip() for origin in cors_origins.split(",") if origin.strip()]
 
+# Add default localhost origins for development if not present
+default_origins = ["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173", "http://127.0.0.1:3000"]
+for origin in default_origins:
+    if origin not in cors_origins:
+        cors_origins.append(origin)
+
+# Log CORS origins for debugging
+import logging
+logger = logging.getLogger(__name__)
+logger.info(f"CORS allowed origins: {cors_origins}")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
@@ -177,11 +188,12 @@ async def validation_error_handler(request: Request, exc: RequestValidationError
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
-    """Handle all other exceptions - ensure it returns JSON"""
+    """Handle all other exceptions - ensure it returns JSON with CORS headers"""
     import logging
     logger = logging.getLogger(__name__)
     logger.error(f"Unhandled exception: {str(exc)}", exc_info=True)
     
+    # Create response - CORS middleware will add headers automatically
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={

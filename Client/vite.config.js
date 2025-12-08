@@ -21,26 +21,33 @@ export default defineConfig({
   },
   build: {
     chunkSizeWarningLimit: 1000, // Increase warning limit to 1MB
+    commonjsOptions: {
+      transformMixedEsModules: true,
+      include: [/node_modules/],
+    },
     rollupOptions: {
       output: {
         manualChunks: (id) => {
           // Split node_modules into separate chunks
           if (id.includes('node_modules')) {
-            // React and React DOM
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+            // React and React DOM - must be together and loaded first
+            // Use simpler pattern to catch all React-related packages
+            if (id.includes('node_modules/react') && !id.includes('react-icons')) {
               return 'react-vendor';
             }
-            // ONNX Runtime (background removal library)
-            if (id.includes('ort') || id.includes('onnxruntime')) {
-              return 'onnx-vendor';
+            // Bundle @imgly/background-removal and ONNX together in vendor chunk
+            // They must stay together due to tight coupling and module format requirements
+            if (id.includes('@imgly') || 
+                id.includes('background-removal') || 
+                id.includes('ort') || 
+                id.includes('onnxruntime') ||
+                id.includes('onnxruntime-web')) {
+              // Bundle with other vendor libraries to avoid splitting
+              return 'vendor';
             }
             // PDF generation libraries
             if (id.includes('html2pdf') || id.includes('html2canvas') || id.includes('jspdf')) {
               return 'pdf-vendor';
-            }
-            // Image processing
-            if (id.includes('@imgly') || id.includes('background-removal')) {
-              return 'image-vendor';
             }
             // Other large vendor libraries
             if (id.includes('axios') || id.includes('react-icons')) {
@@ -52,6 +59,9 @@ export default defineConfig({
         },
       },
     },
+  },
+  optimizeDeps: {
+    exclude: ['@imgly/background-removal'],
   },
 })
 

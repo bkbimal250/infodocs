@@ -24,11 +24,36 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
         except Exception as e:
             logger.error(f"Unhandled error: {str(e)}")
             logger.error(traceback.format_exc())
-            return JSONResponse(
+            
+            # Create response with CORS headers
+            response = JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content={
                     "error": "Internal server error",
-                    "detail": str(e) if request.app.debug else None
+                    "detail": str(e) if getattr(request.app.state, 'debug', False) else None
                 }
             )
+            
+            # Add CORS headers if origin is present
+            origin = request.headers.get("origin")
+            if origin:
+                # Get CORS origins from app settings
+                from config.settings import settings
+                cors_origins = settings.CORS_ORIGINS
+                if isinstance(cors_origins, str):
+                    cors_origins = [origin.strip() for origin in cors_origins.split(",") if origin.strip()]
+                
+                # Add default localhost origins
+                default_origins = ["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173", "http://127.0.0.1:3000"]
+                for default_origin in default_origins:
+                    if default_origin not in cors_origins:
+                        cors_origins.append(default_origin)
+                
+                if origin in cors_origins or "*" in cors_origins:
+                    response.headers["Access-Control-Allow-Origin"] = origin
+                    response.headers["Access-Control-Allow-Credentials"] = "true"
+                    response.headers["Access-Control-Allow-Methods"] = "*"
+                    response.headers["Access-Control-Allow-Headers"] = "*"
+            
+            return response
 

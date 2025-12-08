@@ -42,7 +42,11 @@ const SignatureUpload = ({ value, onChange, label = 'Signature', required = fals
       toast.loading('Removing background...', { id: 'bg-removal' });
 
       // Dynamically import background removal library (large ONNX Runtime)
-      const { removeBackground } = await import('@imgly/background-removal');
+      // Handle both named and default exports for compatibility
+      const backgroundRemovalModule = await import('@imgly/background-removal');
+      const removeBackground = backgroundRemovalModule.removeBackground || 
+                                (backgroundRemovalModule.default && backgroundRemovalModule.default.removeBackground) ||
+                                backgroundRemovalModule.default;
 
       // Convert data URL to blob
       const response = await fetch(croppedImageUrl);
