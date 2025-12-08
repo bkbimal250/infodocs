@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { authApi } from '../../api/Auth/authApi';
+import { usersApi } from '../../api/Users/usersApi';
 
 /**
  * User Profile Page
@@ -55,7 +56,6 @@ const Profile = () => {
 
     try {
       // Update profile using usersApi
-      const { usersApi } = await import('../../api/Users/usersApi');
       await usersApi.profile.updateProfile(user.id, formData);
       setSuccess('Profile updated successfully!');
       loadProfile();

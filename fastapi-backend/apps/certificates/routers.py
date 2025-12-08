@@ -681,8 +681,13 @@ async def delete_template_endpoint(
     try:
         deleted = await delete_template(db, template_id)
         if not deleted:
+            # Raise HTTPException outside of database context to avoid issues
             raise HTTPException(status_code=404, detail="Template not found")
+        # Return 204 No Content on success
+        from fastapi.responses import Response
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
     except HTTPException:
+        # Re-raise HTTP exceptions as-is
         raise
     except Exception as e:
         logger.error(f"Error deleting template {template_id}: {e}", exc_info=True)

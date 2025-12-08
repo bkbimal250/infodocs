@@ -247,8 +247,8 @@ async def update_template(
 
 async def delete_template(db: AsyncSession, template_id: int) -> bool:
     """Delete a certificate template and invalidate cache"""
-    """Delete a certificate template"""
-    template = await get_template_by_id(db, template_id)
+    # Check if template exists (bypass cache to ensure we check database)
+    template = await get_template_by_id(db, template_id, use_cache=False)
     if not template:
         return False
 
@@ -256,8 +256,9 @@ async def delete_template(db: AsyncSession, template_id: int) -> bool:
     await db.execute(stmt)
     await db.commit()
     
-    # Invalidate cache for deleted template
+    # Invalidate cache for deleted template and list cache
     _invalidate_template_cache(template_id)
+    _invalidate_template_cache()  # Also clear list cache
     
     return True
 

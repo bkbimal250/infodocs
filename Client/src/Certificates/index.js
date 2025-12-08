@@ -5,13 +5,18 @@
  * Central entry point for all certificate-related modules
  * 
  * Usage:
- * import { certificateApi, prepareCertificateData, CreateCertifications } from '@/Certificates';
+ * import { certificateApi, prepareCertificateData } from '@/Certificates';
+ * 
+ * Note: Page components (Certifications, CreateCertifications, ViewCertificates) 
+ * are lazy-loaded in the router for code splitting. Import them directly if needed:
+ * import Certifications from '@/Certificates/Certifications';
  */
 
-// Page Components
-export { default as Certifications } from './Certifications';
-export { default as CreateCertifications } from './CreateCertifications';
-export { default as ViewCertificates } from './ViewCertificates';
+// Page Components - NOT exported here to avoid conflicts with lazy loading
+// Import directly: import Certifications from '@/Certificates/Certifications';
+// export { default as Certifications } from './Certifications';
+// export { default as CreateCertifications } from './CreateCertifications';
+// export { default as ViewCertificates } from './ViewCertificates';
 
 // API Service
 export { certificateApi } from '../api/Certificates/certificateApi';

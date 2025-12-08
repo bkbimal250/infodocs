@@ -1,4 +1,4 @@
-import { Certifications } from '../../../Certificates';
+import Certifications from '../../../Certificates/Certifications';
 
 /**
  * Manager Certificate Creation Page

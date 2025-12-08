@@ -7,9 +7,11 @@ import HrLayout from '../components/HrLayout';
 import ManagerLayout from '../components/ManagerLayout';
 import UserLayout from '../components/UserLayout';
 import { FormSkeleton } from '../components/LoadingSkeleton';
+import Certifications from '../Certificates/Certifications';
+
 
 // Lazy load components for code splitting
-const LazyCertifications = lazy(() => import('../Certificates/Certifications'));
+// const LazyCertifications = lazy(() => import('../Certificates/Certifications'));
 const LazyCreateCertifications = lazy(() => import('../Certificates/CreateCertifications'));
 const LazyViewCertificates = lazy(() => import('../Certificates/ViewCertificates'));
 const LazyCertificatePreviewPage = lazy(() => import('../Certificates/CertificatePreviewPage'));
@@ -87,13 +89,8 @@ import { ViewHiringDetails as UserViewHiringDetails } from '../pages/Users/JobHi
 // Public Forms
 import { CandidateForm, HiringForms } from '../publicforms';
 
-// Public Certificate Creation
-import { Certifications, CreateCertifications, ViewCertificates } from '../Certificates';
-import CertificatePreviewPage from '../Certificates/CertificatePreviewPage';
-
 // Home Pages
-import Home from '../Home/Home';
-import About from '../Home/About';
+// Note: Certificates components are lazy-loaded for code splitting
 
 /**
  * Main App Router
@@ -148,12 +145,11 @@ const AppRouter = () => {
           path="/certificates"
           element={
             <Layout>
-              <Suspense fallback={<FormSkeleton />}>
-                <LazyCertifications />
-              </Suspense>
+              <Certifications />
             </Layout>
           }
         />
+
         <Route
           path="/certificate-creation"
           element={
