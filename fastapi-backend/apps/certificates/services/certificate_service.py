@@ -319,12 +319,12 @@ async def prepare_certificate_data(template: CertificateTemplate, certificate_da
     # Determine image URLs based on context
     if use_http_urls:
         # For browser preview - use HTTP URLs
-        background_image = certificate_data.get("certificate_background_image") or f"{base_url}/static/images/info docs.png"
+        background_image = certificate_data.get("certificate_background_image") or f"{base_url}/static/images/spacertificate.png"
         stamp_image = certificate_data.get("certificate_stamp_image") or f"{base_url}/static/images/Spa Certificate Stamp.png"
         signatory_image = certificate_data.get("certificate_signatory_image") or f"{base_url}/static/images/Spa Certificate Signatory.png"
     else:
         # For PDF generation - use file:// URLs
-        background_image = certificate_data.get("certificate_background_image") or f"file:///{static_base_path_str}/images/info docs.png"
+        background_image = certificate_data.get("certificate_background_image") or f"file:///{static_base_path_str}/images/spacertificate.png"
         stamp_image = certificate_data.get("certificate_stamp_image") or f"file:///{static_base_path_str}/images/Spa Certificate Stamp.png"
         signatory_image = certificate_data.get("certificate_signatory_image") or f"file:///{static_base_path_str}/images/Spa Certificate Signatory.png"
     
