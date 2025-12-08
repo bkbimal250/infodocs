@@ -56,7 +56,7 @@ const Profile = () => {
 
     try {
       // Update profile using usersApi
-      await usersApi.profile.updateProfile(user.id, formData);
+      await usersApi.updateProfile(user.id, formData);
       setSuccess('Profile updated successfully!');
       loadProfile();
     } catch (err) {
