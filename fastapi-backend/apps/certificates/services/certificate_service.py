@@ -219,10 +219,13 @@ async def update_template(
     template_config: Optional[Dict[str, Any]] = None
 ) -> Optional[CertificateTemplate]:
     """Update a certificate template"""
-    template = await get_template_by_id(db, template_id)
+    # Bypass cache to get a fresh template from the current session
+    # This ensures the template is attached to the current session for updates
+    template = await get_template_by_id(db, template_id, use_cache=False)
     if not template:
         return None
 
+    # Update fields that are provided
     for field, value in {
         "name": name,
         "category": category,
@@ -236,13 +239,18 @@ async def update_template(
         if value is not None:
             setattr(template, field, value)
 
-    await db.commit()
-    await db.refresh(template)
-    
-    # Invalidate cache for updated template
-    _invalidate_template_cache(template_id)
-    
-    return template
+    try:
+        await db.commit()
+        await db.refresh(template)
+        
+        # Invalidate cache for updated template
+        _invalidate_template_cache(template_id)
+        
+        return template
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Error updating template {template_id}: {e}", exc_info=True)
+        raise
 
 
 async def delete_template(db: AsyncSession, template_id: int) -> bool:
