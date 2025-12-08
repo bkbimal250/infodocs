@@ -302,7 +302,8 @@ async def prepare_certificate_data(template: CertificateTemplate, certificate_da
 
     # Get static file base path (using cached path)
     static_base_path = _get_static_path()
-    static_base_path_str = str(static_base_path).replace("\\", "/")
+    # Remove leading slash for file:// URLs to avoid double slashes
+    static_base_path_str = str(static_base_path).replace("\\", "/").lstrip("/")
     
     # Get base URL once
     base_url = certificate_data.get("base_url", settings.API_BASE_URL)
@@ -323,12 +324,16 @@ async def prepare_certificate_data(template: CertificateTemplate, certificate_da
     # Note: Files are saved to uploads/ but settings.UPLOAD_DIR might be "media"
     # Check both locations to handle the mismatch
     media_base_path = _get_media_path()
-    media_base_path_str = str(media_base_path).replace("\\", "/")
+    # Remove leading slash for file:// URLs to avoid double slashes
+    media_base_path_str = str(media_base_path).replace("\\", "/").lstrip("/")
     
     # Also check uploads directory (where files are actually saved)
-    base_dir = Path(__file__).parent.parent.parent
+    # Get backend root: certificate_service.py is at apps/certificates/services/
+    # So we need to go up 4 levels: services -> certificates -> apps -> backend_root
+    base_dir = Path(__file__).parent.parent.parent.parent
     uploads_base_path = base_dir / "uploads"
-    uploads_base_path_str = str(uploads_base_path.resolve()).replace("\\", "/")
+    # Remove leading slash for file:// URLs to avoid double slashes
+    uploads_base_path_str = str(uploads_base_path.resolve()).replace("\\", "/").lstrip("/")
     
     spa_logo = spa.get("logo", "")
     logger.debug(f"SPA logo from data: {spa_logo[:100] if spa_logo else 'None'}")
@@ -353,13 +358,15 @@ async def prepare_certificate_data(template: CertificateTemplate, certificate_da
                 # Try uploads first (where files are actually saved)
                 uploads_logo_path = uploads_base_path / spa_logo
                 if uploads_logo_path.exists():
+                    # Ensure proper file:// URL format (file:///absolute/path)
                     spa_logo = f"file:///{uploads_base_path_str}/{spa_logo}"
                     logger.info(f"PDF: Found logo in uploads: {spa_logo}")
                 else:
                     # Fallback to media directory
                     media_logo_path = Path(media_base_path) / spa_logo
+                    media_base_path_str_clean = media_base_path_str.lstrip("/")
                     if media_logo_path.exists():
-                        spa_logo = f"file:///{media_base_path_str}/{spa_logo}"
+                        spa_logo = f"file:///{media_base_path_str_clean}/{spa_logo}"
                         logger.info(f"PDF: Found logo in media: {spa_logo}")
                     else:
                         # Try uploads anyway (might work if path is correct)
@@ -459,12 +466,16 @@ async def prepare_certificate_data(template: CertificateTemplate, certificate_da
     if template.category == CertificateCategory.ID_CARD:
         base_url = certificate_data.get("base_url", settings.API_BASE_URL)
         media_base_path = _get_media_path()
-        media_base_path_str = str(media_base_path).replace("\\", "/")
+        # Remove leading slash for file:// URLs to avoid double slashes
+        media_base_path_str = str(media_base_path).replace("\\", "/").lstrip("/")
         
         # Also check uploads directory (where files are actually saved)
-        base_dir = Path(__file__).parent.parent.parent
+        # Get backend root: certificate_service.py is at apps/certificates/services/
+        # So we need to go up 4 levels: services -> certificates -> apps -> backend_root
+        base_dir = Path(__file__).parent.parent.parent.parent
         uploads_base_path = base_dir / "uploads"
-        uploads_base_path_str = str(uploads_base_path.resolve()).replace("\\", "/")
+        # Remove leading slash for file:// URLs to avoid double slashes
+        uploads_base_path_str = str(uploads_base_path.resolve()).replace("\\", "/").lstrip("/")
         
         # Handle candidate_photo
         if data.get("candidate_photo"):
@@ -512,12 +523,13 @@ async def prepare_certificate_data(template: CertificateTemplate, certificate_da
                     uploads_photo_path = uploads_base_path / photo
                     media_photo_path = Path(media_base_path) / photo
                     
+                    media_base_path_str_clean = media_base_path_str.lstrip("/")
                     if uploads_photo_path.exists():
                         file_url = f"file:///{uploads_base_path_str}/{photo}"
                         data["candidate_photo"] = file_url
                         logger.info(f"PDF: Using existing file path in uploads: {file_url}")
                     elif media_photo_path.exists():
-                        file_url = f"file:///{media_base_path_str}/{photo}"
+                        file_url = f"file:///{media_base_path_str_clean}/{photo}"
                         data["candidate_photo"] = file_url
                         logger.info(f"PDF: Using existing file path in media: {file_url}")
                     else:
@@ -525,10 +537,41 @@ async def prepare_certificate_data(template: CertificateTemplate, certificate_da
                         file_url = f"file:///{uploads_base_path_str}/{photo}"
                         data["candidate_photo"] = file_url
                         logger.warning(f"PDF: File not found in uploads or media, using uploads path: {file_url}")
-            # If it's already a full URL or file:// path, keep it as is
+            # Handle blob URLs (browser-specific, can't be used for PDF)
+            elif photo.startswith("blob:"):
+                if use_http_urls:
+                    # For preview: blob URLs work in browsers
+                    data["candidate_photo"] = photo
+                    logger.debug(f"Keeping blob URL for preview: {photo[:50]}")
+                else:
+                    # For PDF: blob URLs don't work, need to convert or use file path
+                    logger.error(f"Blob URL cannot be used for PDF generation: {photo[:50]}. Frontend should send base64 data URL or file path instead.")
+                    data["candidate_photo"] = ""  # Empty to avoid broken image
+            # If it's already a full HTTP/HTTPS URL or file:// path, keep it as is
             elif photo.startswith("http://") or photo.startswith("https://") or photo.startswith("file://"):
-                data["candidate_photo"] = photo
-                logger.debug(f"Keeping existing URL: {photo[:50]}")
+                if use_http_urls:
+                    # For preview: HTTP URLs work
+                    data["candidate_photo"] = photo
+                    logger.debug(f"Keeping existing HTTP URL: {photo[:50]}")
+                else:
+                    # For PDF: HTTP URLs might work if accessible, but file:// is better
+                    # Try to convert HTTP URL to file path if it's a local server file
+                    if base_url and photo.startswith(base_url):
+                        # It's a local server file, try to extract path
+                        relative_path = photo.replace(f"{base_url}/uploads/", "").replace(f"{base_url}/media/", "")
+                        if relative_path:
+                            uploads_photo_path = uploads_base_path / relative_path
+                            if uploads_photo_path.exists():
+                                data["candidate_photo"] = f"file:///{uploads_base_path_str}/{relative_path}"
+                                logger.info(f"PDF: Converted HTTP URL to file path: {data['candidate_photo']}")
+                            else:
+                                data["candidate_photo"] = photo  # Keep HTTP URL as fallback
+                                logger.warning(f"PDF: Could not convert HTTP URL to file path, using HTTP URL: {photo[:50]}")
+                        else:
+                            data["candidate_photo"] = photo
+                    else:
+                        data["candidate_photo"] = photo
+                        logger.warning(f"PDF: Using HTTP URL (may not work): {photo[:50]}")
             else:
                 # Unknown format, try to use as is
                 data["candidate_photo"] = photo
