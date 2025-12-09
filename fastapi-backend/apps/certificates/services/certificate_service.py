@@ -176,7 +176,7 @@ async def create_template(
     template_html: Optional[str] = None,
     template_type: TemplateType = TemplateType.IMAGE,
     is_active: bool = True,
-    is_public: bool = True,
+    is_public: bool = False,  # Certificates are private by default - only authenticated users can access
     template_config: Optional[Dict[str, Any]] = None
 ) -> CertificateTemplate:
     """Create a new certificate template"""
@@ -767,7 +767,7 @@ async def create_generated_certificate(
     name: str,
     certificate_data: Optional[Dict[str, Any]] = None,
     created_by: Optional[int] = None,
-    is_public: bool = True,
+    is_public: bool = False,  # Certificates are private by default - only authenticated users can access
     ip_address: Optional[str] = None,
     user_agent: Optional[str] = None
 ):

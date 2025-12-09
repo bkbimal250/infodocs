@@ -1,19 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { HiArrowRight, HiOutlineBell, HiOutlineClock, HiOutlineBriefcase } from 'react-icons/hi';
+import { HiArrowRight, HiOutlineBell, HiOutlineClock } from 'react-icons/hi';
 import { managerApi } from '../../../api/Manager/managerApi';
 import { usersApi } from '../../../api/Users/usersApi';
+import Stats from './Stats';
 
 /**
  * Manager Dashboard Page
  * Shows overview for managers
  */
 const ManagerDashboard = () => {
-  const [stats, setStats] = useState({
-    totalCertificates: 0,
-    totalCandidates: 0,
-    totalHiringForms: 0,
-  });
   const [loading, setLoading] = useState(true);
   const [recentCertificates, setRecentCertificates] = useState([]);
   const [notifications, setNotifications] = useState([]);
@@ -26,25 +22,17 @@ const ManagerDashboard = () => {
 
   const loadDashboardData = async () => {
     try {
-      const [certsRes, candidatesRes, hiringRes, notificationsRes, activitiesRes, unreadRes] = await Promise.allSettled([
-        managerApi.getMyCertificates({ skip: 0, limit: 1000 }),
-        managerApi.getMyCandidateForms({ skip: 0, limit: 1000 }),
-        managerApi.getMyHiringForms({ skip: 0, limit: 1000 }),
+      const [certsRes, notificationsRes, activitiesRes, unreadRes] = await Promise.allSettled([
+        managerApi.getMyCertificates({ skip: 0, limit: 5 }),
         usersApi.getNotifications({ limit: 5 }),
         usersApi.getActivities({ limit: 5 }),
         usersApi.getUnreadCount(),
       ]);
 
-      const certificates = certsRes.status === 'fulfilled' ? (certsRes.value.data || []) : [];
-      const candidates = candidatesRes.status === 'fulfilled' ? (candidatesRes.value.data || []) : [];
-      const hiringForms = hiringRes.status === 'fulfilled' ? (hiringRes.value.data || []) : [];
-
-      setStats({
-        totalCertificates: certificates.length,
-        totalCandidates: candidates.length,
-        totalHiringForms: hiringForms.length,
-      });
-      setRecentCertificates(certificates.slice(0, 5));
+      const certificates = certsRes.status === 'fulfilled' 
+        ? (certsRes.value.data?.results || certsRes.value.data || []) 
+        : [];
+      setRecentCertificates(Array.isArray(certificates) ? certificates.slice(0, 5) : []);
 
       if (notificationsRes.status === 'fulfilled') {
         const notifs = notificationsRes.value.data || [];
@@ -82,71 +70,9 @@ const ManagerDashboard = () => {
       <div className="max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold text-[var(--color-text-primary)] mb-8">Manager Dashboard</h1>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-[var(--color-bg-primary)] rounded-lg shadow p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-[var(--color-text-secondary)]">Total Certificates</p>
-                <p className="text-3xl font-bold text-[var(--color-text-primary)] mt-2">
-                  {stats.totalCertificates}
-                </p>
-              </div>
-              <div className="bg-blue-100 rounded-full p-3">
-                <svg
-                  className="w-6 h-6 text-[var(--color-primary)]"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
-                  />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-[var(--color-bg-primary)] rounded-lg shadow p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-[var(--color-text-secondary)]">Total Candidates</p>
-                <p className="text-3xl font-bold text-[var(--color-text-primary)] mt-2">{stats.totalCandidates}</p>
-              </div>
-              <div className="bg-green-100 rounded-full p-3">
-                <svg
-                  className="w-6 h-6 text-green-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                  />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-[var(--color-bg-primary)] rounded-lg shadow p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-[var(--color-text-secondary)]">Total Hiring Forms</p>
-                <p className="text-3xl font-bold text-[var(--color-text-primary)] mt-2">
-                  {stats.totalHiringForms}
-                </p>
-              </div>
-              <div className="bg-purple-100 rounded-full p-3">
-                <HiOutlineBriefcase className="w-6 h-6 text-purple-600" />
-              </div>
-            </div>
-          </div>
+        {/* Statistics Cards */}
+        <div className="mb-8">
+          <Stats />
         </div>
 
         {/* Notifications and Activities */}
@@ -286,20 +212,49 @@ const ManagerDashboard = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-[var(--color-bg-primary)] divide-y divide-gray-200">
-                  {recentCertificates.map((cert) => (
-                    <tr key={cert.id} className="hover:bg-[var(--color-bg-secondary)]">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[var(--color-text-primary)]">
-                        {cert.candidate_name_display || cert.candidate_name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {cert.template_name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(cert.generated_at).toLocaleDateString()}
-                      </td>
-                    </tr>
-                  ))}
+                  {recentCertificates.map((cert) => {
+                    // Get template name - try multiple possible fields
+                    const getTemplateName = () => {
+                      // Try template_name first (if backend includes it)
+                      if (cert.template_name) return cert.template_name;
+                      
+                      // Try template object with name property
+                      if (cert.template?.name) return cert.template.name;
+                      
+                      // Format category as fallback (e.g., "spa_therapist" -> "Spa Therapist")
+                      if (cert.category) {
+                        const categoryStr = String(cert.category);
+                        return categoryStr
+                          .split('_')
+                          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                          .join(' ');
+                      }
+                      
+                      // Last resort: show template ID
+                      if (cert.template_id) return `Template #${cert.template_id}`;
+                      
+                      return 'N/A';
+                    };
+
+                    return (
+                      <tr key={cert.id} className="hover:bg-[var(--color-bg-secondary)]">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[var(--color-text-primary)]">
+                          {cert.candidate_name_display || cert.candidate_name || 'N/A'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {getTemplateName()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {cert.generated_at 
+                            ? new Date(cert.generated_at).toLocaleDateString()
+                            : 'N/A'}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
+
+                
               </table>
             </div>
           ) : (

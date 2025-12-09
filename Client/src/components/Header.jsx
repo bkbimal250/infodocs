@@ -1,10 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 
-/**
- * Header Component
- * Main navigation header with public and authenticated user navigation
- */
 const Header = ({ user, onLogout }) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -21,16 +17,14 @@ const Header = ({ user, onLogout }) => {
     navigate('/login');
   };
 
-  // Public navigation links
   const publicNavLinks = [
     { path: '/', label: 'Home' },
     { path: '/about', label: 'About' },
   ];
 
-  // Get role-based navigation links
   const getRoleNavLinks = () => {
     if (!user) return [];
-    
+
     if (user.role === 'admin' || user.role === 'super_admin') {
       return [
         { path: '/admin/dashboard', label: 'Dashboard' },
@@ -39,7 +33,7 @@ const Header = ({ user, onLogout }) => {
         { path: '/admin/users', label: 'Users' },
       ];
     }
-    
+
     if (user.role === 'spa_manager') {
       return [
         { path: '/manager/dashboard', label: 'Dashboard' },
@@ -47,7 +41,7 @@ const Header = ({ user, onLogout }) => {
         { path: '/manager/candidates', label: 'Candidates' },
       ];
     }
-    
+
     if (user.role === 'hr') {
       return [
         { path: '/hr/dashboard', label: 'Dashboard' },
@@ -55,7 +49,7 @@ const Header = ({ user, onLogout }) => {
         { path: '/hr/hiring-data', label: 'Hiring Data' },
       ];
     }
-    
+
     if (user.role === 'user') {
       return [
         { path: '/user/dashboard', label: 'Dashboard' },
@@ -63,93 +57,126 @@ const Header = ({ user, onLogout }) => {
         { path: '/user/forms', label: 'My Forms' },
       ];
     }
-    
+
     return [];
   };
 
   const roleNavLinks = getRoleNavLinks();
 
   return (
-    <header className="bg-white shadow-md sticky top-0 z-50">
+    <header className="sticky top-0 z-50 border-b bg-white/80 backdrop-blur">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo */}
+        {/* Top bar */}
+        <div className="flex items-center justify-between h-16 md:h-20">
+          {/* Logo + Brand */}
           <Link to="/" className="flex items-center">
-            <span className="text-2xl font-bold text-blue-600">info docs</span>
+            <img
+              className="h-12 w-auto object-contain"
+              src="/infodocs.png"
+              alt="Infodocs Logo"
+            />
           </Link>
 
+
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex space-x-1 items-center">
+          <nav className="hidden md:flex items-center gap-2">
             {user ? (
-              // Authenticated user navigation - show role-based links
               <>
                 {/* Role-based navigation */}
-                {roleNavLinks.map((link) => (
+                <div className="flex items-center gap-1">
+                  {roleNavLinks.map((link) => (
+                    <Link
+                      key={link.path}
+                      to={link.path}
+                      className={`relative px-3 py-2 rounded-full text-sm font-medium transition-all duration-200
+                        ${isActive(link.path)
+                          ? 'text-blue-700 bg-blue-50 shadow-sm'
+                          : 'text-gray-600 hover:text-blue-700 hover:bg-gray-50'
+                        }`}
+                    >
+                      {link.label}
+                      {isActive(link.path) && (
+                        <span className="absolute inset-x-3 -bottom-[3px] h-[2px] rounded-full bg-blue-500" />
+                      )}
+                    </Link>
+                  ))}
+                </div>
+
+                {/* User info + actions */}
+                <div className="flex items-center gap-3 pl-4 ml-4 border-l border-gray-200">
                   <Link
-                    key={link.path}
-                    to={link.path}
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
-                      isActive(link.path)
-                        ? 'bg-blue-600 text-white'
-                        : 'text-gray-700 hover:bg-gray-100 hover:text-blue-600'
-                    }`}
+                    to={user.role === 'user' ? '/user/profile' : '/profile'}
+                    className="flex items-center gap-2 rounded-full border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:border-blue-500 hover:text-blue-700 transition-colors"
                   >
-                    {link.label}
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-600/10 text-[11px] font-semibold text-blue-700 uppercase">
+                      {user.first_name?.[0]}
+                      {user.last_name?.[0]}
+                    </span>
+                    <span className="flex flex-col leading-tight">
+                      <span className="text-xs">
+                        {user.first_name} {user.last_name}
+                      </span>
+                      <span className="text-[10px] text-gray-500 capitalize">
+                        {user.role?.replace('_', ' ')}
+                      </span>
+                    </span>
                   </Link>
-                ))}
-                <Link
-                  to={user.role === 'user' ? '/user/profile' : '/profile'}
-                  className="text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium"
-                >
-                  {user.first_name} {user.last_name}
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm font-medium ml-2"
-                >
-                  Logout
-                </button>
+
+                  <button
+                    onClick={handleLogout}
+                    className="inline-flex items-center rounded-full bg-red-600 px-4 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1"
+                  >
+                    Logout
+                  </button>
+                </div>
               </>
             ) : (
-              // Public navigation - only Home, About, Login, Register
               <>
-                {publicNavLinks.map((link) => (
+                <div className="flex items-center gap-1">
+                  {publicNavLinks.map((link) => (
+                    <Link
+                      key={link.path}
+                      to={link.path}
+                      className={`relative px-3 py-2 rounded-full text-sm font-medium transition-all duration-200
+                        ${isActive(link.path)
+                          ? 'text-blue-700 bg-blue-50 shadow-sm'
+                          : 'text-gray-600 hover:text-blue-700 hover:bg-gray-50'
+                        }`}
+                    >
+                      {link.label}
+                      {isActive(link.path) && (
+                        <span className="absolute inset-x-3 -bottom-[3px] h-[2px] rounded-full bg-blue-500" />
+                      )}
+                    </Link>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-3 pl-4 ml-4 border-l border-gray-200">
                   <Link
-                    key={link.path}
-                    to={link.path}
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
-                      isActive(link.path)
-                        ? 'bg-blue-600 text-white'
-                        : 'text-gray-700 hover:bg-gray-100 hover:text-blue-600'
-                    }`}
+                    to="/login"
+                    className="text-sm font-medium text-gray-600 hover:text-blue-700"
                   >
-                    {link.label}
+                    Login
                   </Link>
-                ))}
-                <Link
-                  to="/login"
-                  className="text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium ml-2"
-                >
-                  Login
-                </Link>
-                <Link
-                  to="/register"
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium ml-2"
-                >
-                  Register
-                </Link>
+                  <Link
+                    to="/register"
+                    className="inline-flex items-center rounded-full bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                  >
+                    Get Started
+                  </Link>
+                </div>
               </>
             )}
           </nav>
 
           {/* Mobile Menu Button */}
           <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="md:hidden p-2 rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onClick={() => setIsMenuOpen((prev) => !prev)}
+            className="md:hidden inline-flex items-center justify-center rounded-lg border border-gray-200 p-2 text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
             aria-label="Toggle menu"
           >
             <svg
-              className="h-6 w-6"
+              className="h-5 w-5"
               fill="none"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -160,7 +187,7 @@ const Header = ({ user, onLogout }) => {
               {isMenuOpen ? (
                 <path d="M6 18L18 6M6 6l12 12" />
               ) : (
-                <path d="M4 6h16M4 12h16M4 18h16" />
+                <path d="M4 7h16M4 12h16M4 17h10" />
               )}
             </svg>
           </button>
@@ -169,72 +196,75 @@ const Header = ({ user, onLogout }) => {
         {/* Mobile Navigation */}
         {isMenuOpen && (
           <div className="md:hidden pb-4">
-            <nav className="flex flex-col space-y-1">
+            <nav className="mt-2 rounded-2xl border border-gray-100 bg-white shadow-lg p-2 space-y-1">
               {user ? (
-                // Authenticated mobile menu
                 <>
-                  {/* Role-based navigation */}
                   {roleNavLinks.map((link) => (
                     <Link
                       key={link.path}
                       to={link.path}
                       onClick={() => setIsMenuOpen(false)}
-                      className={`px-4 py-2 rounded-md text-base font-medium transition-colors duration-200 ${
-                        isActive(link.path)
+                      className={`block px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${isActive(link.path)
                           ? 'bg-blue-600 text-white'
-                          : 'text-gray-700 hover:bg-gray-100 hover:text-blue-600'
-                      }`}
+                          : 'text-gray-700 hover:bg-gray-50 hover:text-blue-700'
+                        }`}
                     >
                       {link.label}
                     </Link>
                   ))}
+
                   <Link
                     to={user.role === 'user' ? '/user/profile' : '/profile'}
                     onClick={() => setIsMenuOpen(false)}
-                    className="px-4 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100"
+                    className="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-gray-700 bg-gray-50"
                   >
-                    Profile: {user.first_name} {user.last_name}
+                    <span>
+                      {user.first_name} {user.last_name}
+                    </span>
+                    <span className="text-xs text-gray-500 capitalize">
+                      {user.role?.replace('_', ' ')}
+                    </span>
                   </Link>
+
                   <button
                     onClick={() => {
                       setIsMenuOpen(false);
                       handleLogout();
                     }}
-                    className="px-4 py-2 rounded-md text-base font-medium text-white bg-red-600 hover:bg-red-700 text-left"
+                    className="w-full mt-1 px-3 py-2 rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-700 text-left"
                   >
                     Logout
                   </button>
                 </>
               ) : (
-                // Public mobile menu - only Home, About, Login, Register
                 <>
                   {publicNavLinks.map((link) => (
                     <Link
                       key={link.path}
                       to={link.path}
                       onClick={() => setIsMenuOpen(false)}
-                      className={`px-4 py-2 rounded-md text-base font-medium transition-colors duration-200 ${
-                        isActive(link.path)
+                      className={`block px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${isActive(link.path)
                           ? 'bg-blue-600 text-white'
-                          : 'text-gray-700 hover:bg-gray-100 hover:text-blue-600'
-                      }`}
+                          : 'text-gray-700 hover:bg-gray-50 hover:text-blue-700'
+                        }`}
                     >
                       {link.label}
                     </Link>
                   ))}
+
                   <Link
                     to="/login"
                     onClick={() => setIsMenuOpen(false)}
-                    className="px-4 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100"
+                    className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
                   >
                     Login
                   </Link>
                   <Link
                     to="/register"
                     onClick={() => setIsMenuOpen(false)}
-                    className="px-4 py-2 rounded-md text-base font-medium text-white bg-blue-600 hover:bg-blue-700"
+                    className="block px-3 py-2 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 text-center"
                   >
-                    Register
+                    Get Started
                   </Link>
                 </>
               )}
@@ -247,4 +277,3 @@ const Header = ({ user, onLogout }) => {
 };
 
 export default Header;
-

@@ -81,12 +81,13 @@ export const hrApi = {
 
   /**
    * Get all certificates (from all users)
+   * HR can see all certificates, not just public ones
    * @param {Object} params - Query parameters (skip, limit)
    * @returns {Promise}
    */
   getCertificates: (params = {}) => {
-    // Use public generated certificates endpoint
-    return apiClient.get('/certificates/generated/public', { params });
+    // Use HR-specific endpoint to get all certificates
+    return apiClient.get('/certificates/hr/all', { params });
   },
 
   /**
@@ -104,6 +105,47 @@ export const hrApi = {
    */
   getSpas: () => {
     return apiClient.get('/forms/spas/all');
+  },
+
+  /**
+   * Get all certificate templates (public templates)
+   * @returns {Promise}
+   */
+  getTemplates: () => {
+    return apiClient.get('/certificates/templates');
+  },
+
+  /**
+   * Generate a certificate
+   * @param {Object} data - Certificate data { template_id, name, certificate_data, spa_id? }
+   * @returns {Promise} - Returns blob for PDF download
+   */
+  generateCertificate: (data) => {
+    return apiClient.post('/certificates/generate', data, {
+      responseType: 'blob',
+    });
+  },
+
+  /**
+   * Download certificate PDF
+   * @param {number} id - Certificate ID
+   * @returns {Promise}
+   */
+  downloadCertificatePDF: (id) => {
+    return apiClient.get(`/certificates/generated/${id}/download/pdf`, {
+      responseType: 'blob'
+    });
+  },
+
+  /**
+   * Download certificate Image
+   * @param {number} id - Certificate ID
+   * @returns {Promise}
+   */
+  downloadCertificateImage: (id) => {
+    return apiClient.get(`/certificates/generated/${id}/download/image`, {
+      responseType: 'blob'
+    });
   },
 };
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { adminApi } from '../../../api/Admin/adminApi';
 import SpaTable from './SpaTable';
 
@@ -9,6 +9,7 @@ import SpaTable from './SpaTable';
  */
 const Spas = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [spas, setSpas] = useState([]);
   const [allSpas, setAllSpas] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -17,7 +18,8 @@ const Spas = () => {
     search: '',
     activeOnly: false,
   });
-  const [currentPage, setCurrentPage] = useState(1);
+  // Get page from URL query params, default to 1
+  const currentPage = parseInt(searchParams.get('page') || '1', 10);
   const itemsPerPage = 15;
 
   useEffect(() => {
@@ -57,6 +59,10 @@ const Spas = () => {
     }
   };
 
+  const handlePageChange = (newPage) => {
+    // Update URL query parameter when page changes
+    setSearchParams({ page: newPage.toString() });
+  };
 
   useEffect(() => {
     // Apply filters and pagination
@@ -209,7 +215,13 @@ const Spas = () => {
                 <input
                   type="text"
                   value={filter.search}
-                  onChange={(e) => setFilter({ ...filter, search: e.target.value })}
+                  onChange={(e) => {
+                    setFilter({ ...filter, search: e.target.value });
+                    // Reset to page 1 when search changes
+                    if (currentPage !== 1) {
+                      setSearchParams({ page: '1' });
+                    }
+                  }}
                   placeholder="Search by name, address, city, state..."
                   className="w-full pl-10 pr-4 py-2 border border-[var(--color-border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] transition"
                 />
@@ -220,7 +232,13 @@ const Spas = () => {
                 <input
                   type="checkbox"
                   checked={filter.activeOnly}
-                  onChange={(e) => setFilter({ ...filter, activeOnly: e.target.checked })}
+                  onChange={(e) => {
+                    setFilter({ ...filter, activeOnly: e.target.checked });
+                    // Reset to page 1 when filter changes
+                    if (currentPage !== 1) {
+                      setSearchParams({ page: '1' });
+                    }
+                  }}
                   className="w-4 h-4 rounded border-[var(--color-border-primary)] text-[var(--color-primary)] focus:ring-[var(--color-primary)] cursor-pointer"
                 />
                 <span className="ml-2 text-sm text-[var(--color-text-primary)]">Show active SPAs only</span>
@@ -237,7 +255,7 @@ const Spas = () => {
             loading={loading}
             currentPage={currentPage}
             totalPages={Math.ceil(filteredSpas.length / itemsPerPage)}
-            onPageChange={setCurrentPage}
+            onPageChange={handlePageChange}
             totalItems={filteredSpas.length}
             itemsPerPage={itemsPerPage}
           />

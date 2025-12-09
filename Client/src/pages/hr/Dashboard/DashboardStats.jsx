@@ -28,8 +28,9 @@ const DashboardStats = () => {
   const loadStats = async () => {
     try {
       // Load all data in parallel
-      const [certificatesRes, formsRes, hiringFormsRes] = await Promise.allSettled([
+      const [certificatesRes, templatesRes, formsRes, hiringFormsRes] = await Promise.allSettled([
         hrApi.getCertificates({ skip: 0, limit: 1000 }),
+        hrApi.getTemplates(),
         hrApi.getCandidateForms({ skip: 0, limit: 1 }),
         hrApi.getHiringForms({ skip: 0, limit: 1 }),
       ]);
@@ -45,6 +46,12 @@ const DashboardStats = () => {
       if (certificatesRes.status === 'fulfilled') {
         const certificates = certificatesRes.value.data?.results || certificatesRes.value.data || [];
         newStats.totalCertificates = Array.isArray(certificates) ? certificates.length : 0;
+      }
+
+      // Process templates
+      if (templatesRes.status === 'fulfilled') {
+        const templates = templatesRes.value.data || [];
+        newStats.totalTemplates = Array.isArray(templates) ? templates.length : 0;
       }
 
       // Process forms (get total count)

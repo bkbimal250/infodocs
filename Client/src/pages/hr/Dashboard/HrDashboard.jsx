@@ -206,7 +206,63 @@ const HrDashboard = () => {
 
         {/* Recent Activity */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        
+          {/* Recent Certificates */}
+          <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">Recent Certificates</h2>
+              <Link
+                to="/hr/certificates"
+                className="text-sm text-[var(--color-primary)] hover:text-blue-800 font-medium"
+              >
+                View All <HiArrowRight className="inline ml-1" />
+              </Link>
+            </div>
+            {loading ? (
+              <div className="space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="animate-pulse">
+                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                  </div>
+                ))}
+              </div>
+            ) : recentCertificates.length > 0 ? (
+              <div className="space-y-3">
+                {recentCertificates.map((cert) => (
+                  <Link
+                    key={cert.id}
+                    to={`/hr/certificates/${cert.id}`}
+                    className="block border-b border-[var(--color-border-primary)] pb-3 last:border-0 hover:bg-[var(--color-bg-secondary)] -mx-2 px-2 rounded transition-colors"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <p className="font-medium text-[var(--color-text-primary)]">
+                          {cert.candidate_name || cert.candidate_name_display || 'Unknown'}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {cert.category
+                            ? String(cert.category)
+                                .split('_')
+                                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                .join(' ')
+                            : cert.template_id
+                            ? `Template #${cert.template_id}`
+                            : 'Template'}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          {cert.generated_at
+                            ? new Date(cert.generated_at).toLocaleDateString()
+                            : 'Unknown date'}
+                        </p>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center py-4">No certificates yet</p>
+            )}
+          </div>
 
           {/* Recent Candidate Forms */}
           <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
@@ -250,7 +306,9 @@ const HrDashboard = () => {
                           </p>
                         )}
                         <p className="text-xs text-gray-400 mt-1">
-                          {new Date(form.created_at).toLocaleDateString()}
+                          {form.created_at
+                            ? new Date(form.created_at).toLocaleDateString()
+                            : 'Unknown date'}
                         </p>
                       </div>
                     </div>
@@ -300,7 +358,9 @@ const HrDashboard = () => {
                           Exp: {form.required_experience || 'N/A'}
                         </p>
                         <p className="text-xs text-gray-400 mt-1">
-                          {new Date(form.created_at).toLocaleDateString()}
+                          {form.created_at
+                            ? new Date(form.created_at).toLocaleDateString()
+                            : 'Unknown date'}
                         </p>
                       </div>
                     </div>

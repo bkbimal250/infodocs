@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { adminApi } from '../../../api/Admin/adminApi';
 import { FaArrowLeft } from 'react-icons/fa';
 
 const EditSpaPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  // Get the page number from URL query params
+  const page = searchParams.get('page') || '1';
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState(null);
@@ -157,7 +160,7 @@ const EditSpaPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
       <div className="max-w-4xl mx-auto bg-[var(--color-bg-primary)] rounded-xl shadow-lg p-8">
         <button 
-          onClick={() => navigate(-1)} 
+          onClick={() => navigate(`/admin/spas?page=${page}`)} 
           className="text-[var(--color-primary)] hover:text-blue-800 mb-6 flex items-center gap-2 font-medium transition-colors"
         >
           <FaArrowLeft className="mr-1" /> Back
@@ -279,7 +282,7 @@ const EditSpaPage = () => {
             </button>
             <button
               type="button"
-              onClick={() => navigate(-1)}
+              onClick={() => navigate(`/admin/spas?page=${page}`)}
               className="px-6 py-3 border border-[var(--color-border-primary)] rounded-lg hover:bg-[var(--color-bg-secondary)] font-semibold transition-colors"
             >
               Cancel

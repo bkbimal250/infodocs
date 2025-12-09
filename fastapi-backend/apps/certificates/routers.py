@@ -167,7 +167,7 @@ async def generate_certificate(
             name=certificate_data.name,
             certificate_data=certificate_data.certificate_data,
             created_by=current_user.id,
-            is_public=True,
+            is_public=False,  # Certificates are never public - only authenticated users can access
             ip_address=ip_address,
             user_agent=user_agent
         )
@@ -260,9 +260,16 @@ async def generate_certificate(
 
 
 @certificates_router.get("/generated/public", response_model=List[GeneratedCertificateResponse])
-async def list_public_certificates(skip: int = 0, limit: int = 100, db: AsyncSession = Depends(get_db)):
-    """List all public generated certificates"""
-    return await get_public_certificates(db, skip=skip, limit=limit)
+async def list_public_certificates(
+    skip: int = 0,
+    limit: int = 100,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """List certificates - requires authentication (no public access)"""
+    # This endpoint now requires authentication - redirect to my-certificates for consistency
+    # Or return empty list since we don't want public certificates
+    return []
 
 
 def get_certificate_name(certificate) -> str:
@@ -294,8 +301,8 @@ def convert_certificate_to_response(certificate):
     # Get certificate_pdf
     certificate_pdf = getattr(certificate, 'certificate_pdf', None)
     
-    # Get is_public
-    is_public = getattr(certificate, 'is_public', True)
+    # Get is_public (defaults to False for security)
+    is_public = getattr(certificate, 'is_public', False)
     
     # Get category from certificate model
     category = getattr(certificate, 'category', None)
@@ -347,22 +354,26 @@ async def list_my_certificates(
 
 
 @certificates_router.get("/generated/{certificate_id}", response_model=GeneratedCertificateResponse)
-async def get_public_certificate(
+async def get_certificate(
     certificate_id: int, 
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ):
-    """Get a single certificate - public if is_public=True, or admin/super_admin can access any"""
+    """Get a single certificate - requires authentication (no public access)"""
     certificate = await get_generated_certificate_by_id(db, certificate_id)
     if not certificate:
         raise HTTPException(status_code=404, detail="Certificate not found")
     
-    # Allow admin and super_admin to view any certificate
-    is_admin = current_user and current_user.role in ["admin", "super_admin"]
-    is_public = getattr(certificate, 'is_public', True)
+    # Check if user can access this certificate
+    is_admin = current_user.role in ["admin", "super_admin"]
+    is_hr = current_user.role == "hr"
+    is_manager = current_user.role == "spa_manager"
+    is_owner = getattr(certificate, 'created_by', None) == current_user.id
     
-    if not is_public and not is_admin:
-        raise HTTPException(status_code=403, detail="Certificate is not public")
+    # Admin, HR, and managers can see all certificates
+    # Regular users can only see their own certificates
+    if not (is_admin or is_hr or is_manager or is_owner):
+        raise HTTPException(status_code=403, detail="You don't have permission to access this certificate")
     
     # Convert to response format
     return convert_certificate_to_response(certificate)
@@ -372,19 +383,23 @@ async def get_public_certificate(
 async def download_certificate_pdf(
     certificate_id: int, 
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ):
-    """Download certificate as PDF - public if is_public=True, or admin/super_admin can download any"""
+    """Download certificate as PDF - requires authentication (no public access)"""
     certificate = await get_generated_certificate_by_id(db, certificate_id)
     if not certificate:
         raise HTTPException(status_code=404, detail="Certificate not found")
     
-    # Allow admin and super_admin to download any certificate
-    is_admin = current_user and current_user.role in ["admin", "super_admin"]
-    is_public = getattr(certificate, 'is_public', True)
+    # Check if user can access this certificate
+    is_admin = current_user.role in ["admin", "super_admin"]
+    is_hr = current_user.role == "hr"
+    is_manager = current_user.role == "spa_manager"
+    is_owner = getattr(certificate, 'created_by', None) == current_user.id
     
-    if not is_public and not is_admin:
-        raise HTTPException(status_code=403, detail="Certificate is not public")
+    # Admin, HR, and managers can download all certificates
+    # Regular users can only download their own certificates
+    if not (is_admin or is_hr or is_manager or is_owner):
+        raise HTTPException(status_code=403, detail="You don't have permission to download this certificate")
 
     if certificate.certificate_pdf:
         pdf_path = Path(settings.UPLOAD_DIR) / certificate.certificate_pdf
@@ -500,20 +515,24 @@ async def download_certificate_pdf(
 async def download_certificate_image(
     certificate_id: int, 
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Download certificate as image (PNG) - converts from PDF if available, otherwise generates from HTML.
-    Public if is_public=True, or admin/super_admin can download any"""
+    Requires authentication (no public access)"""
     certificate = await get_generated_certificate_by_id(db, certificate_id)
     if not certificate:
         raise HTTPException(status_code=404, detail="Certificate not found")
     
-    # Allow admin and super_admin to download any certificate
-    is_admin = current_user and current_user.role in ["admin", "super_admin"]
-    is_public = getattr(certificate, 'is_public', True)
+    # Check if user can access this certificate
+    is_admin = current_user.role in ["admin", "super_admin"]
+    is_hr = current_user.role == "hr"
+    is_manager = current_user.role == "spa_manager"
+    is_owner = getattr(certificate, 'created_by', None) == current_user.id
     
-    if not is_public and not is_admin:
-        raise HTTPException(status_code=403, detail="Certificate is not public")
+    # Admin, HR, and managers can download all certificates
+    # Regular users can only download their own certificates
+    if not (is_admin or is_hr or is_manager or is_owner):
+        raise HTTPException(status_code=403, detail="You don't have permission to download this certificate")
 
     # First, try to convert from existing PDF if available
     certificate_pdf = getattr(certificate, 'certificate_pdf', None)
@@ -764,10 +783,54 @@ async def get_all_certificates_admin(
 ):
     """Get all certificates with user information (admin only)"""
     try:
-        certificates = await get_all_certificates_with_users(db, skip=skip, limit=limit)
-        return certificates
+        # Get all certificates without pagination first (to properly sort across all tables)
+        # Then apply pagination after sorting
+        certificates = await get_all_certificates_with_users(db, skip=0, limit=10000)
+        
+        # Apply pagination after combining and sorting
+        paginated_certificates = certificates[skip:skip + limit]
+        
+        # Convert to response format and include creator info
+        result = []
+        for cert in paginated_certificates:
+            cert_response = convert_certificate_to_response(cert)
+            # Add creator information if available
+            if hasattr(cert, 'creator') and cert.creator:
+                cert_response['creator'] = {
+                    'id': cert.creator.id,
+                    'first_name': cert.creator.first_name,
+                    'last_name': cert.creator.last_name,
+                    'email': cert.creator.email,
+                    'username': cert.creator.username,
+                }
+            result.append(cert_response)
+        
+        return result
     except Exception as e:
         logger.error(f"Error getting all certificates: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve certificates: {str(e)}")
+
+
+@certificates_router.get("/hr/all", response_model=List[GeneratedCertificateResponse])
+async def get_all_certificates_hr(
+    skip: int = 0,
+    limit: int = 100,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("hr", "admin", "super_admin"))
+):
+    """Get all certificates for HR (HR can see all certificates from all users)"""
+    try:
+        # Get all certificates without pagination first (to properly sort across all tables)
+        # Then apply pagination after sorting
+        certificates = await get_all_certificates_with_users(db, skip=0, limit=10000)
+        
+        # Apply pagination after combining and sorting
+        paginated_certificates = certificates[skip:skip + limit]
+        
+        # Convert to response format
+        return [convert_certificate_to_response(cert) for cert in paginated_certificates]
+    except Exception as e:
+        logger.error(f"Error getting HR certificates: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to retrieve certificates: {str(e)}")
 
 

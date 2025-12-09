@@ -54,7 +54,7 @@ class CertificateTemplate(Base):
 
     created_by = Column(Integer, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
-    is_public = Column(Boolean, default=True, nullable=False)
+    is_public = Column(Boolean, default=False, nullable=False)  # Certificates are private by default
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
@@ -99,7 +99,7 @@ class CertificateBase(Base):
     certificate_pdf = Column(Text, nullable=True)
     certificate_data = Column(JSON, default=dict, nullable=False)
 
-    is_public = Column(Boolean, default=True, nullable=False)
+    is_public = Column(Boolean, default=False, nullable=False)  # Certificates are private by default
     generated_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 

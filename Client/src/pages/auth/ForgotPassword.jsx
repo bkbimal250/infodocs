@@ -88,7 +88,7 @@ const ForgotPassword = () => {
                   if (error) setError(null);
                   if (success) setSuccess(null);
                 }}
-                placeholder="you@example.com"
+                placeholder="youremail@gmail.com"
                 required
                 className="w-full px-4 py-2.5 border border-[var(--color-border-primary)] rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
               />

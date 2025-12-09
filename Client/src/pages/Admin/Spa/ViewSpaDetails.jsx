@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { adminApi } from '../../../api/Admin/adminApi';
 import { FaArrowLeft } from 'react-icons/fa';
 
@@ -9,6 +9,11 @@ const ViewSpaDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  
+  // Get the page number from URL query params
+  const page = searchParams.get('page') || '1';
 
   useEffect(() => {
     const loadSpa = async () => {
@@ -54,7 +59,7 @@ const ViewSpaDetails = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
       <div className="max-w-4xl mx-auto bg-[var(--color-bg-primary)] rounded-xl shadow-lg p-8">
         <button 
-          onClick={() => window.history.back()} 
+          onClick={() => navigate(`/admin/spas?page=${page}`)} 
           className="text-[var(--color-primary)] hover:text-blue-800 mb-6 flex items-center gap-2 font-medium transition-colors"
         >
           <FaArrowLeft className="mr-1" /> Back

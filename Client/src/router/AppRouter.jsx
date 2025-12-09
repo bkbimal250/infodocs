@@ -7,7 +7,6 @@ import HrLayout from '../components/HrLayout';
 import ManagerLayout from '../components/ManagerLayout';
 import UserLayout from '../components/UserLayout';
 import { FormSkeleton } from '../components/LoadingSkeleton';
-import Certifications from '../Certificates/Certifications';
 
 
 // Lazy load components for code splitting
@@ -66,12 +65,15 @@ import { HrDashboard } from '../pages/hr/Dashboard';
 import { Candidatespage, CandidateView } from '../pages/hr/Candidates';
 import { Hiringpages, ViewData } from '../pages/hr/HiringData';
 import { HrProfile } from '../pages/hr/Profiles';
+import HrCertificates from '../pages/hr/Certificates';
+import HrCertificateCreation from '../pages/hr/CertificateCreation';
 
 // Common Pages
 import {
   CertificateCreation,
   Profile,
 } from '../pages/common';
+import Certifications from '../Certificates/Certifications';
 
 // User Pages
 import {
@@ -270,6 +272,16 @@ const AppRouter = () => {
             <ProtectedRoute allowedRoles={['admin', 'super_admin', 'spa_manager']}>
               <AdminLayout>
                 <AdminCertificates />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/certificates/create"
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'super_admin', 'spa_manager']}>
+              <AdminLayout>
+                <Certifications />
               </AdminLayout>
             </ProtectedRoute>
           }
@@ -487,6 +499,8 @@ const AppRouter = () => {
           <Route path="dashboard" element={<HrDashboard />} />
           <Route path="candidates" element={<Candidatespage />} />
           <Route path="candidates/:id" element={<CandidateView />} />
+          <Route path="certificates" element={<HrCertificates />} />
+          <Route path="certificate-creation" element={<HrCertificateCreation />} />
           <Route path="hiring-data" element={<Hiringpages />} />
           <Route path="hiring-data/:id" element={<ViewData />} />
           <Route path="profile" element={<HrProfile />} />

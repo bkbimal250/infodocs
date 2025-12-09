@@ -35,7 +35,7 @@ const AdminDashboard = () => {
   const loadDashboardData = async () => {
     try {
       const [certificatesRes, candidateFormsRes, hiringFormsRes, notificationsRes, activitiesRes, unreadRes] = await Promise.allSettled([
-        adminApi.certificates.getGeneratedCertificates(0, 5),
+        adminApi.certificates.getAllCertificates({ skip: 0, limit: 5 }),
         adminApi.forms.getCandidateForms(0, 5),
         adminApi.forms.getHiringForms(0, 5),
         usersApi.getNotifications({ limit: 5 }),
@@ -44,7 +44,8 @@ const AdminDashboard = () => {
       ]);
 
       if (certificatesRes.status === 'fulfilled') {
-        const certificates = certificatesRes.value.data?.results || certificatesRes.value.data || [];
+        // Admin endpoint returns array directly, not wrapped in results
+        const certificates = certificatesRes.value.data || [];
         setRecentCertificates(Array.isArray(certificates) ? certificates.slice(0, 5) : []);
       }
 
@@ -245,7 +246,21 @@ const AdminDashboard = () => {
                           {cert.candidate_name || cert.candidate_name_display || 'Unknown'}
                         </p>
                         <p className="text-sm text-gray-500">
-                          {cert.template_name || 'Template'}
+                          {(() => {
+                            // Get template name - try multiple possible fields
+                            if (cert.template_name) return cert.template_name;
+                            if (cert.template?.name) return cert.template.name;
+                            // Format category as fallback
+                            if (cert.category) {
+                              const categoryStr = String(cert.category);
+                              return categoryStr
+                                .split('_')
+                                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                .join(' ');
+                            }
+                            if (cert.template_id) return `Template #${cert.template_id}`;
+                            return 'Template';
+                          })()}
                         </p>
                         <p className="text-xs text-gray-400 mt-1">
                           {new Date(cert.generated_at || cert.created_at).toLocaleDateString()}

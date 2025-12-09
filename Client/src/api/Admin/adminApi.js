@@ -102,13 +102,14 @@ export const adminApi = {
     },
 
     /**
-     * Get all generated certificates
+     * Get all generated certificates (admin can see all)
+     * @param {Object} params - Query parameters (skip, limit)
      * @returns {Promise}
      */
-    getGeneratedCertificates: () => {
-      // Backend route: GET /api/certificates/generated/public
-      // Returns all public generated certificates
-      return apiClient.get('/certificates/generated/public');
+    getGeneratedCertificates: (skip = 0, limit = 100) => {
+      // Backend route: GET /api/certificates/admin/all
+      // Returns all certificates (admin only)
+      return apiClient.get('/certificates/admin/all', { params: { skip, limit } });
     },
 
     /**
@@ -129,13 +130,36 @@ export const adminApi = {
     },
 
     /**
-     * Generate a certificate for a candidate
-     * @param {number} templateId - Template ID
-     * @param {Object} data - { candidate_id, certificate_data }
+     * Generate a certificate
+     * @param {Object} data - Certificate data { template_id, name, certificate_data, spa_id? }
+     * @returns {Promise} - Returns blob for PDF download
+     */
+    generateCertificate: (data) => {
+      return apiClient.post('/certificates/generate', data, {
+        responseType: 'blob',
+      });
+    },
+
+    /**
+     * Download certificate PDF
+     * @param {number} id - Certificate ID
      * @returns {Promise}
      */
-    generateCertificate: (templateId, data) => {
-      return apiClient.post(`/certificates/templates/${templateId}/generate`, data);
+    downloadCertificatePDF: (id) => {
+      return apiClient.get(`/certificates/generated/${id}/download/pdf`, {
+        responseType: 'blob'
+      });
+    },
+
+    /**
+     * Download certificate Image
+     * @param {number} id - Certificate ID
+     * @returns {Promise}
+     */
+    downloadCertificateImage: (id) => {
+      return apiClient.get(`/certificates/generated/${id}/download/image`, {
+        responseType: 'blob'
+      });
     },
 
     /**

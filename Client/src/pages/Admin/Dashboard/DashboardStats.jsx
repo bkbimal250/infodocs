@@ -33,9 +33,9 @@ const DashboardStats = () => {
   const loadStats = async () => {
     try {
       // Load all data in parallel
-      const [usersRes, certificatesRes, templatesRes, formsRes, spasRes, hiringFormsRes, analyticsRes] = await Promise.allSettled([
+      const [usersRes, certificatesStatsRes, templatesRes, formsRes, spasRes, hiringFormsRes, analyticsRes] = await Promise.allSettled([
         adminApi.users.getUsers(),
-        adminApi.certificates.getGeneratedCertificates(),
+        adminApi.certificates.getStatistics(), // Use statistics endpoint for accurate count
         adminApi.certificates.getTemplates(),
         adminApi.forms.getCandidateForms(0, 1),
         adminApi.forms.getAllSpas(),
@@ -60,10 +60,25 @@ const DashboardStats = () => {
         newStats.activeUsers = users.filter((u) => u.is_active).length;
       }
 
-      // Process certificates
-      if (certificatesRes.status === 'fulfilled') {
-        const certificates = certificatesRes.value.data?.results || certificatesRes.value.data || [];
-        newStats.totalCertificates = Array.isArray(certificates) ? certificates.length : 0;
+      // Process certificates - use statistics endpoint for accurate count
+      if (certificatesStatsRes.status === 'fulfilled') {
+        const stats = certificatesStatsRes.value.data || {};
+        const count = stats.total_certificates || 0;
+        newStats.totalCertificates = count;
+        console.log('Certificate statistics:', stats);
+        console.log('Total certificates count:', count);
+      } else {
+        // Fallback: try to get count from certificates list if stats fails
+        console.warn('Statistics endpoint failed, trying fallback:', certificatesStatsRes.reason);
+        try {
+          const certsRes = await adminApi.certificates.getAllCertificates({ skip: 0, limit: 1000 });
+          const certificates = certsRes.data || [];
+          const count = Array.isArray(certificates) ? certificates.length : 0;
+          newStats.totalCertificates = count;
+          console.log('Fallback: Certificates count from list:', count);
+        } catch (e) {
+          console.error('Failed to fetch certificates count:', e);
+        }
       }
 
       // Process templates
@@ -111,12 +126,13 @@ const DashboardStats = () => {
         }
       }
 
-      // Use analytics if available
+      // Use analytics if available (but don't override certificate count from statistics endpoint)
       if (analyticsRes.status === 'fulfilled' && analyticsRes.value.data) {
         const analytics = analyticsRes.value.data;
         if (analytics.total_forms !== undefined) newStats.totalForms = analytics.total_forms;
-        if (analytics.total_certificates !== undefined)
-          newStats.totalCertificates = analytics.total_certificates;
+        // Don't override certificate count - use statistics endpoint value
+        // if (analytics.total_certificates !== undefined)
+        //   newStats.totalCertificates = analytics.total_certificates;
         if (analytics.active_users !== undefined) newStats.activeUsers = analytics.active_users;
       }
 
@@ -142,6 +158,7 @@ const DashboardStats = () => {
       subtitle: 'Generated',
       icon: HiOutlineDocumentText,
       color: 'green',
+      link: '/admin/certificates',
     },
     {
       title: 'Templates',

@@ -85,22 +85,47 @@ const SpaTable = ({
           </tr>
         </thead>
         <tbody className="bg-[var(--color-bg-primary)] divide-y divide-[var(--color-border-primary)]">
-          {spas.map((spa) => (
-            <tr key={spa.id} className="hover:bg-[var(--color-primary-light)] transition-colors duration-150">
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="flex items-center">
-                  <div className="text-sm font-semibold text-[var(--color-text-primary)]">{spa.name}</div>
-                  {spa.code && (
-                    <span className="ml-2 px-2 py-0.5 text-xs bg-[var(--color-gray-100)] text-[var(--color-text-secondary)] rounded">
-                      {spa.code}
-                    </span>
-                  )}
-                </div>
-              </td>
+          {spas.map((spa) => {
+            // Construct logo URL - logo path is relative, need to add base URL
+            const fileBase = (import.meta.env.VITE_API_BASE_URL || 'https://infodocs.api.d0s369.co.in/api') + '/forms/files/';
+            const logoUrl = spa.logo ? (spa.logo.startsWith('http') ? spa.logo : fileBase + spa.logo) : null;
+            
+            return (
+              <tr key={spa.id} className="hover:bg-[var(--color-primary-light)] transition-colors duration-150">
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    {logoUrl ? (
+                      <img 
+                        src={logoUrl} 
+                        alt={spa.name} 
+                        className="w-10 h-10  mr-3 object-cover border-2 border-[var(--color-border-primary)]"
+                        onError={(e) => {
+                          // Fallback to placeholder if image fails to load
+                          e.target.style.display = 'none';
+                          if (e.target.nextSibling) {
+                            e.target.nextSibling.style.display = 'flex';
+                          }
+                        }}
+                      />
+                    ) : null}
+                    <div 
+                      className={`w-10 h-10 rounded-full mr-3 flex items-center justify-center bg-[var(--color-primary-light)] text-[var(--color-primary)] font-semibold text-sm border-2 border-[var(--color-border-primary)] ${logoUrl ? 'hidden' : ''}`}
+                    >
+                      {spa.name ? spa.name.charAt(0).toUpperCase() : 'S'}
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-[var(--color-text-primary)]">{spa.name}</div>
+                      {spa.code && (
+                        <span className="mt-1 inline-block px-2 py-0.5 text-xs bg-[var(--color-gray-100)] text-[var(--color-text-secondary)] rounded">
+                          {spa.code}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="text-sm text-[var(--color-text-secondary)]">{spa.area || '-'}</div>
                 <div className="text-sm text-[var(--color-text-secondary)]">{spa.city || '-'}</div>
-
               </td>
 
               <td className="px-6 py-4 whitespace-nowrap">
@@ -144,7 +169,7 @@ const SpaTable = ({
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <div className="flex items-center justify-end gap-2">
                   <Link
-                    to={`/admin/spas/${spa.id}`}
+                    to={`/admin/spas/${spa.id}?page=${currentPage}`}
                     className="p-2 text-[var(--color-info)] hover:text-[var(--color-info-dark)] hover:bg-[var(--color-info-light)] rounded-lg transition-colors"
                     title="View Details"
                   >
@@ -154,7 +179,7 @@ const SpaTable = ({
                     </svg>
                   </Link>
                   <Link
-                    to={`/admin/spas/${spa.id}/edit`}
+                    to={`/admin/spas/${spa.id}/edit?page=${currentPage}`}
                     className="p-2 text-[var(--color-primary)] hover:text-[var(--color-primary-dark)] hover:bg-[var(--color-primary-light)] rounded-lg transition-colors"
                     title="Edit"
                   >
@@ -174,7 +199,8 @@ const SpaTable = ({
                 </div>
               </td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
 

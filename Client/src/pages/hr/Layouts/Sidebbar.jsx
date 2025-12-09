@@ -27,6 +27,11 @@ const HrSidebar = () => {
       icon: HiOutlineChartBar,
     },
     {
+      name: 'Certificates',
+      path: '/hr/certificates',
+      icon: HiOutlineDocumentText,
+    },
+    {
       name: 'Candidates',
       path: '/hr/candidates',
       icon: HiOutlineUser,

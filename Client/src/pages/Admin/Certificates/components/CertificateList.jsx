@@ -394,7 +394,7 @@ const CertificateList = ({ certificates, loading, onRefresh }) => {
                   <div className="flex items-center gap-2">
                     {/* View Button */}
                     <Link
-                      to={`/certificate/${cert.id}`}
+                      to={`/admin/certificates/${cert.id}`}
                       className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 hover:text-blue-800 transition-colors"
                       title="View Certificate"
                     >

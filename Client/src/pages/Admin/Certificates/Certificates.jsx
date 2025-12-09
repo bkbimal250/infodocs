@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { HiOutlineDocumentText } from 'react-icons/hi';
 import { adminApi } from '../../../api/Admin/adminApi';
 import CertificateStatistics from './components/CertificateStatistics';
 import CertificateList from './components/CertificateList';
@@ -35,7 +37,9 @@ const AdminCertificates = () => {
       ]);
       
       setStatistics(statsResponse.data);
-      setCertificates(Array.isArray(certsResponse.data) ? certsResponse.data : []);
+      // Admin endpoint returns array directly (certificates with creator info attached)
+      const certs = certsResponse.data || [];
+      setCertificates(Array.isArray(certs) ? certs : []);
     } catch (err) {
       setError('Failed to load certificate data');
       console.error(err);
@@ -58,6 +62,20 @@ const AdminCertificates = () => {
   return (
     <div className="min-h-screen bg-[var(--color-bg-secondary)] py-8 px-4">
       <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-[var(--color-text-primary)]">Certificates</h1>
+            <p className="mt-2 text-[var(--color-text-secondary)]">View and manage all certificates</p>
+          </div>
+          <Link
+            to="/admin/certificates/create"
+            className="inline-flex items-center px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-[var(--color-primary-dark)] transition-colors"
+          >
+            <HiOutlineDocumentText className="mr-2 h-5 w-5" />
+            Create Certificate
+          </Link>
+        </div>
 
         {error && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded">
