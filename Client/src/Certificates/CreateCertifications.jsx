@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { HiArrowLeft } from 'react-icons/hi';
 import { certificateApi } from '../api/Certificates/certificateApi';
 import { apiCache } from '../utils/apiCache';
 import { debounce } from '../utils/debounce';
@@ -14,7 +15,14 @@ import {
   SPA_REQUIRED_CATEGORIES,
 } from '../utils/certificateConstants';
 
-import { prepareCertificateData, calculateInvoiceTotal, generateCertificateFilename, downloadFile, getCategoryDisplayName, convertBlobUrlsInData } from '../utils/certificateUtils';
+import {
+  prepareCertificateData,
+  calculateInvoiceTotal,
+  generateCertificateFilename,
+  downloadFile,
+  getCategoryDisplayName,
+  convertBlobUrlsInData,
+} from '../utils/certificateUtils';
 import { getCertificateFormComponent } from './components';
 
 const CreateCertifications = () => {
@@ -44,7 +52,7 @@ const CreateCertifications = () => {
 
   useEffect(() => {
     if (!templates.length) return;
-    const selected = templates.find(t => t.id === selectedTemplateId) || templates[0];
+    const selected = templates.find((t) => t.id === selectedTemplateId) || templates[0];
     setSelectedTemplate(selected || null);
     setSelectedTemplateId(selected ? selected.id : null);
   }, [templates, selectedTemplateId]);
@@ -56,7 +64,10 @@ const CreateCertifications = () => {
     return CERTIFICATE_FIELDS[categoryKey] || null;
   }, [categoryKey]);
 
-  const isInvoiceCategory = useMemo(() => categoryKey === CERTIFICATE_CATEGORIES.INVOICE_SPA_BILL, [categoryKey]);
+  const isInvoiceCategory = useMemo(
+    () => categoryKey === CERTIFICATE_CATEGORIES.INVOICE_SPA_BILL,
+    [categoryKey]
+  );
   const shouldRequireSpa = useMemo(
     () => (categoryKey ? SPA_REQUIRED_CATEGORIES.includes(categoryKey) : false),
     [categoryKey]
@@ -87,24 +98,22 @@ const CreateCertifications = () => {
   const loadTemplates = useCallback(async () => {
     try {
       setState(FORM_STATES.LOADING);
-      
-      // Check cache first
+
       const cacheKey = '/certificates/templates';
       const cached = apiCache.get(cacheKey);
-      
+
       if (cached) {
         setTemplates(cached);
         setError(null);
         setState(FORM_STATES.IDLE);
         return;
       }
-      
+
       const response = await certificateApi.getPublicTemplates();
       const templates = response.data || [];
       setTemplates(templates);
       setError(null);
-      
-      // Cache the response
+
       apiCache.set(cacheKey, {}, templates);
     } catch (err) {
       setError(ERROR_MESSAGES.LOAD_TEMPLATES_FAILED);
@@ -116,11 +125,10 @@ const CreateCertifications = () => {
   const loadSpas = useCallback(async () => {
     try {
       setSpaLoading(true);
-      
-      // Check cache first
+
       const cacheKey = '/forms/spas';
       const cached = apiCache.get(cacheKey);
-      
+
       if (cached) {
         setSpas(cached);
         setSpaError(null);
@@ -131,8 +139,7 @@ const CreateCertifications = () => {
       const spasData = response.data || [];
       setSpas(spasData);
       setSpaError(null);
-      
-      // Cache the response
+
       apiCache.set(cacheKey, {}, spasData);
     } catch (err) {
       setSpaError('Failed to load SPA locations');
@@ -143,8 +150,6 @@ const CreateCertifications = () => {
 
   const formatSpaAddress = useCallback((spa) => {
     if (!spa) return '';
-    // Use address field directly - it already contains the full address
-    // No need to combine with area, city, state, pincode as they may cause duplication
     return spa.address || '';
   }, []);
 
@@ -212,27 +217,30 @@ const CreateCertifications = () => {
     setShowSpaDropdown(false);
   };
 
-  // Debounced SPA search handler
   const debouncedSpaSearch = useMemo(
-    () => debounce((value) => {
-      setSpaSearch(value);
-      setShowSpaDropdown(true);
-    }, 300),
+    () =>
+      debounce((value) => {
+        setSpaSearch(value);
+        setShowSpaDropdown(true);
+      }, 300),
     []
   );
 
-  const handleSpaSearchChange = useCallback( (e) => {
-    const value = e.target.value;
-    debouncedSpaSearch(value);
-    // Clear selection if current selected SPA is not in filtered results
-    if (selectedSpaId) {
-      const selectedSpa = filteredSpas.find((s) => s.id === selectedSpaId);
-      if (!selectedSpa && value) {
-        setSelectedSpaId(null);
-        clearSpaData();
+  const handleSpaSearchChange = useCallback(
+    (e) => {
+      const value = e.target.value;
+      debouncedSpaSearch(value);
+
+      if (selectedSpaId) {
+        const selectedSpa = filteredSpas.find((s) => s.id === selectedSpaId);
+        if (!selectedSpa && value) {
+          setSelectedSpaId(null);
+          clearSpaData();
+        }
       }
-    }
-  }, [debouncedSpaSearch, selectedSpaId, clearSpaData]);
+    },
+    [debouncedSpaSearch, selectedSpaId, clearSpaData, filteredSpas]
+  );
 
   useEffect(() => {
     if (selectedSpa) {
@@ -248,7 +256,6 @@ const CreateCertifications = () => {
     }
   }, [shouldRequireSpa, clearSpaData]);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (showSpaDropdown && !event.target.closest('.spa-dropdown-container')) {
@@ -263,7 +270,7 @@ const CreateCertifications = () => {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
@@ -272,17 +279,17 @@ const CreateCertifications = () => {
   const handleTemplateChange = (e) => {
     const id = parseInt(e.target.value, 10);
     setSelectedTemplateId(id);
-    setPreviewHtml('');
     setSuccess(null);
     setError(null);
+    // setPreviewHtml && setPreviewHtml(''); // keep if you have this state defined above
   };
 
   const addInvoiceItem = () => {
-    setInvoiceItems(prev => [...prev, { ...INVOICE_ITEM_TEMPLATE }]);
+    setInvoiceItems((prev) => [...prev, { ...INVOICE_ITEM_TEMPLATE }]);
   };
 
   const updateInvoiceItem = (index, field, value) => {
-    setInvoiceItems(prev =>
+    setInvoiceItems((prev) =>
       prev.map((item, i) => {
         if (i !== index) return item;
         const updated = {
@@ -298,7 +305,7 @@ const CreateCertifications = () => {
   };
 
   const removeInvoiceItem = (index) => {
-    setInvoiceItems(prev => {
+    setInvoiceItems((prev) => {
       const next = prev.filter((_, i) => i !== index);
       return next.length ? next : [{ ...INVOICE_ITEM_TEMPLATE }];
     });
@@ -313,7 +320,14 @@ const CreateCertifications = () => {
       setError(ERROR_MESSAGES.SPA_REQUIRED);
       return;
     }
-    const requestName = formData.manager_name || formData.candidate_name || formData.recipient_name || formData.employee_name || formData.customer_name || formData.name || '';
+    const requestName =
+      formData.manager_name ||
+      formData.candidate_name ||
+      formData.recipient_name ||
+      formData.employee_name ||
+      formData.customer_name ||
+      formData.name ||
+      '';
     if (!requestName) {
       setError(ERROR_MESSAGES.NAME_REQUIRED);
       return;
@@ -331,11 +345,9 @@ const CreateCertifications = () => {
       });
       const html = response.data?.html || '';
 
-      // Store HTML and generation data in sessionStorage for the new window
       const previewId = `preview_${Date.now()}`;
       sessionStorage.setItem(previewId, html);
 
-      // Store generation data for PDF generation
       const generationData = {
         template_id: selectedTemplate.id,
         name: requestName,
@@ -345,7 +357,6 @@ const CreateCertifications = () => {
       };
       sessionStorage.setItem(`${previewId}_data`, JSON.stringify(generationData));
 
-      // Open preview in new window
       const previewWindow = window.open(
         `/certificate-preview?id=${previewId}`,
         'CertificatePreview',
@@ -365,7 +376,6 @@ const CreateCertifications = () => {
   };
 
   const onGenerate = async () => {
-
     if (!selectedTemplate) {
       setError(ERROR_MESSAGES.TEMPLATE_NOT_SELECTED);
       return;
@@ -374,7 +384,14 @@ const CreateCertifications = () => {
       setError(ERROR_MESSAGES.SPA_REQUIRED);
       return;
     }
-    const requestName = formData.manager_name || formData.candidate_name || formData.recipient_name || formData.employee_name || formData.customer_name || formData.name || '';
+    const requestName =
+      formData.manager_name ||
+      formData.candidate_name ||
+      formData.recipient_name ||
+      formData.employee_name ||
+      formData.customer_name ||
+      formData.name ||
+      '';
     if (!requestName) {
       setError(ERROR_MESSAGES.NAME_REQUIRED);
       return;
@@ -383,8 +400,7 @@ const CreateCertifications = () => {
       setState(FORM_STATES.GENERATING);
       setError(null);
       let data = prepareCertificateData(categoryKey, formData, invoiceItems);
-      
-      // Convert blob URLs to base64 for PDF generation
+
       data = await convertBlobUrlsInData(data);
 
       const response = await certificateApi.generateCertificate({
@@ -395,7 +411,10 @@ const CreateCertifications = () => {
         certificate_data: data,
       });
 
-      const filename = generateCertificateFilename(selectedTemplate.name || 'certificate', requestName || 'recipient');
+      const filename = generateCertificateFilename(
+        selectedTemplate.name || 'certificate',
+        requestName || 'recipient'
+      );
       downloadFile(response.data, filename);
 
       setSuccess(SUCCESS_MESSAGES.GENERATE_SUCCESS);
@@ -410,154 +429,122 @@ const CreateCertifications = () => {
 
   useEffect(() => {
     if (isInvoiceCategory) {
-      setFormData(prev => ({ ...prev, subtotal: totals.subtotal, amount_in_words: totals.totalInWords }));
+      setFormData((prev) => ({
+        ...prev,
+        subtotal: totals.subtotal,
+        amount_in_words: totals.totalInWords,
+      }));
     }
   }, [totals, isInvoiceCategory]);
 
   return (
-    <div className="min-h-screen py-8 px-4" style={{ background: 'linear-gradient(to bottom right, var(--color-bg-secondary), var(--color-info-light))' }}>
-      <div className="max-w-6xl mx-auto">
-        {/* Back Button and Header */}
-        <div className="mb-4">
-          <button
-            onClick={() => navigate('/certificates')}
-            className="flex items-center gap-2 transition-colors mb-4"
-            style={{ color: 'var(--color-text-secondary)' }}
-            onMouseEnter={(e) => e.target.style.color = 'var(--color-text-primary)'}
-            onMouseLeave={(e) => e.target.style.color = 'var(--color-text-secondary)'}
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            <span>Back to Templates</span>
-          </button>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-[var(--color-bg-secondary)] to-[var(--color-info-light)] px-3 py-6 md:px-6">
+      <div className="max-w-6xl mx-auto space-y-5">
+        {/* Top bar */}
+        <div
+          className="rounded-2xl shadow-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-primary)] px-4 py-4 md:px-6 md:py-5"
+        >
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate('/certificates')}
+                className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border-secondary)] px-3 py-1.5 text-sm font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+              >
+                <HiArrowLeft className="h-4 w-4" />
+                <span>Back</span>
+              </button>
+              <div className="hidden md:block">
+                <h1 className="text-base md:text-lg font-semibold text-[var(--color-text-primary)]">
+                  Create Certificate
+                </h1>
+                <p className="text-xs md:text-sm text-[var(--color-text-secondary)]">
+                  Select a template and fill the details to generate a certificate.
+                </p>
+              </div>
+            </div>
 
-        {/* Selected Template Display */}
-        {selectedTemplate && (
-          <div className="rounded-lg shadow-xl p-6 mb-6" style={{ backgroundColor: 'var(--color-bg-primary)', borderColor: 'var(--color-border-primary)', borderWidth: '1px' }}>
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>{selectedTemplate.name}</h2>
-                {selectedTemplate.category && (
-                  <span className="inline-block px-3 py-1 text-sm font-medium rounded-full mb-2" style={{ backgroundColor: 'var(--color-info-light)', color: 'var(--color-info-dark)' }}>
-                    {getCategoryDisplayName(selectedTemplate.category)}
-                  </span>
-                )}
-                {selectedTemplate.description && (
-                  <p className="mt-2" style={{ color: 'var(--color-text-secondary)' }}>{selectedTemplate.description}</p>
-                )}
+            <div className="flex flex-1 flex-col gap-3 md:flex-row md:items-end md:justify-end">
+              <div className="w-full md:w-64">
+                <label
+                  className="block text-xs font-medium mb-1 text-[var(--color-text-secondary)]"
+                >
+                  Template
+                </label>
+                <select
+                  value={selectedTemplateId || ''}
+                  onChange={handleTemplateChange}
+                  className="w-full rounded-xl border border-[var(--color-border-secondary)] bg-[var(--color-bg-primary)] px-3 py-2 text-sm text-[var(--color-text-primary)] shadow-sm outline-none focus:border-[var(--color-border-focus)] focus:ring-2 focus:ring-[var(--color-primary-light)]"
+                >
+                  {templates.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex gap-2 md:gap-3 md:ml-2">
+                <button
+                  onClick={onPreview}
+                  disabled={state === FORM_STATES.PREVIEW || state === FORM_STATES.GENERATING}
+                  className="flex-1 md:flex-none rounded-xl px-3 py-2 text-sm font-medium shadow-sm disabled:opacity-60 disabled:cursor-not-allowed bg-[var(--color-primary-light)] text-[var(--color-text-inverse)] hover:bg-[var(--color-primary)] transition-colors"
+                >
+                  {state === FORM_STATES.PREVIEW ? 'Previewing…' : 'Preview'}
+                </button>
+                <button
+                  onClick={onGenerate}
+                  disabled={state === FORM_STATES.PREVIEW || state === FORM_STATES.GENERATING}
+                  className="flex-1 md:flex-none rounded-xl px-3 py-2 text-sm font-semibold shadow-sm disabled:opacity-60 disabled:cursor-not-allowed bg-[var(--color-info)] text-[var(--color-text-inverse)] hover:bg-[var(--color-info-dark)] transition-colors"
+                >
+                  {state === FORM_STATES.GENERATING ? 'Generating…' : 'Generate PDF'}
+                </button>
               </div>
             </div>
           </div>
-        )}
 
-        <div className="rounded-lg shadow-xl p-6 mb-6" style={{ backgroundColor: 'var(--color-bg-primary)', borderColor: 'var(--color-border-primary)', borderWidth: '1px' }}>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-            <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-primary)' }}>Template</label>
-              <select
-                value={selectedTemplateId || ''}
-                onChange={handleTemplateChange}
-                className="w-full px-4 py-2 rounded-lg"
-                style={{
-                  borderColor: 'var(--color-border-secondary)',
-                  borderWidth: '1px',
-                  color: 'var(--color-text-primary)'
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = 'var(--color-border-focus)';
-                  e.target.style.boxShadow = '0 0 0 2px var(--color-primary-light)';
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = 'var(--color-border-secondary)';
-                  e.target.style.boxShadow = 'none';
-                }}
-              >
-                {templates.map(t => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </select>
-            </div>
-            <div className="flex gap-3 justify-end md:col-span-2">
-              <button
-                onClick={onPreview}
-                disabled={state === FORM_STATES.PREVIEW || state === FORM_STATES.GENERATING}
-                className="px-4 py-2 rounded-lg disabled:opacity-50"
-                style={{
-                  backgroundColor: state === FORM_STATES.PREVIEW || state === FORM_STATES.GENERATING ? 'var(--color-gray-400)' : 'var(--color-primary)',
-                  color: 'var(--color-text-inverse)'
-                }}
-                onMouseEnter={(e) => {
-                  if (state !== FORM_STATES.PREVIEW && state !== FORM_STATES.GENERATING) {
-                    e.target.style.backgroundColor = 'var(--color-primary-dark)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (state !== FORM_STATES.PREVIEW && state !== FORM_STATES.GENERATING) {
-                    e.target.style.backgroundColor = 'var(--color-primary)';
-                  }
-                }}
-              >
-                Preview
-              </button>
-              <button
-                onClick={onGenerate}
-                disabled={state === FORM_STATES.PREVIEW || state === FORM_STATES.GENERATING}
-                className="px-4 py-2 rounded-lg disabled:opacity-50"
-                style={{
-                  backgroundColor: state === FORM_STATES.PREVIEW || state === FORM_STATES.GENERATING ? 'var(--color-gray-400)' : 'var(--color-info)',
-                  color: 'var(--color-text-inverse)'
-                }}
-                onMouseEnter={(e) => {
-                  if (state !== FORM_STATES.PREVIEW && state !== FORM_STATES.GENERATING) {
-                    e.target.style.backgroundColor = 'var(--color-info-dark)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (state !== FORM_STATES.PREVIEW && state !== FORM_STATES.GENERATING) {
-                    e.target.style.backgroundColor = 'var(--color-info)';
-                  }
-                }}
-              >
-                Generate PDF
-              </button>
-            </div>
-          </div>
           {error && (
-            <div className="mt-4 p-3 rounded" style={{ backgroundColor: 'var(--color-error-light)', borderColor: 'var(--color-error)', borderWidth: '1px', color: 'var(--color-error-dark)' }}>
+            <div className="mt-3 rounded-lg border border-[var(--color-error)] bg-[var(--color-error-light)] px-3 py-2 text-sm text-[var(--color-error-dark)]">
               {error}
             </div>
           )}
           {success && (
-            <div className="mt-4 p-3 rounded" style={{ backgroundColor: 'var(--color-success-light)', borderColor: 'var(--color-success)', borderWidth: '1px', color: 'var(--color-success-dark)' }}>
+            <div className="mt-3 rounded-lg border border-[var(--color-success)] bg-[var(--color-success-light)] px-3 py-2 text-sm text-[var(--color-success-dark)]">
               {success}
             </div>
           )}
         </div>
 
+        {/* SPA selection */}
         {shouldRequireSpa && (
-          <div className="rounded-lg shadow-xl p-6 mb-6" style={{ backgroundColor: 'var(--color-bg-primary)', borderColor: 'var(--color-border-primary)', borderWidth: '1px' }}>
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--color-text-primary)' }}>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--color-info)' }}>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              SPA Location <span style={{ color: 'var(--color-error)' }}>*</span>
-            </h3>
+          <div className="rounded-2xl shadow-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-primary)] p-4 md:p-5">
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <div>
+                <h3 className="text-sm md:text-base font-semibold text-[var(--color-text-primary)]">
+                  Select SPA Location
+                </h3>
+                <p className="text-xs text-[var(--color-text-secondary)]">
+                  Search and pick the SPA details that will be used on this certificate.
+                </p>
+              </div>
+            </div>
 
             <div className="space-y-4">
-              {/* Search and Select */}
               <div className="relative spa-dropdown-container">
-                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-primary)' }}>
-                  Search and Select SPA Location
-                </label>
-
-                {/* Search Input */}
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--color-text-tertiary)' }}>
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
+                    <svg
+                      className="h-4 w-4 md:h-5 md:w-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      style={{ color: 'var(--color-text-tertiary)' }}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                      />
                     </svg>
                   </div>
                   <input
@@ -565,179 +552,180 @@ const CreateCertifications = () => {
                     value={spaSearch}
                     onChange={handleSpaSearchChange}
                     placeholder="Search by name, code, area, or city..."
-                    className="w-full pl-10 pr-10 py-3 text-sm border-2 rounded-xl transition-all"
+                    className="w-full rounded-xl border-2 px-9 pr-10 py-2.5 text-sm outline-none transition-all shadow-sm bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]"
                     style={{
                       borderColor: !selectedSpaId && !spaSearch
-                        ? 'var(--color-error)'
-                        : selectedSpaId
-                          ? 'var(--color-success)'
-                          : 'var(--color-border-secondary)',
-                      backgroundColor: !selectedSpaId && !spaSearch
                         ? 'var(--color-error-light)'
                         : selectedSpaId
-                          ? 'var(--color-success-light)'
-                          : 'var(--color-bg-primary)',
-                      color: 'var(--color-text-primary)'
+                        ? 'var(--color-success)'
+                        : 'var(--color-border-secondary)',
                     }}
-                    onFocus={(e) => {
-                      setShowSpaDropdown(true);
-                      e.target.style.borderColor = 'var(--color-border-focus)';
-                      e.target.style.boxShadow = '0 0 0 2px var(--color-primary-light)';
-                    }}
-                    onBlur={(e) => {
-                      const borderColor = !selectedSpaId && !spaSearch
-                        ? 'var(--color-error)'
-                        : selectedSpaId
-                          ? 'var(--color-success)'
-                          : 'var(--color-border-secondary)';
-                      e.target.style.borderColor = borderColor;
-                      e.target.style.boxShadow = 'none';
-                    }}
+                    onFocus={() => setShowSpaDropdown(true)}
                   />
                   {selectedSpaId && (
                     <button
+                      type="button"
                       onClick={() => handleSpaSelect(null)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
-                      style={{ color: 'var(--color-text-tertiary)' }}
-                      onMouseEnter={(e) => e.target.style.color = 'var(--color-error)'}
-                      onMouseLeave={(e) => e.target.style.color = 'var(--color-text-tertiary)'}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-[var(--color-text-tertiary)] hover:text-[var(--color-error)] transition-colors"
                       title="Clear selection"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      <svg
+                        className="h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
                       </svg>
                     </button>
                   )}
                   {spaSearch && (
-                    <span className="absolute right-12 top-1/2 -translate-y-1/2 text-xs font-medium px-2 py-1 rounded-lg" style={{ color: 'var(--color-info-dark)', backgroundColor: 'var(--color-info-light)' }}>
+                    <span className="absolute right-11 top-1/2 -translate-y-1/2 rounded-lg px-2 py-0.5 text-[10px] font-medium bg-[var(--color-info-light)] text-[var(--color-info-dark)]">
                       {filteredSpas.length} {filteredSpas.length === 1 ? 'result' : 'results'}
                     </span>
                   )}
                 </div>
 
-                {/* Dropdown Results */}
                 {showSpaDropdown && (spaSearch || !selectedSpaId) && (
-                  <div className="absolute z-50 w-full mt-2 border-2 rounded-xl shadow-2xl max-h-80 overflow-y-auto" style={{ backgroundColor: 'var(--color-bg-primary)', borderColor: 'var(--color-border-secondary)' }}>
+                  <div className="absolute z-50 mt-2 max-h-64 w-full overflow-y-auto rounded-xl border border-[var(--color-border-secondary)] bg-[var(--color-bg-primary)] shadow-xl">
                     {spaLoading ? (
-                      <div className="p-4 text-center" style={{ color: 'var(--color-text-secondary)' }}>
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 mx-auto" style={{ borderColor: 'var(--color-info)' }}></div>
-                        <p className="mt-2 text-sm">Loading SPA locations...</p>
+                      <div className="p-4 text-center text-[var(--color-text-secondary)] text-sm">
+                        <div className="mx-auto mb-2 h-5 w-5 animate-spin rounded-full border-2 border-b-transparent" />
+                        Loading SPA locations...
                       </div>
                     ) : filteredSpas.length > 0 ? (
-                      <ul className="py-2">
+                      <ul className="py-1">
                         {filteredSpas.map((spa) => (
                           <li
                             key={spa.id}
                             onClick={() => handleSpaSelect(spa.id)}
-                            className="px-4 py-3 cursor-pointer transition-colors"
+                            className="cursor-pointer px-3 py-2.5 text-sm transition-colors"
                             style={{
-                              backgroundColor: selectedSpaId === spa.id ? 'var(--color-info-light)' : 'transparent',
-                              borderLeft: selectedSpaId === spa.id ? '4px solid var(--color-info)' : 'none'
-                            }}
-                            onMouseEnter={(e) => {
-                              if (selectedSpaId !== spa.id) {
-                                e.currentTarget.style.backgroundColor = 'var(--color-info-light)';
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (selectedSpaId !== spa.id) {
-                                e.currentTarget.style.backgroundColor = 'transparent';
-                              }
+                              backgroundColor:
+                                selectedSpaId === spa.id
+                                  ? 'var(--color-info-light)'
+                                  : 'transparent',
                             }}
                           >
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>{spa.name}</span>
-                                  {selectedSpaId === spa.id && (
-                                    <span className="px-2 py-0.5 text-xs rounded-full font-medium" style={{ backgroundColor: 'var(--color-success-light)', color: 'var(--color-success-dark)' }}>
-                                      Selected
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-3 mt-1 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-                                  {spa.code && (
-                                    <span className="px-2 py-0.5 rounded text-xs font-medium" style={{ backgroundColor: 'var(--color-gray-100)' }}>
-                                      Code: {spa.code}
-                                    </span>
-                                  )}
-                                  {spa.area && <span>{spa.area}</span>}
-                                  {spa.city && <span>{spa.city}</span>}
-                                  {spa.state && <span>{spa.state}</span>}
-                                </div>
-                                {spa.address && (
-                                  <p className="text-xs mt-1 truncate" style={{ color: 'var(--color-text-tertiary)' }}>{spa.address}</p>
+                            <div className="flex flex-col gap-0.5">
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-[var(--color-text-primary)]">
+                                  {spa.name}
+                                </span>
+                                {spa.code && (
+                                  <span className="rounded-full bg-[var(--color-gray-100)] px-2 py-0.5 text-[10px] font-medium text-[var(--color-text-secondary)]">
+                                    Code: {spa.code}
+                                  </span>
+                                )}
+                                {selectedSpaId === spa.id && (
+                                  <span className="rounded-full bg-[var(--color-success-light)] px-2 py-0.5 text-[10px] font-medium text-[var(--color-success-dark)]">
+                                    Selected
+                                  </span>
                                 )}
                               </div>
+                              <div className="flex flex-wrap gap-2 text-[11px] text-[var(--color-text-secondary)]">
+                                {spa.area && <span>{spa.area}</span>}
+                                {spa.city && <span>{spa.city}</span>}
+                                {spa.state && <span>{spa.state}</span>}
+                              </div>
+                              {spa.address && (
+                                <p className="truncate text-[11px] text-[var(--color-text-tertiary)]">
+                                  {spa.address}
+                                </p>
+                              )}
                             </div>
                           </li>
                         ))}
                       </ul>
                     ) : spaSearch ? (
-                      <div className="p-4 text-center" style={{ color: 'var(--color-text-secondary)' }}>
-                        <p className="text-sm">No SPAs found matching "{spaSearch}"</p>
-                        <p className="text-xs mt-1" style={{ color: 'var(--color-text-tertiary)' }}>Try a different search term</p>
+                      <div className="p-3 text-center text-xs text-[var(--color-text-secondary)]">
+                        <p>No SPAs found matching “{spaSearch}”.</p>
+                        <p className="mt-1 text-[var(--color-text-tertiary)]">
+                          Try a different search term.
+                        </p>
                       </div>
                     ) : (
-                      <div className="p-4 text-center" style={{ color: 'var(--color-text-secondary)' }}>
-                        <p className="text-sm">No SPA locations available</p>
+                      <div className="p-3 text-center text-xs text-[var(--color-text-secondary)]">
+                        No SPA locations available.
                       </div>
                     )}
                   </div>
                 )}
               </div>
 
-              {/* Selected SPA Display */}
               {selectedSpa && (
-                <div className="mt-4 p-4 rounded-xl border-2" style={{ background: 'linear-gradient(to right, var(--color-info-light), var(--color-primary-light))', borderColor: 'var(--color-info)' }}>
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--color-info)' }}>
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <h4 className="text-lg font-bold" style={{ color: 'var(--color-text-primary)' }}>{selectedSpa.name}</h4>
+                <div className="mt-2 rounded-2xl border border-[var(--color-border-secondary)] bg-[var(--color-bg-secondary)] px-4 py-3 text-sm">
+                  <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h4 className="text-sm md:text-base font-semibold text-[var(--color-text-primary)]">
+                          {selectedSpa.name}
+                        </h4>
                         {selectedSpa.code && (
-                          <span className="px-2 py-1 text-xs font-semibold rounded-full" style={{ backgroundColor: 'var(--color-info)', color: 'var(--color-text-inverse)' }}>
+                          <span className="rounded-full bg-[var(--color-info-light)] px-2 py-0.5 text-[10px] font-semibold text-[var(--color-info-dark)]">
                             Code: {selectedSpa.code}
                           </span>
                         )}
                       </div>
-                      <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>{formatSpaAddress(selectedSpa) || '—'}</p>
+                      <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
+                        {formatSpaAddress(selectedSpa) || '—'}
+                      </p>
                     </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-3" style={{ borderTopColor: 'var(--color-info)', borderTopWidth: '1px' }}>
-                    <div>
-                      <p className="text-xs font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Contact</p>
-                      <p className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>{selectedSpa.phone_number || '—'}</p>
-                      {selectedSpa.alternate_number && (
-                        <p className="text-xs mt-1" style={{ color: 'var(--color-text-secondary)' }}>{selectedSpa.alternate_number}</p>
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Location/Area</p>
-                      <p className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>{selectedSpa.area || '—'}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>City</p>
-                      <p className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>{selectedSpa.city || '—'}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>State</p>
-                      <p className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>{selectedSpa.state || '—'}</p>
+                    <div className="grid grid-cols-2 gap-3 md:grid-cols-4 mt-2 md:mt-0">
+                      <div>
+                        <p className="text-[10px] font-medium text-[var(--color-text-tertiary)]">
+                          Contact
+                        </p>
+                        <p className="text-xs font-semibold text-[var(--color-text-primary)]">
+                          {selectedSpa.phone_number || '—'}
+                        </p>
+                        {selectedSpa.alternate_number && (
+                          <p className="text-[11px] text-[var(--color-text-secondary)]">
+                            {selectedSpa.alternate_number}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-medium text-[var(--color-text-tertiary)]">
+                          Area
+                        </p>
+                        <p className="text-xs font-semibold text-[var(--color-text-primary)]">
+                          {selectedSpa.area || '—'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-medium text-[var(--color-text-tertiary)]">
+                          City
+                        </p>
+                        <p className="text-xs font-semibold text-[var(--color-text-primary)]">
+                          {selectedSpa.city || '—'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-medium text-[var(--color-text-tertiary)]">
+                          State
+                        </p>
+                        <p className="text-xs font-semibold text-[var(--color-text-primary)]">
+                          {selectedSpa.state || '—'}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Error Messages */}
               {spaError && (
-                <div className="mt-3 p-3 rounded-lg" style={{ backgroundColor: 'var(--color-error-light)', borderColor: 'var(--color-error)', borderWidth: '1px', color: 'var(--color-error-dark)' }}>
+                <div className="mt-2 rounded-xl border border-[var(--color-error)] bg-[var(--color-error-light)] px-3 py-2 text-xs text-[var(--color-error-dark)]">
                   {spaError}
                 </div>
               )}
               {!spaError && !spaLoading && !spas.length && (
-                <div className="mt-3 p-3 rounded-lg" style={{ backgroundColor: 'var(--color-warning-light)', borderColor: 'var(--color-warning)', borderWidth: '1px', color: 'var(--color-warning-dark)' }}>
+                <div className="mt-2 rounded-xl border border-[var(--color-warning)] bg-[var(--color-warning-light)] px-3 py-2 text-xs text-[var(--color-warning-dark)]">
                   No SPA locations available. Please contact administrator.
                 </div>
               )}
@@ -745,9 +733,10 @@ const CreateCertifications = () => {
           </div>
         )}
 
+        {/* Dynamic form */}
         {FormComponent ? (
-          <div className="rounded-lg shadow-xl p-6 mb-6" style={{ backgroundColor: 'var(--color-bg-primary)', borderColor: 'var(--color-border-primary)', borderWidth: '1px' }}>
-            <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--color-text-primary)' }}>
+          <div className="rounded-2xl shadow-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-primary)] p-4 md:p-5">
+            <h3 className="mb-3 text-sm md:text-base font-semibold text-[var(--color-text-primary)]">
               {categoryFields?.title ||
                 CERTIFICATE_CATEGORY_METADATA[categoryKey]?.title ||
                 'Certificate Details'}
@@ -756,7 +745,9 @@ const CreateCertifications = () => {
               <FormComponent
                 formData={{ ...formData, invoiceItems }}
                 handleInputChange={handleInputChange}
-                handleInvoiceItemChange={(index, field, value) => updateInvoiceItem(index, field, value)}
+                handleInvoiceItemChange={(index, field, value) =>
+                  updateInvoiceItem(index, field, value)
+                }
                 handleAddInvoiceItem={addInvoiceItem}
                 handleRemoveInvoiceItem={removeInvoiceItem}
               />
@@ -766,54 +757,36 @@ const CreateCertifications = () => {
           </div>
         ) : (
           categoryFields && (
-            <div className="rounded-lg shadow-xl p-6 mb-6" style={{ backgroundColor: 'var(--color-bg-primary)', borderColor: 'var(--color-border-primary)', borderWidth: '1px' }}>
-              <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--color-text-primary)' }}>{categoryFields.title}</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {categoryFields.fields.map(field => (
-                  <div key={field.name}>
-                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-primary)' }}>{field.label}</label>
+            <div className="rounded-2xl shadow-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-primary)] p-4 md:p-5">
+              <h3 className="mb-3 text-sm md:text-base font-semibold text-[var(--color-text-primary)]">
+                {categoryFields.title}
+              </h3>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {categoryFields.fields.map((field) => (
+                  <div key={field.name} className="space-y-1">
+                    <label className="block text-xs font-medium text-[var(--color-text-secondary)]">
+                      {field.label}
+                    </label>
                     {field.type === 'textarea' ? (
                       <textarea
                         name={field.name}
                         value={formData[field.name] || ''}
                         onChange={handleInputChange}
                         rows="3"
-                        className="w-full px-4 py-2 rounded-lg"
-                        style={{
-                          borderColor: 'var(--color-border-secondary)',
-                          borderWidth: '1px',
-                          color: 'var(--color-text-primary)'
-                        }}
-                        onFocus={(e) => {
-                          e.target.style.borderColor = 'var(--color-border-focus)';
-                          e.target.style.boxShadow = '0 0 0 2px var(--color-primary-light)';
-                        }}
-                        onBlur={(e) => {
-                          e.target.style.borderColor = 'var(--color-border-secondary)';
-                          e.target.style.boxShadow = 'none';
-                        }}
+                        className="w-full rounded-xl border border-[var(--color-border-secondary)] bg-[var(--color-bg-primary)] px-3 py-2 text-sm text-[var(--color-text-primary)] shadow-sm outline-none focus:border-[var(--color-border-focus)] focus:ring-2 focus:ring-[var(--color-primary-light)]"
                       />
                     ) : field.type === 'select' ? (
                       <select
                         name={field.name}
                         value={formData[field.name] || ''}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-2 rounded-lg"
-                        style={{
-                          borderColor: 'var(--color-border-secondary)',
-                          borderWidth: '1px',
-                          color: 'var(--color-text-primary)'
-                        }}
-                        onFocus={(e) => {
-                          e.target.style.borderColor = 'var(--color-border-focus)';
-                          e.target.style.boxShadow = '0 0 0 2px var(--color-primary-light)';
-                        }}
-                        onBlur={(e) => {
-                          e.target.style.borderColor = 'var(--color-border-secondary)';
-                          e.target.style.boxShadow = 'none';
-                        }}
+                        className="w-full rounded-xl border border-[var(--color-border-secondary)] bg-[var(--color-bg-primary)] px-3 py-2 text-sm text-[var(--color-text-primary)] shadow-sm outline-none focus:border-[var(--color-border-focus)] focus:ring-2 focus:ring-[var(--color-primary-light)]"
                       >
-                        {(field.options || []).map(opt => (<option key={opt} value={opt}>{opt}</option>))}
+                        {(field.options || []).map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
                       </select>
                     ) : (
                       <input
@@ -821,20 +794,7 @@ const CreateCertifications = () => {
                         name={field.name}
                         value={formData[field.name] || ''}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-2 rounded-lg"
-                        style={{
-                          borderColor: 'var(--color-border-secondary)',
-                          borderWidth: '1px',
-                          color: 'var(--color-text-primary)'
-                        }}
-                        onFocus={(e) => {
-                          e.target.style.borderColor = 'var(--color-border-focus)';
-                          e.target.style.boxShadow = '0 0 0 2px var(--color-primary-light)';
-                        }}
-                        onBlur={(e) => {
-                          e.target.style.borderColor = 'var(--color-border-secondary)';
-                          e.target.style.boxShadow = 'none';
-                        }}
+                        className="w-full rounded-xl border border-[var(--color-border-secondary)] bg-[var(--color-bg-primary)] px-3 py-2 text-sm text-[var(--color-text-primary)] shadow-sm outline-none focus:border-[var(--color-border-focus)] focus:ring-2 focus:ring-[var(--color-primary-light)]"
                       />
                     )}
                   </div>
@@ -844,102 +804,95 @@ const CreateCertifications = () => {
           )
         )}
 
+        {/* Fallback invoice items block if no custom FormComponent */}
         {isInvoiceCategory && !FormComponent && (
-          <div className="rounded-lg shadow-xl p-6 mb-6" style={{ backgroundColor: 'var(--color-bg-primary)', borderColor: 'var(--color-border-primary)', borderWidth: '1px' }}>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold" style={{ color: 'var(--color-text-primary)' }}>Invoice Items</h3>
+          <div className="rounded-2xl shadow-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-primary)] p-4 md:p-5">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h3 className="text-sm md:text-base font-semibold text-[var(--color-text-primary)]">
+                Invoice Items
+              </h3>
               <button
                 onClick={addInvoiceItem}
-                className="px-3 py-2 rounded"
-                style={{
-                  backgroundColor: 'var(--color-success)',
-                  color: 'var(--color-text-inverse)'
-                }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = 'var(--color-success-dark)'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = 'var(--color-success)'}
+                className="rounded-lg bg-[var(--color-success)] px-3 py-1.5 text-xs md:text-sm font-medium text-[var(--color-text-inverse)] shadow-sm hover:bg-[var(--color-success-dark)] transition-colors"
               >
                 Add Item
               </button>
             </div>
+
             <div className="space-y-3">
               {invoiceItems.map((item, idx) => (
-                <div key={idx} className="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
+                <div
+                  key={idx}
+                  className="grid grid-cols-1 gap-2 md:grid-cols-6 md:items-end"
+                >
                   <input
                     type="text"
                     placeholder="Description"
                     value={item.description}
                     onChange={(e) => updateInvoiceItem(idx, 'description', e.target.value)}
-                    className="px-3 py-2 border rounded"
-                    style={{ borderColor: 'var(--color-border-secondary)', color: 'var(--color-text-primary)' }}
+                    className="rounded-lg border border-[var(--color-border-secondary)] bg-[var(--color-bg-primary)] px-3 py-2 text-sm text-[var(--color-text-primary)] shadow-sm outline-none"
                   />
                   <input
                     type="text"
                     placeholder="HSN"
                     value={item.hsn_code}
                     onChange={(e) => updateInvoiceItem(idx, 'hsn_code', e.target.value)}
-                    className="px-3 py-2 border rounded"
-                    style={{ borderColor: 'var(--color-border-secondary)', color: 'var(--color-text-primary)' }}
+                    className="rounded-lg border border-[var(--color-border-secondary)] bg-[var(--color-bg-primary)] px-3 py-2 text-sm text-[var(--color-text-primary)] shadow-sm outline-none"
                   />
                   <input
                     type="number"
                     placeholder="Qty"
                     value={item.quantity}
                     onChange={(e) => updateInvoiceItem(idx, 'quantity', e.target.value)}
-                    className="px-3 py-2 border rounded"
-                    style={{ borderColor: 'var(--color-border-secondary)', color: 'var(--color-text-primary)' }}
+                    className="rounded-lg border border-[var(--color-border-secondary)] bg-[var(--color-bg-primary)] px-3 py-2 text-sm text-[var(--color-text-primary)] shadow-sm outline-none"
                   />
                   <input
                     type="number"
                     placeholder="Rate"
                     value={item.rate}
                     onChange={(e) => updateInvoiceItem(idx, 'rate', e.target.value)}
-                    className="px-3 py-2 border rounded"
-                    style={{ borderColor: 'var(--color-border-secondary)', color: 'var(--color-text-primary)' }}
+                    className="rounded-lg border border-[var(--color-border-secondary)] bg-[var(--color-bg-primary)] px-3 py-2 text-sm text-[var(--color-text-primary)] shadow-sm outline-none"
                   />
                   <input
                     type="text"
                     placeholder="Amount"
                     value={item.amount}
                     readOnly
-                    className="px-3 py-2 border rounded"
-                    style={{ borderColor: 'var(--color-border-secondary)', backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)' }}
+                    className="rounded-lg border border-[var(--color-border-secondary)] bg-[var(--color-bg-secondary)] px-3 py-2 text-sm text-[var(--color-text-primary)] shadow-sm outline-none"
                   />
                   <button
                     onClick={() => removeInvoiceItem(idx)}
-                    className="px-3 py-2 rounded"
-                    style={{
-                      backgroundColor: 'var(--color-error)',
-                      color: 'var(--color-text-inverse)'
-                    }}
-                    onMouseEnter={(e) => e.target.style.backgroundColor = 'var(--color-error-dark)'}
-                    onMouseLeave={(e) => e.target.style.backgroundColor = 'var(--color-error)'}
+                    className="rounded-lg bg-[var(--color-error)] px-3 py-2 text-xs md:text-sm font-medium text-[var(--color-text-inverse)] shadow-sm hover:bg-[var(--color-error-dark)] transition-colors"
                   >
                     Remove
                   </button>
                 </div>
               ))}
             </div>
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+
+            <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
               <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-primary)' }}>Subtotal</label>
+                <label className="mb-1 block text-xs font-medium text-[var(--color-text-secondary)]">
+                  Subtotal
+                </label>
                 <input
                   type="text"
                   name="subtotal"
                   value={formData.subtotal || ''}
                   readOnly
-                  className="w-full px-4 py-2 border rounded-lg"
-                  style={{ borderColor: 'var(--color-border-secondary)', backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-primary)' }}
+                  className="w-full rounded-lg border border-[var(--color-border-secondary)] bg-[var(--color-bg-secondary)] px-3 py-2 text-sm text-[var(--color-text-primary)] shadow-sm outline-none"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-primary)' }}>Amount in Words</label>
+              <div className="md:col-span-2">
+                <label className="mb-1 block text-xs font-medium text-[var(--color-text-secondary)]">
+                  Amount in Words
+                </label>
                 <input
                   type="text"
                   name="amount_in_words"
                   value={formData.amount_in_words || ''}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 border rounded-lg"
-                  style={{ borderColor: 'var(--color-border-secondary)', color: 'var(--color-text-primary)' }}
+                  className="w-full rounded-lg border border-[var(--color-border-secondary)] bg-[var(--color-bg-primary)] px-3 py-2 text-sm text-[var(--color-text-primary)] shadow-sm outline-none"
                 />
               </div>
             </div>

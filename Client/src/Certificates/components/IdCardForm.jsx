@@ -28,13 +28,24 @@ const IdCardForm = ({ formData, handleInputChange }) => {
   const photoField = getConfig("candidate_photo");
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 text-sm">
       {/* Candidate Info */}
-      <div className="bg-blue-50 p-6 rounded-lg border border-blue-100">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-          <span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
-          Candidate Information
-        </h3>
+      <div className="rounded-xl border border-slate-200 bg-white/90 shadow-sm p-5 md:p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-50 text-blue-600 text-xs font-semibold">
+              1
+            </span>
+            <div>
+              <h3 className="text-base md:text-lg font-semibold text-slate-900">
+                Candidate Information
+              </h3>
+              <p className="text-xs text-slate-500">
+                Basic details to be printed on the ID card.
+              </p>
+            </div>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
@@ -51,20 +62,12 @@ const IdCardForm = ({ formData, handleInputChange }) => {
             options={designationOptions}
             value={formData.designation}
             onChange={handleInputChange}
-            placeholder="Select Designation"
+            placeholder="Select designation"
             required
           />
         </div>
-      </div>
 
-      {/* Employment Details */}
-      <div className="bg-blue-50 p-6 rounded-lg border border-blue-100">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-          <span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
-          Employment Details
-        </h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
           <DatePicker
             name="date_of_joining"
             label={dojField.label || "Date of Joining"}
@@ -90,22 +93,39 @@ const IdCardForm = ({ formData, handleInputChange }) => {
       </div>
 
       {/* Candidate Photo */}
-      <div className="bg-blue-50 p-6 rounded-lg border border-blue-100">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-          <span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
-          Candidate Photo
-        </h3>
+      <div className="rounded-xl border border-slate-200 bg-white/90 shadow-sm p-5 md:p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-50 text-blue-600 text-xs font-semibold">
+              2
+            </span>
+            <div>
+              <h3 className="text-base md:text-lg font-semibold text-slate-900">
+                Candidate Photo
+              </h3>
+              <p className="text-xs text-slate-500">
+                Upload a clear, passport-style photo for the ID card.
+              </p>
+            </div>
+          </div>
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
           <ImageUpload
             name="candidate_photo"
             value={formData.candidate_photo || ""}
             onChange={handleInputChange}
             label={photoField.label || "Candidate Photo"}
-            // Use passport-like aspect ratio so ID card photo looks proper
-            aspectRatio={3 / 4}
+            aspectRatio={3 / 4} // passport-like ratio
             required
           />
+          <div className="hidden md:block text-xs  leading-relaxed">
+            <ul className="list-disc list-inside text-red-500  space-y-1 mt-4">
+              <li>Use a recent, professional-looking photo.</li>
+              <li>Keep the face clearly visible with plain background.</li>
+              <li>Recommended size: similar to passport photo dimensions.</li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
@@ -113,5 +133,3 @@ const IdCardForm = ({ formData, handleInputChange }) => {
 };
 
 export default IdCardForm;
-
-
