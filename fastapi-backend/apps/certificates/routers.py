@@ -4,7 +4,7 @@ API endpoints for certificate management
 """
 from typing import List, Optional
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Response, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Response, Query, UploadFile, File, Form
 from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from pathlib import Path
@@ -47,6 +47,12 @@ from apps.certificates.services.pdf_generator import (
     pdf_to_image,
     PDF2IMAGE_AVAILABLE
 )
+from apps.certificates.services.background_removal import (
+    remove_background_from_image,
+    remove_background_from_base64,
+    REMBG_AVAILABLE,
+    REMBG_ERROR
+)
 from core.exceptions import NotFoundError, ValidationError
 
 logger = logging.getLogger(__name__)
@@ -56,6 +62,140 @@ certificates_router = APIRouter()
 # -------------------------
 # Public Endpoints
 # -------------------------
+
+@certificates_router.get("/background-removal/status")
+async def background_removal_status():
+    """
+    Check if background removal service is available.
+    Returns the status of rembg installation.
+    """
+    return {
+        "available": REMBG_AVAILABLE,
+        "error": REMBG_ERROR if not REMBG_AVAILABLE else None,
+        "message": "Background removal service is available" if REMBG_AVAILABLE else f"Background removal service is not available: {REMBG_ERROR}. Please install rembg: pip install rembg pillow"
+    }
+
+
+@certificates_router.post("/remove-background")
+async def remove_background_endpoint(
+    file: UploadFile = File(..., description="Image file to remove background from"),
+    output_format: str = Form("PNG", description="Output format: PNG, JPEG, etc.")
+):
+    """
+    Remove background from an uploaded image file.
+    This is a reusable endpoint that can be used for any image background removal.
+    
+    Returns the processed image as base64-encoded data URL.
+    """
+    try:
+        # Validate file type
+        if not file.content_type or not file.content_type.startswith("image/"):
+            raise HTTPException(
+                status_code=400,
+                detail="File must be an image. Supported formats: JPEG, PNG, WEBP, etc."
+            )
+        
+        # Read file content
+        image_data = await file.read()
+        
+        if not image_data:
+            raise HTTPException(status_code=400, detail="Empty file provided")
+        
+        # Remove background
+        output_bytes = await remove_background_from_image(image_data, output_format)
+        
+        if output_bytes is None:
+            raise HTTPException(status_code=500, detail="Failed to remove background")
+        
+        # Convert to base64
+        import base64
+        output_base64 = base64.b64encode(output_bytes).decode("utf-8")
+        
+        # Determine MIME type
+        mime_type = f"image/{output_format.lower()}" if output_format.upper() != "JPG" else "image/jpeg"
+        data_url = f"data:{mime_type};base64,{output_base64}"
+        
+        return {
+            "success": True,
+            "image": data_url,
+            "format": output_format.upper()
+        }
+    
+    except ImportError as e:
+        logger.error(f"rembg not available: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=503,
+            detail="Background removal service is not available. Please ensure rembg and pillow are installed. Run: pip install rembg pillow"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Check if the error is from rembg not being available
+        error_str = str(e).lower()
+        if "rembg" in error_str and ("not installed" in error_str or "not available" in error_str):
+            logger.error(f"rembg not available: {e}", exc_info=True)
+            raise HTTPException(
+                status_code=503,
+                detail="Background removal service is not available. Please ensure rembg and pillow are installed. Run: pip install rembg pillow"
+            )
+        logger.error(f"Error removing background: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to remove background: {str(e)}"
+        )
+
+
+@certificates_router.post("/remove-background-base64")
+async def remove_background_base64_endpoint(
+    image: str = Form(..., description="Base64-encoded image string (with or without data URL prefix)"),
+    output_format: str = Form("PNG", description="Output format: PNG, JPEG, etc.")
+):
+    """
+    Remove background from a base64-encoded image.
+    This is a reusable endpoint that can be used for any image background removal.
+    
+    Accepts base64 string with or without data URL prefix (e.g., "data:image/png;base64,...").
+    Returns the processed image as base64-encoded data URL.
+    """
+    try:
+        if not image:
+            raise HTTPException(status_code=400, detail="Image data is required")
+        
+        # Remove background
+        output_base64 = await remove_background_from_base64(image, output_format)
+        
+        if output_base64 is None:
+            raise HTTPException(status_code=500, detail="Failed to remove background")
+        
+        return {
+            "success": True,
+            "image": output_base64,
+            "format": output_format.upper()
+        }
+    
+    except ImportError as e:
+        logger.error(f"rembg not available: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=503,
+            detail="Background removal service is not available. Please ensure rembg and pillow are installed. Run: pip install rembg pillow"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Check if the error is from rembg not being available
+        error_str = str(e).lower()
+        if "rembg" in error_str and ("not installed" in error_str or "not available" in error_str):
+            logger.error(f"rembg not available: {e}", exc_info=True)
+            raise HTTPException(
+                status_code=503,
+                detail="Background removal service is not available. Please ensure rembg and pillow are installed. Run: pip install rembg pillow"
+            )
+        logger.error(f"Error removing background: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to remove background: {str(e)}"
+        )
+
 
 @certificates_router.get("/templates", response_model=List[CertificateTemplateResponse])
 async def list_public_templates(db: AsyncSession = Depends(get_db)):

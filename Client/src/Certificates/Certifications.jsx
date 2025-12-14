@@ -11,10 +11,11 @@ import { apiCache } from '../utils/apiCache';
  * Memoized Template Card Component
  * Prevents unnecessary re-renders
  */
+const TemplateImage='/bgimages/templateImage.jpg';
+
 const TemplateCard = memo(({ template, onClick }) => {
   const [imageError, setImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
-
   return (
     <Card
       className="overflow-hidden hover:shadow-lg transition-shadow duration-200 cursor-pointer"
@@ -38,9 +39,12 @@ const TemplateCard = memo(({ template, onClick }) => {
             />
           </>
         ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <HiDocumentText className="w-16 h-16 text-gray-400" />
-          </div>
+          <img
+            src={TemplateImage}
+            alt={template.name || 'Certificate Template'}
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
         )}
       </div>
 
@@ -162,8 +166,7 @@ const Certifications = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold mb-2 text-gray-900">Certificate Templates</h1>
-          <p className="text-gray-600">Choose a template to create your certificate</p>
+          <h1 className="text-3xl font-bold mb-2 text-gray-900">Available Templates</h1>
         </div>
 
         {/* Error Message */}

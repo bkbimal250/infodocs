@@ -1,10 +1,12 @@
 import { useState, useRef } from 'react';
 import ImageCrop from './ImageCrop';
-import { HiUpload, HiX } from 'react-icons/hi';
+import { HiUpload, HiX, HiSparkles } from 'react-icons/hi';
+import toast from 'react-hot-toast';
 
 /**
- * Image Upload Component with Crop
+ * Image Upload Component with Crop and Optional Background Removal
  * Allows users to upload and crop images
+ * Background removal is optional and disabled by default
  */
 const ImageUpload = ({ 
   value, 
@@ -12,10 +14,12 @@ const ImageUpload = ({
   label = 'Image', 
   required = false,
   aspectRatio = null,
-  name 
+  name,
+  removeBackground = false // Optional: enable background removal
 }) => {
   const [showCrop, setShowCrop] = useState(false);
   const [tempImageSrc, setTempImageSrc] = useState(null);
+  const [processing, setProcessing] = useState(false);
   const fileInputRef = useRef(null);
 
   const handleFileSelect = (e) => {
@@ -23,7 +27,7 @@ const ImageUpload = ({
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+      toast.error('Please select an image file');
       return;
     }
 
@@ -35,13 +39,66 @@ const ImageUpload = ({
     reader.readAsDataURL(file);
   };
 
-  const handleCropComplete = (croppedImageUrl) => {
-    if (croppedImageUrl) {
-      onChange({ target: { name, value: croppedImageUrl } });
+  const handleCropComplete = async (croppedImageUrl) => {
+    if (!croppedImageUrl) {
+      setShowCrop(false);
+      setTempImageSrc(null);
+      return;
     }
-    setShowCrop(false);
-    setTempImageSrc(null);
-    
+
+    // If background removal is not enabled, just use the cropped image
+    if (!removeBackground) {
+      onChange({ target: { name, value: croppedImageUrl } });
+      setShowCrop(false);
+      setTempImageSrc(null);
+      
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
+
+    // Background removal is enabled
+    try {
+      setProcessing(true);
+      toast.loading('Removing background...', { id: 'bg-removal' });
+
+      // Dynamically import background removal library (large ONNX Runtime)
+      // Handle both named and default exports for compatibility
+      const backgroundRemovalModule = await import('@imgly/background-removal');
+      const removeBackgroundFn = backgroundRemovalModule.removeBackground || 
+                                (backgroundRemovalModule.default && backgroundRemovalModule.default.removeBackground) ||
+                                backgroundRemovalModule.default;
+
+      // Convert data URL to blob
+      const response = await fetch(croppedImageUrl);
+      const blob = await response.blob();
+
+      // Remove background
+      const blobWithoutBg = await removeBackgroundFn(blob);
+
+      // Convert blob to data URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result;
+        onChange({ target: { name, value: base64String } });
+        setShowCrop(false);
+        setTempImageSrc(null);
+        setProcessing(false);
+        toast.success('Background removed successfully!', { id: 'bg-removal' });
+      };
+      reader.readAsDataURL(blobWithoutBg);
+    } catch (error) {
+      console.error('Background removal error:', error);
+      toast.error('Failed to remove background. Using original image.', { id: 'bg-removal' });
+      // Fallback to cropped image without background removal
+      onChange({ target: { name, value: croppedImageUrl } });
+      setShowCrop(false);
+      setTempImageSrc(null);
+      setProcessing(false);
+    }
+
     // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -105,6 +162,12 @@ const ImageUpload = ({
             <span className="text-sm text-gray-600">
               Click to upload {label.toLowerCase()}
             </span>
+            {removeBackground && (
+              <span className="text-xs text-gray-500 flex items-center gap-1">
+                <HiSparkles className="w-4 h-4" />
+                Background will be removed automatically
+              </span>
+            )}
           </label>
         </div>
       )}
@@ -116,6 +179,13 @@ const ImageUpload = ({
           onCancel={handleCancelCrop}
           aspectRatio={aspectRatio}
         />
+      )}
+
+      {processing && (
+        <div className="mt-2 text-sm text-blue-600 flex items-center gap-2">
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+          Processing...
+        </div>
       )}
     </div>
   );

@@ -80,5 +80,39 @@ export const certificateApi = {
       responseType: 'blob',
     });
   },
+
+  /**
+   * Remove background from an image file
+   * @param {File} file - Image file to remove background from
+   * @param {string} outputFormat - Output format (PNG, JPEG, etc.). Default is PNG.
+   * @returns {Promise} - Returns { success, image (base64 data URL), format }
+   */
+  removeBackground: (file, outputFormat = 'PNG') => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('output_format', outputFormat);
+    return apiClient.post('/certificates/remove-background', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+
+  /**
+   * Remove background from a base64-encoded image
+   * @param {string} base64Image - Base64-encoded image string (with or without data URL prefix)
+   * @param {string} outputFormat - Output format (PNG, JPEG, etc.). Default is PNG.
+   * @returns {Promise} - Returns { success, image (base64 data URL), format }
+   */
+  removeBackgroundFromBase64: (base64Image, outputFormat = 'PNG') => {
+    const formData = new FormData();
+    formData.append('image', base64Image);
+    formData.append('output_format', outputFormat);
+    return apiClient.post('/certificates/remove-background-base64', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
 };
 

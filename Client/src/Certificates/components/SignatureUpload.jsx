@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import ImageCrop from './ImageCrop';
 import { HiUpload, HiX, HiSparkles } from 'react-icons/hi';
 import toast from 'react-hot-toast';
+import { certificateApi } from '../../api/Certificates/certificateApi';
 
 /**
  * Signature Upload Component with Background Removal
@@ -41,34 +42,43 @@ const SignatureUpload = ({ value, onChange, label = 'Signature', required = fals
       setProcessing(true);
       toast.loading('Removing background...', { id: 'bg-removal' });
 
-      // Dynamically import background removal library (large ONNX Runtime)
-      // Handle both named and default exports for compatibility
-      const backgroundRemovalModule = await import('@imgly/background-removal');
-      const removeBackground = backgroundRemovalModule.removeBackground || 
-                                (backgroundRemovalModule.default && backgroundRemovalModule.default.removeBackground) ||
-                                backgroundRemovalModule.default;
-
-      // Convert data URL to blob
+      // Convert data URL to blob for upload
       const response = await fetch(croppedImageUrl);
       const blob = await response.blob();
+      
+      // Create a File object from the blob
+      const file = new File([blob], 'signature.png', { type: 'image/png' });
 
-      // Remove background
-      const blobWithoutBg = await removeBackground(blob);
-
-      // Convert blob to data URL
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result;
-        onChange({ target: { name, value: base64String } });
+      // Call backend API to remove background
+      const result = await certificateApi.removeBackground(file, 'PNG');
+      
+      if (result.data && result.data.success && result.data.image) {
+        // Use the processed image from backend
+        onChange({ target: { name, value: result.data.image } });
         setShowCrop(false);
         setTempImageSrc(null);
         setProcessing(false);
         toast.success('Background removed successfully!', { id: 'bg-removal' });
-      };
-      reader.readAsDataURL(blobWithoutBg);
+      } else {
+        throw new Error('Invalid response from server');
+      }
     } catch (error) {
       console.error('Background removal error:', error);
-      toast.error('Failed to remove background. Using original image.', { id: 'bg-removal' });
+      
+      // Determine error message
+      let errorMessage = 'Failed to remove background. Using original image.';
+      if (error.response?.status === 503) {
+        // Show the detailed error from backend
+        const backendMessage = error.response?.data?.detail || 'Background removal service is not available.';
+        errorMessage = `${backendMessage} Using original image.`;
+      } else if (error.response?.data?.detail) {
+        errorMessage = `${error.response.data.detail} Using original image.`;
+      } else if (error.message) {
+        errorMessage = `${error.message} Using original image.`;
+      }
+      
+      toast.error(errorMessage, { id: 'bg-removal', duration: 6000 });
+      
       // Fallback to cropped image without background removal
       onChange({ target: { name, value: croppedImageUrl } });
       setShowCrop(false);
@@ -97,6 +107,44 @@ const SignatureUpload = ({ value, onChange, label = 'Signature', required = fals
     }
   };
 
+  const handleRemoveBackground = async () => {
+    if (!value || !isImage) {
+      toast.error('No image to process');
+      return;
+    }
+
+    try {
+      setProcessing(true);
+      toast.loading('Removing background...', { id: 'bg-removal' });
+
+      // Use base64 endpoint since we already have the image as data URL
+      const result = await certificateApi.removeBackgroundFromBase64(value, 'PNG');
+      
+      if (result.data && result.data.success && result.data.image) {
+        onChange({ target: { name, value: result.data.image } });
+        setProcessing(false);
+        toast.success('Background removed successfully!', { id: 'bg-removal' });
+      } else {
+        throw new Error('Invalid response from server');
+      }
+    } catch (error) {
+      console.error('Background removal error:', error);
+      
+      let errorMessage = 'Failed to remove background.';
+      if (error.response?.status === 503) {
+        // Show the detailed error from backend
+        errorMessage = error.response?.data?.detail || 'Background removal service is not available.';
+      } else if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage, { id: 'bg-removal', duration: 6000 });
+      setProcessing(false);
+    }
+  };
+
   const isImage = value && (value.startsWith('data:image') || value.startsWith('http://') || value.startsWith('https://'));
 
   return (
@@ -114,14 +162,25 @@ const SignatureUpload = ({ value, onChange, label = 'Signature', required = fals
               className="max-w-full max-h-32 object-contain"
             />
           </div>
-          <button
-            type="button"
-            onClick={handleRemove}
-            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-            title="Remove signature"
-          >
-            <HiX className="w-4 h-4" />
-          </button>
+          <div className="absolute -top-2 -right-2 flex gap-1">
+            <button
+              type="button"
+              onClick={handleRemoveBackground}
+              disabled={processing}
+              className="bg-blue-500 text-white rounded-full p-1 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Remove background"
+            >
+              <HiSparkles className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={handleRemove}
+              className="bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+              title="Remove signature"
+            >
+              <HiX className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       ) : value && !isImage ? (
         <div className="flex items-center gap-2">
