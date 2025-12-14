@@ -9,6 +9,8 @@ env/
 ENV/
 .venv
 
+requirements.txt/
+
 # Environment
 .env
 .env.local
