@@ -7,6 +7,9 @@ import { certificateApi } from '../../api/Certificates/certificateApi';
 /**
  * Signature Upload Component with Background Removal
  * Allows users to upload signature, crop it, and remove background
+ * 
+ * NOTE: Background removal is handled by the backend FastAPI service only.
+ * No frontend background removal libraries are used in this component.
  */
 const SignatureUpload = ({ value, onChange, label = 'Signature', required = false, name = 'signature' }) => {
   const [showCrop, setShowCrop] = useState(false);
