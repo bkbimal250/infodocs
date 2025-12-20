@@ -50,7 +50,9 @@ from apps.certificates.services.pdf_generator import (
 from apps.certificates.services.background_removal import (
     remove_background_from_image,
     remove_background_from_base64,
+    REMOVE_BG_AVAILABLE,
     REMBG_AVAILABLE,
+    REMOVE_BG_ERROR,
     REMBG_ERROR
 )
 from core.exceptions import NotFoundError, ValidationError
@@ -67,12 +69,23 @@ certificates_router = APIRouter()
 async def background_removal_status():
     """
     Check if background removal service is available.
-    Returns the status of rembg installation.
+    Returns the status of remove.bg API and rembg installation.
     """
+    available = REMOVE_BG_AVAILABLE or REMBG_AVAILABLE
+    error = None
+    if not REMOVE_BG_AVAILABLE and not REMBG_AVAILABLE:
+        error = f"remove.bg API: {REMOVE_BG_ERROR if REMOVE_BG_ERROR else 'Not configured'}. rembg: {REMBG_ERROR if REMBG_ERROR else 'Not installed'}"
+    
+    message = "Background removal service is available"
+    if not available:
+        message = f"Background removal service is not available. Please configure REMOVE_BG_API_KEY in .env or install rembg: pip install rembg pillow"
+    
     return {
-        "available": REMBG_AVAILABLE,
-        "error": REMBG_ERROR if not REMBG_AVAILABLE else None,
-        "message": "Background removal service is available" if REMBG_AVAILABLE else f"Background removal service is not available: {REMBG_ERROR}. Please install rembg: pip install rembg pillow"
+        "available": available,
+        "remove_bg_api": REMOVE_BG_AVAILABLE,
+        "rembg": REMBG_AVAILABLE,
+        "error": error,
+        "message": message
     }
 
 

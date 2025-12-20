@@ -108,6 +108,15 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379/0"
 
     # ------------------------------------------------------------------
+    # Background Removal API (remove.bg)
+    # ------------------------------------------------------------------
+    REMOVE_BG_API_KEY: str = Field(
+        default="",
+        description="API key for remove.bg background removal service"
+    )
+    REMOVE_BG_API_URL: str = "https://api.remove.bg/v1.0/removebg"
+
+    # ------------------------------------------------------------------
     # ENV Settings
     # ------------------------------------------------------------------
     model_config = SettingsConfigDict(
