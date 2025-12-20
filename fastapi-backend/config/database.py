@@ -40,6 +40,9 @@ from apps.certificates.models import (
     ExperienceLetterCertificate,
     AppointmentLetterCertificate,
     InvoiceSpaBillCertificate,
+    IDCardCertificate,
+    DailySheet,
+    DailySheetCertificate,
 )  # noqa
 
 # Forms App
@@ -76,15 +79,20 @@ async def connect_to_db():
     try:
         database_url = get_db_url()
 
+        # Optimized connection pool for 500+ concurrent users
+        # pool_size: Base connections always available
+        # max_overflow: Additional connections when pool is exhausted
+        # Total max connections = pool_size + max_overflow = 50 + 100 = 150
+        # This allows handling 500+ concurrent users with connection pooling
         engine = create_async_engine(
             database_url,
             echo=settings.DEBUG,
             future=True,
-            pool_pre_ping=True,
-            pool_recycle=3600,
-            pool_timeout=20,
-            pool_size=5,
-            max_overflow=10,
+            pool_pre_ping=True,  # Verify connections before using
+            pool_recycle=3600,  # Recycle connections after 1 hour
+            pool_timeout=30,  # Wait up to 30s for connection from pool
+            pool_size=50,  # Increased from 5 to 50 base connections
+            max_overflow=100,  # Increased from 10 to 100 overflow connections
             connect_args={
                 "connect_timeout": 10,
             },

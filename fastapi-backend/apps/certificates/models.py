@@ -28,6 +28,7 @@ class CertificateCategory(str, PyEnum):
     APPOINTMENT_LETTER = "appointment_letter"
     INVOICE_SPA_BILL = "invoice_spa_bill"
     ID_CARD = "id_card"
+    DAILY_SHEET = "daily_sheet"
 
 
 class TemplateType(str, PyEnum):
@@ -43,11 +44,13 @@ class CertificateTemplate(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(255), nullable=False)
+    banner_image = Column(String(500), nullable=True)
     # Use native_enum=False to store enum values (e.g., 'id_card') instead of enum names (e.g., 'ID_CARD')
     # create_constraint=False prevents SQLAlchemy from creating a CHECK constraint
     category = Column(SQLEnum(CertificateCategory, native_enum=False, length=50, create_constraint=False), nullable=False)
 
     template_type = Column(SQLEnum(TemplateType, native_enum=False, length=20, create_constraint=False), default=TemplateType.IMAGE, nullable=False)
+    template_variant = Column(String(100), nullable=True, default=None, index=True)  # UI template variant/type (e.g., "modern", "classic", "minimal", "v1", "v2")
     template_image = Column(String(500), nullable=True)
     template_html = Column(Text, nullable=True)
     template_config = Column(JSON, default=dict, nullable=False)
@@ -77,6 +80,9 @@ class CertificateTemplate(Base):
     )
     id_card_certificates = relationship(
         "IDCardCertificate", back_populates="template", cascade="all, delete-orphan"
+    )
+    daily_sheet_certificates = relationship(
+        "DailySheetCertificate", back_populates="template", cascade="all, delete-orphan"
     )
     generated_certificates = relationship(
         "GeneratedCertificate", back_populates="template", cascade="all, delete-orphan"
@@ -238,6 +244,29 @@ class IDCardCertificate(CertificateBase):
     generated_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     template = relationship("CertificateTemplate", back_populates="id_card_certificates")
+
+class DailySheet(Base):
+    __tablename__ = "daily_sheets"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    spa_id = Column(Integer, ForeignKey("spas.id"))  # from this spa we need spa_name,spa_code,spa_address,spa_city,spa_state,spa_country,spa_pincode,spa_phone_number,spa_alternate_number,spa_email,spa_website,spa_logo
+    spa = relationship("SPA", back_populates="daily_sheets")
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+# ---------------------------
+# Daily Sheet Certificate
+# ---------------------------
+class DailySheetCertificate(CertificateBase):
+    __tablename__ = "daily_sheet_certificates"
+
+    category = Column(SQLEnum(CertificateCategory, native_enum=False, length=50, create_constraint=False), default=CertificateCategory.DAILY_SHEET, nullable=False)
+
+    spa_id = Column(Integer, ForeignKey("spas.id"), nullable=True)
+    spa = relationship("SPA", back_populates="daily_sheet_certificates")
+
+    template = relationship("CertificateTemplate", back_populates="daily_sheet_certificates")
 
 
 

@@ -53,6 +53,10 @@ class SPA(Base):
     appointment_letter_certificates = relationship("AppointmentLetterCertificate", back_populates="spa")
     invoice_spa_bill_certificates = relationship("InvoiceSpaBillCertificate", back_populates="spa")
     id_card_certificates = relationship("IDCardCertificate", back_populates="spa")
+    daily_sheet_certificates = relationship("DailySheetCertificate", back_populates="spa")
+    
+    # relationship with DailySheet
+    daily_sheets = relationship("DailySheet", back_populates="spa")
 
     
 

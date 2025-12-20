@@ -37,10 +37,12 @@ class CertificateTemplateResponse(BaseModel):
 
     id: int
     name: str
+    banner_image: Optional[str] = None
     category: CertificateCategory
     template_image: Optional[str] = None
     template_html: Optional[str] = None
     template_type: TemplateType
+    template_variant: Optional[str] = None  # UI template variant/type (e.g., "modern", "classic", "v1", "v2")
     is_public: bool
 
 
@@ -85,8 +87,10 @@ class TemplateCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     name: str
+    banner_image: Optional[str] = None
     category: CertificateCategory
     template_type: TemplateType = TemplateType.IMAGE
+    template_variant: Optional[str] = None  # UI template variant/type (e.g., "modern", "classic", "v1", "v2")
     is_active: bool = True
     is_public: bool = True
     template_image: Optional[str] = None
@@ -111,8 +115,10 @@ class TemplateUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     name: Optional[str] = None
+    banner_image: Optional[str] = None
     category: Optional[CertificateCategory] = None
     template_type: Optional[TemplateType] = None
+    template_variant: Optional[str] = None  # UI template variant/type
     is_active: Optional[bool] = None
     is_public: Optional[bool] = None
     template_image: Optional[str] = None

@@ -2,7 +2,7 @@
 Certificate Routers
 API endpoints for certificate management
 """
-from typing import List, Optional
+from typing import List, Optional, Dict
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Response, Query, UploadFile, File, Form
 from fastapi.responses import FileResponse, StreamingResponse
@@ -28,6 +28,8 @@ from apps.certificates.services.certificate_service import (
     get_public_templates,
     get_template_by_id,
     get_all_templates,
+    get_templates_by_category,
+    get_template_variants_by_category,
     create_template,
     update_template,
     delete_template,
@@ -211,12 +213,73 @@ async def remove_background_base64_endpoint(
 
 
 @certificates_router.get("/templates", response_model=List[CertificateTemplateResponse])
-async def list_public_templates(db: AsyncSession = Depends(get_db)):
-    """List all public certificate templates"""
+async def list_public_templates(
+    category: Optional[str] = Query(None, description="Filter by certificate category"),
+    variant: Optional[str] = Query(None, description="Filter by template variant/UI type"),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    List all public certificate templates.
+    Optionally filter by category and/or variant.
+    """
     try:
-        return await get_public_templates(db)
+        if category:
+            try:
+                category_enum = CertificateCategory(category)
+                templates = await get_templates_by_category(
+                    db, 
+                    category_enum, 
+                    template_variant=variant,
+                    is_public=True,
+                    is_active=True
+                )
+                return templates
+            except ValueError:
+                raise HTTPException(status_code=400, detail=f"Invalid category: {category}")
+        
+        # Return all public templates if no category filter
+        templates = await get_public_templates(db)
+        # Ensure we return a list even if empty
+        return templates if templates else []
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error listing public templates: {e}", exc_info=True)
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve templates: {str(e)}")
+
+
+@certificates_router.get("/templates/by-category/{category}", response_model=Dict[str, List[CertificateTemplateResponse]])
+async def get_templates_by_category_endpoint(
+    category: str,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get all template variants for a specific category, grouped by variant.
+    Returns a dictionary where keys are variant names (or "default" for templates without variant)
+    and values are lists of templates.
+    
+    Example response:
+    {
+        "default": [template1, template2],
+        "modern": [template3],
+        "classic": [template4, template5]
+    }
+    """
+    try:
+        category_enum = CertificateCategory(category)
+        variants = await get_template_variants_by_category(
+            db,
+            category_enum,
+            is_public=True,
+            is_active=True
+        )
+        return variants
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid category: {category}")
+    except Exception as e:
+        logger.error(f"Error getting templates by category {category}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to retrieve templates: {str(e)}")
 
 
@@ -841,11 +904,13 @@ async def create_template_endpoint(
         return await create_template(
             db=db,
             name=template_data.name,
+            banner_image=template_data.banner_image,
             category=category_enum,
             created_by=current_user.id,
             template_image=template_data.template_image,
             template_html=template_data.template_html,
             template_type=template_type_enum,
+            template_variant=template_data.template_variant,
             is_active=template_data.is_active,
             is_public=template_data.is_public,
             template_config=template_data.template_config or {}
@@ -870,10 +935,12 @@ async def update_template_endpoint(
             db=db,
             template_id=template_id,
             name=template_data.name,
+            banner_image=template_data.banner_image,
             category=template_enum,
             template_image=template_data.template_image,
             template_html=template_data.template_html,
             template_type=category_enum,
+            template_variant=template_data.template_variant,
             is_active=template_data.is_active,
             is_public=template_data.is_public,
             template_config=template_data.template_config

@@ -6,10 +6,11 @@ import os
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone
+from urllib.parse import quote
 import logging
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, delete
+from sqlalchemy import select, and_, delete, func
 
 from apps.certificates.models import (
     CertificateTemplate,
@@ -22,6 +23,7 @@ from apps.certificates.models import (
     AppointmentLetterCertificate,
     InvoiceSpaBillCertificate,
     IDCardCertificate,
+    DailySheetCertificate,
 )
 from apps.certificates.services.pdf_generator import (
     render_html_template,
@@ -94,6 +96,7 @@ SPA_REQUIRED_CATEGORIES = {
     CertificateCategory.APPOINTMENT_LETTER,
     CertificateCategory.INVOICE_SPA_BILL,
     CertificateCategory.ID_CARD,
+    CertificateCategory.DAILY_SHEET,
     # Note: SPA_THERAPIST does NOT require spa_id
 }
 
@@ -167,6 +170,84 @@ async def get_all_templates(db: AsyncSession, skip: int = 0, limit: int = 100) -
     return list(result.scalars().all())
 
 
+async def get_templates_by_category(
+    db: AsyncSession,
+    category: CertificateCategory,
+    template_variant: Optional[str] = None,
+    is_public: Optional[bool] = None,
+    is_active: Optional[bool] = True
+) -> List[CertificateTemplate]:
+    """
+    Get templates by category, optionally filtered by variant.
+    This allows one category to have multiple UI template types.
+    
+    Args:
+        db: Database session
+        category: Certificate category
+        template_variant: Optional variant filter (e.g., "modern", "classic", "v1", "v2")
+        is_public: Optional filter for public templates
+        is_active: Filter for active templates (default: True)
+    
+    Returns:
+        List of templates matching the criteria
+    """
+    conditions = [CertificateTemplate.category == category]
+    
+    if template_variant is not None:
+        conditions.append(CertificateTemplate.template_variant == template_variant)
+    
+    if is_public is not None:
+        conditions.append(CertificateTemplate.is_public == is_public)
+    
+    if is_active is not None:
+        conditions.append(CertificateTemplate.is_active == is_active)
+    
+    # MySQL-compatible ordering: use ISNULL() to put NULLs last
+    # ISNULL() returns 1 for NULL, 0 for non-NULL, so ascending order puts NULLs last
+    stmt = select(CertificateTemplate).where(
+        and_(*conditions)
+    ).order_by(
+        func.isnull(CertificateTemplate.template_variant).asc(),
+        CertificateTemplate.template_variant.asc(),
+        CertificateTemplate.name.asc()
+    )
+    
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def get_template_variants_by_category(
+    db: AsyncSession,
+    category: CertificateCategory,
+    is_public: Optional[bool] = None,
+    is_active: Optional[bool] = True
+) -> Dict[str, List[CertificateTemplate]]:
+    """
+    Get all template variants grouped by variant name for a category.
+    Returns a dictionary where keys are variant names (or "default" for None) and values are template lists.
+    
+    Args:
+        db: Database session
+        category: Certificate category
+        is_public: Optional filter for public templates
+        is_active: Filter for active templates (default: True)
+    
+    Returns:
+        Dictionary mapping variant names to lists of templates
+    """
+    templates = await get_templates_by_category(db, category, is_public=is_public, is_active=is_active)
+    
+    # Group by variant
+    variants: Dict[str, List[CertificateTemplate]] = {}
+    for template in templates:
+        variant_key = template.template_variant or "default"
+        if variant_key not in variants:
+            variants[variant_key] = []
+        variants[variant_key].append(template)
+    
+    return variants
+
+
 async def create_template(
     db: AsyncSession,
     name: str,
@@ -175,18 +256,22 @@ async def create_template(
     template_image: Optional[str] = None,
     template_html: Optional[str] = None,
     template_type: TemplateType = TemplateType.IMAGE,
+    template_variant: Optional[str] = None,
     is_active: bool = True,
     is_public: bool = False,  # Certificates are private by default - only authenticated users can access
-    template_config: Optional[Dict[str, Any]] = None
+    template_config: Optional[Dict[str, Any]] = None,
+    banner_image: Optional[str] = None
 ) -> CertificateTemplate:
     """Create a new certificate template"""
     try:
         template = CertificateTemplate(
             name=name,
+            banner_image=banner_image,
             category=category,
             template_image=template_image,
             template_html=template_html,
             template_type=template_type,
+            template_variant=template_variant,
             created_by=created_by,
             is_active=is_active,
             is_public=is_public,
@@ -214,9 +299,11 @@ async def update_template(
     template_image: Optional[str] = None,
     template_html: Optional[str] = None,
     template_type: Optional[TemplateType] = None,
+    template_variant: Optional[str] = None,
     is_active: Optional[bool] = None,
     is_public: Optional[bool] = None,
-    template_config: Optional[Dict[str, Any]] = None
+    template_config: Optional[Dict[str, Any]] = None,
+    banner_image: Optional[str] = None
 ) -> Optional[CertificateTemplate]:
     """Update a certificate template"""
     # Bypass cache to get a fresh template from the current session
@@ -228,10 +315,12 @@ async def update_template(
     # Update fields that are provided
     for field, value in {
         "name": name,
+        "banner_image": banner_image,
         "category": category,
         "template_image": template_image,
         "template_html": template_html,
         "template_type": template_type,
+        "template_variant": template_variant,
         "is_active": is_active,
         "is_public": is_public,
         "template_config": template_config,
@@ -318,15 +407,28 @@ async def prepare_certificate_data(template: CertificateTemplate, certificate_da
     
     # Determine image URLs based on context
     if use_http_urls:
-        # For browser preview - use HTTP URLs
+        # For browser preview - use HTTP URLs (URL-encode filenames with spaces)
+        # Note: quote() encodes spaces as %20 which is correct for URLs
         background_image = certificate_data.get("certificate_background_image") or f"{base_url}/static/images/spacertificate.png"
-        stamp_image = certificate_data.get("certificate_stamp_image") or f"{base_url}/static/images/Spa Certificate Stamp.png"
-        signatory_image = certificate_data.get("certificate_signatory_image") or f"{base_url}/static/images/Spa Certificate Signatory.png"
+        stamp_image = certificate_data.get("certificate_stamp_image") or f"{base_url}/static/images/{quote('Spa Certificate Stamp.png', safe='')}"
+        signatory_image = certificate_data.get("certificate_signatory_image") or f"{base_url}/static/images/{quote('Spa Certificate Signatory.png', safe='')}"
+        # Daily Sheet background image - URL-encode the filename with space
+        daily_sheet_bg = certificate_data.get("daily_sheet_background") or f"{base_url}/static/images/{quote('daily sheet.jpg', safe='')}"
+        logger.info(f"Daily Sheet background (HTTP): {daily_sheet_bg}")
     else:
-        # For PDF generation - use file:// URLs
+        # For PDF generation - use file:// URLs (URL-encode spaces for file:// paths)
+        # Note: file:// URLs need spaces encoded as %20
         background_image = certificate_data.get("certificate_background_image") or f"file:///{static_base_path_str}/images/spacertificate.png"
-        stamp_image = certificate_data.get("certificate_stamp_image") or f"file:///{static_base_path_str}/images/Spa Certificate Stamp.png"
-        signatory_image = certificate_data.get("certificate_signatory_image") or f"file:///{static_base_path_str}/images/Spa Certificate Signatory.png"
+        stamp_image = certificate_data.get("certificate_stamp_image") or f"file:///{static_base_path_str}/images/{quote('Spa Certificate Stamp.png', safe='')}"
+        signatory_image = certificate_data.get("certificate_signatory_image") or f"file:///{static_base_path_str}/images/{quote('Spa Certificate Signatory.png', safe='')}"
+        # Daily Sheet background image - URL-encode the filename with space for file:// URL
+        daily_sheet_bg = certificate_data.get("daily_sheet_background") or f"file:///{static_base_path_str}/images/{quote('daily sheet.jpg', safe='')}"
+        # Verify file exists and log path
+        daily_sheet_path = static_base_path / "images" / "daily sheet.jpg"
+        if daily_sheet_path.exists():
+            logger.info(f"Daily Sheet background (PDF): {daily_sheet_bg} - File exists")
+        else:
+            logger.warning(f"Daily Sheet background file not found at: {daily_sheet_path}")
     
     # Handle SPA logo path conversion
     # Note: Files are saved to uploads/ but settings.UPLOAD_DIR might be "media"
@@ -412,9 +514,10 @@ async def prepare_certificate_data(template: CertificateTemplate, certificate_da
         "certificate_background_image": background_image,
         "certificate_stamp_image": stamp_image,
         "certificate_signatory_image": signatory_image,
+        "daily_sheet_background": daily_sheet_bg,  # Daily Sheet background image
         # Default signature image path
         # Note: File name is "Bhim Sir Signature.png" (capital S in Signature)
-        "default_signature_image": f"{base_url}/static/images/Bhim Sir Signature.png" if use_http_urls else f"file:///{static_base_path_str}/images/Bhim Sir Signature.png",
+        "default_signature_image": f"{base_url}/static/images/{quote('Bhim Sir Signature.png', safe='')}" if use_http_urls else f"file:///{static_base_path_str}/images/{quote('Bhim Sir Signature.png', safe='')}",
         # Also provide static_base_url for templates that use it directly
         "static_base_url": base_url if use_http_urls else f"file:///{static_base_path_str}",
     }
@@ -704,6 +807,11 @@ async def prepare_certificate_data(template: CertificateTemplate, certificate_da
             "date_of_joining": "",
             "contact_number": "",
             "issue_date": datetime.now().strftime("%d/%m/%Y")
+        },
+        CertificateCategory.DAILY_SHEET: {
+            # Daily Sheet only needs SPA data
+            "spa_name": spa.get("name", ""),
+            "spa_location": spa.get("city", "") or spa.get("address", "") or spa.get("area", ""),
         }
     }
 
@@ -754,6 +862,7 @@ def get_certificate_model(category: CertificateCategory):
         CertificateCategory.APPOINTMENT_LETTER: AppointmentLetterCertificate,
         CertificateCategory.INVOICE_SPA_BILL: InvoiceSpaBillCertificate,
         CertificateCategory.ID_CARD: IDCardCertificate,
+        CertificateCategory.DAILY_SHEET: DailySheetCertificate,
     }
     return model_map.get(category, GeneratedCertificate)
 
@@ -855,6 +964,10 @@ async def create_generated_certificate(
             "date_of_joining": certificate_payload.get("date_of_joining"),
             "contact_number": certificate_payload.get("contact_number"),
             "issue_date": certificate_payload.get("issue_date") or datetime.now().strftime("%d/%m/%Y"),
+        },
+
+        CertificateCategory.DAILY_SHEET: {
+            # Daily Sheet only uses SPA data, no specific fields needed
         },
         
     }
@@ -999,6 +1112,7 @@ async def get_generated_certificate_by_id(db: AsyncSession, certificate_id: int)
         AppointmentLetterCertificate,
         InvoiceSpaBillCertificate,
         IDCardCertificate,
+        DailySheetCertificate,
         GeneratedCertificate,
     ]
     
@@ -1030,6 +1144,7 @@ async def get_public_certificates(db: AsyncSession, skip: int = 0, limit: int = 
         AppointmentLetterCertificate,
         InvoiceSpaBillCertificate,
         IDCardCertificate,
+        DailySheetCertificate,
         GeneratedCertificate,
     ]
     
@@ -1074,6 +1189,7 @@ async def get_user_certificates(db: AsyncSession, user_id: int, skip: int = 0, l
         AppointmentLetterCertificate,
         InvoiceSpaBillCertificate,
         IDCardCertificate,
+        DailySheetCertificate,
         GeneratedCertificate,
     ]
     
@@ -1124,6 +1240,7 @@ async def get_all_certificates_with_users(db: AsyncSession, skip: int = 0, limit
         AppointmentLetterCertificate,
         InvoiceSpaBillCertificate,
         IDCardCertificate,
+        DailySheetCertificate,
         GeneratedCertificate,
     ]
     
@@ -1187,6 +1304,7 @@ async def delete_certificate(db: AsyncSession, certificate_id: int, category: Op
             CertificateCategory.APPOINTMENT_LETTER: AppointmentLetterCertificate,
             CertificateCategory.INVOICE_SPA_BILL: InvoiceSpaBillCertificate,
             CertificateCategory.ID_CARD: IDCardCertificate,
+            CertificateCategory.DAILY_SHEET: DailySheetCertificate,
         }
         model = model_map.get(category)
         if model:
@@ -1219,6 +1337,7 @@ async def get_certificate_statistics(db: AsyncSession):
         (AppointmentLetterCertificate, CertificateCategory.APPOINTMENT_LETTER),
         (InvoiceSpaBillCertificate, CertificateCategory.INVOICE_SPA_BILL),
         (IDCardCertificate, CertificateCategory.ID_CARD),
+        (DailySheetCertificate, CertificateCategory.DAILY_SHEET),
         (GeneratedCertificate, None),
     ]
     

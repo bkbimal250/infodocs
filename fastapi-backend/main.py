@@ -20,6 +20,7 @@ from apps.analytics.routers import analytics_router
 from apps.notifications.routers import notifications_router
 from core.exceptions import CustomException, ValidationError, NotFoundError, AuthenticationError, AuthorizationError
 from core.middleware import ErrorHandlerMiddleware
+from core.rate_limiter import RateLimitMiddleware
 
 
 @asynccontextmanager
@@ -97,6 +98,10 @@ app.add_middleware(
     expose_headers=["*"],
     max_age=3600,
 )
+
+# Add rate limiting middleware (before error handler)
+if settings.RATE_LIMIT_ENABLED:
+    app.add_middleware(RateLimitMiddleware)
 
 # Add custom error handler middleware
 app.add_middleware(ErrorHandlerMiddleware)
@@ -236,6 +241,35 @@ async def root():
 async def health_check():
     """Health check endpoint"""
     return {"status": "healthy"}
+
+
+@app.get("/metrics")
+async def metrics():
+    """Server metrics endpoint for monitoring"""
+    from config.database import engine
+    
+    metrics_data = {
+        "status": "healthy",
+        "database": {
+            "connected": engine is not None,
+        }
+    }
+    
+    # Add connection pool metrics if available
+    if engine and hasattr(engine, 'pool'):
+        pool = engine.pool
+        try:
+            metrics_data["database"]["pool"] = {
+                "size": pool.size() if hasattr(pool, 'size') else None,
+                "checked_in": pool.checkedin() if hasattr(pool, 'checkedin') else None,
+                "checked_out": pool.checkedout() if hasattr(pool, 'checkedout') else None,
+                "overflow": pool.overflow() if hasattr(pool, 'overflow') else None,
+                "invalid": pool.invalid() if hasattr(pool, 'invalid') else None,
+            }
+        except Exception as e:
+            logger.warning(f"Could not get pool metrics: {e}")
+    
+    return metrics_data
 
 
 if __name__ == "__main__":

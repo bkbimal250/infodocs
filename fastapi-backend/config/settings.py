@@ -103,9 +103,23 @@ class Settings(BaseSettings):
         return True
 
     # ------------------------------------------------------------------
-    # Redis Cache (Optional)
+    # Redis Cache (Optional but Recommended for Production)
     # ------------------------------------------------------------------
     REDIS_URL: str = "redis://localhost:6379/0"
+    REDIS_ENABLED: bool = False  # Set to True to enable Redis caching
+    
+    # ------------------------------------------------------------------
+    # Rate Limiting Settings
+    # ------------------------------------------------------------------
+    RATE_LIMIT_ENABLED: bool = True  # Enable rate limiting in production
+    RATE_LIMIT_PER_MINUTE: int = 60  # Requests per minute per IP
+    RATE_LIMIT_PER_HOUR: int = 1000  # Requests per hour per IP
+    
+    # ------------------------------------------------------------------
+    # Performance & Scalability Settings
+    # ------------------------------------------------------------------
+    MAX_WORKERS: int = 4  # Number of uvicorn workers (CPU cores * 2)
+    WORKER_CONNECTIONS: int = 1000  # Max connections per worker
 
     # ------------------------------------------------------------------
     # Background Removal API (remove.bg)
