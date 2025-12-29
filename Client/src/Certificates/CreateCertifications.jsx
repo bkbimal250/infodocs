@@ -31,6 +31,9 @@ const CreateCertifications = () => {
   const initialTemplateId = location.state?.templateId || null;
 
   const [templates, setTemplates] = useState([]);
+  const [templatesByCategory, setTemplatesByCategory] = useState({});
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedVariant, setSelectedVariant] = useState(null);
   const [selectedTemplateId, setSelectedTemplateId] = useState(initialTemplateId);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [formData, setFormData] = useState({});
@@ -50,12 +53,50 @@ const CreateCertifications = () => {
     loadSpas();
   }, []);
 
+  // Load templates by category when category is selected
   useEffect(() => {
-    if (!templates.length) return;
-    const selected = templates.find((t) => t.id === selectedTemplateId) || templates[0];
+    if (selectedCategory) {
+      loadTemplatesByCategory(selectedCategory);
+    }
+  }, [selectedCategory]);
+
+  const loadTemplatesByCategory = useCallback(async (category) => {
+    try {
+      const response = await certificateApi.getTemplatesByCategory(category);
+      const variants = response.data || {};
+      setTemplatesByCategory(prev => ({ ...prev, [category]: variants }));
+    } catch (err) {
+      console.error('Error loading templates by category:', err);
+    }
+  }, []);
+
+  // Get available templates based on category and variant
+  const availableTemplates = useMemo(() => {
+    if (!selectedCategory) return templates;
+    
+    const categoryVariants = templatesByCategory[selectedCategory];
+    if (!categoryVariants) return templates.filter(t => t.category === selectedCategory);
+    
+    if (selectedVariant && categoryVariants[selectedVariant]) {
+      return categoryVariants[selectedVariant];
+    }
+    
+    // Return all templates for selected category
+    return Object.values(categoryVariants).flat();
+  }, [templates, selectedCategory, selectedVariant, templatesByCategory]);
+
+  // Get available variants for selected category
+  const availableVariants = useMemo(() => {
+    if (!selectedCategory || !templatesByCategory[selectedCategory]) return [];
+    return Object.keys(templatesByCategory[selectedCategory]);
+  }, [selectedCategory, templatesByCategory]);
+
+  useEffect(() => {
+    if (!availableTemplates.length) return;
+    const selected = availableTemplates.find((t) => t.id === selectedTemplateId) || availableTemplates[0];
     setSelectedTemplate(selected || null);
     setSelectedTemplateId(selected ? selected.id : null);
-  }, [templates, selectedTemplateId]);
+  }, [availableTemplates, selectedTemplateId]);
 
   const categoryKey = useMemo(() => selectedTemplate?.category || null, [selectedTemplate]);
 
@@ -320,15 +361,21 @@ const CreateCertifications = () => {
       setError(ERROR_MESSAGES.SPA_REQUIRED);
       return;
     }
-    const requestName =
-      formData.manager_name ||
-      formData.candidate_name ||
-      formData.recipient_name ||
-      formData.employee_name ||
-      formData.customer_name ||
-      formData.name ||
-      '';
-    if (!requestName) {
+    // For Daily Sheet, use SPA name instead of a person's name
+    let requestName = '';
+    if (categoryKey === CERTIFICATE_CATEGORIES.DAILY_SHEET) {
+      requestName = selectedSpa?.name || formData.spa_name || 'Daily Sheet';
+    } else {
+      requestName =
+        formData.manager_name ||
+        formData.candidate_name ||
+        formData.recipient_name ||
+        formData.employee_name ||
+        formData.customer_name ||
+        formData.name ||
+        '';
+    }
+    if (!requestName && categoryKey !== CERTIFICATE_CATEGORIES.DAILY_SHEET) {
       setError(ERROR_MESSAGES.NAME_REQUIRED);
       return;
     }
@@ -384,14 +431,20 @@ const CreateCertifications = () => {
       setError(ERROR_MESSAGES.SPA_REQUIRED);
       return;
     }
-    const requestName =
-      formData.manager_name ||
-      formData.candidate_name ||
-      formData.recipient_name ||
-      formData.employee_name ||
-      formData.customer_name ||
-      formData.name ||
-      '';
+    // For Daily Sheet, use SPA name instead of a person's name
+    let requestName = '';
+    if (categoryKey === CERTIFICATE_CATEGORIES.DAILY_SHEET) {
+      requestName = selectedSpa?.name || formData.spa_name || 'Daily Sheet';
+    } else {
+      requestName =
+        formData.manager_name ||
+        formData.candidate_name ||
+        formData.recipient_name ||
+        formData.employee_name ||
+        formData.customer_name ||
+        formData.name ||
+        '';
+    }
     if (!requestName) {
       setError(ERROR_MESSAGES.NAME_REQUIRED);
       return;
@@ -448,7 +501,7 @@ const CreateCertifications = () => {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => navigate('/certificates')}
-                className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border-secondary)] px-3 py-1.5 text-sm font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+                className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border-secondary)] px-3 py-1.5 text-sm font-medium text-[var(--color-text-secondary)] hover:bg-green-500 hover:text-[var(--color-text-primary)] transition-colors"
               >
                 <HiArrowLeft className="h-4 w-4" />
                 <span>Back</span>
@@ -464,6 +517,60 @@ const CreateCertifications = () => {
             </div>
 
             <div className="flex flex-1 flex-col gap-3 md:flex-row md:items-end md:justify-end">
+              {/* Category Selector */}
+              <div className="w-full md:w-48">
+                <label
+                  className="block text-xs font-medium mb-1 text-[var(--color-text-secondary)]"
+                >
+                  Category
+                </label>
+                <select
+                  value={selectedCategory || ''}
+                  onChange={(e) => {
+                    const category = e.target.value || null;
+                    setSelectedCategory(category);
+                    setSelectedVariant(null);
+                    setSelectedTemplateId(null);
+                  }}
+                  className="w-full rounded-xl border border-[var(--color-border-secondary)] bg-[var(--color-bg-primary)] px-3 py-2 text-sm text-[var(--color-text-primary)] shadow-sm outline-none focus:border-[var(--color-border-focus)] focus:ring-2 focus:ring-[var(--color-primary-light)]"
+                >
+                  <option value="">All Categories</option>
+                  {Object.values(CERTIFICATE_CATEGORIES).map((category) => (
+                    <option key={category} value={category}>
+                      {CERTIFICATE_CATEGORY_METADATA[category]?.title || category}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Variant Selector */}
+              {selectedCategory && availableVariants.length > 0 && (
+                <div className="w-full md:w-48">
+                  <label
+                    className="block text-xs font-medium mb-1 text-[var(--color-text-secondary)]"
+                  >
+                    Template Variant
+                  </label>
+                  <select
+                    value={selectedVariant || ''}
+                    onChange={(e) => {
+                      const variant = e.target.value || null;
+                      setSelectedVariant(variant);
+                      setSelectedTemplateId(null);
+                    }}
+                    className="w-full rounded-xl border border-[var(--color-border-secondary)] bg-[var(--color-bg-primary)] px-3 py-2 text-sm text-[var(--color-text-primary)] shadow-sm outline-none focus:border-[var(--color-border-focus)] focus:ring-2 focus:ring-[var(--color-primary-light)]"
+                  >
+                    <option value="">All Variants</option>
+                    {availableVariants.map((variant) => (
+                      <option key={variant} value={variant}>
+                        {variant === 'default' ? 'Default' : variant.charAt(0).toUpperCase() + variant.slice(1)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Template Selector */}
               <div className="w-full md:w-64">
                 <label
                   className="block text-xs font-medium mb-1 text-[var(--color-text-secondary)]"
@@ -475,11 +582,15 @@ const CreateCertifications = () => {
                   onChange={handleTemplateChange}
                   className="w-full rounded-xl border border-[var(--color-border-secondary)] bg-[var(--color-bg-primary)] px-3 py-2 text-sm text-[var(--color-text-primary)] shadow-sm outline-none focus:border-[var(--color-border-focus)] focus:ring-2 focus:ring-[var(--color-primary-light)]"
                 >
-                  {templates.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
-                  ))}
+                  {availableTemplates.length === 0 ? (
+                    <option value="">No templates available</option>
+                  ) : (
+                    availableTemplates.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name} {t.template_variant && `(${t.template_variant})`}
+                      </option>
+                    ))
+                  )}
                 </select>
               </div>
 
@@ -494,7 +605,7 @@ const CreateCertifications = () => {
                 <button
                   onClick={onGenerate}
                   disabled={state === FORM_STATES.PREVIEW || state === FORM_STATES.GENERATING}
-                  className="flex-1 md:flex-none rounded-xl px-3 py-2 text-sm font-semibold shadow-sm disabled:opacity-60 disabled:cursor-not-allowed bg-[var(--color-info)] text-[var(--color-text-inverse)] hover:bg-[var(--color-info-dark)] transition-colors"
+                  className="flex-1 md:flex-none rounded-xl px-3 py-2 text-sm font-semibold shadow-sm disabled:opacity-60 disabled:cursor-not-allowed bg-[var(--color-info)] text-[var(--color-text-inverse)] hover:bg-blue-500 transition-colors"
                 >
                   {state === FORM_STATES.GENERATING ? 'Generating…' : 'Generate PDF'}
                 </button>

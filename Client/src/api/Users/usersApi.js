@@ -181,4 +181,12 @@ export const usersApi = {
   deleteHiringForm: (id) => {
     return apiClient.delete(`/forms/hiring-forms/${id}`);
   },
+
+  /**
+   * Get active SPAs (for user role)
+   * @returns {Promise}
+   */
+  getSpas: () => {
+    return apiClient.get('/forms/spas');
+  },
 };

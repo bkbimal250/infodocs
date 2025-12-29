@@ -11,6 +11,7 @@ import { FaArrowLeft } from 'react-icons/fa';
 
 const INITIAL_FORM_STATE = {
   name: '',
+  banner_image: '',
   category: CERTIFICATE_CATEGORIES.SPA_THERAPIST,
   is_active: true,
   is_public: true,
@@ -63,6 +64,7 @@ const EditTemplatePage = () => {
       setTemplate(foundTemplate);
       setFormData({
         name: foundTemplate.name,
+        banner_image: foundTemplate.banner_image || '',
         category: foundTemplate.category,
         is_active: Boolean(foundTemplate.is_active),
         is_public: Boolean(foundTemplate.is_public),
@@ -113,6 +115,7 @@ const EditTemplatePage = () => {
 
       const payload = {
         name: formData.name.trim(),
+        banner_image: formData.banner_image?.trim() || null,
         category: formData.category,
         template_type: formData.template_type,
         is_active: formData.is_active,

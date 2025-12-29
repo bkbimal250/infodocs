@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import ProtectedRoute from '../utils/ProtectedRoute';
 import Layout from '../components/Layout';
 import AdminLayout from '../components/AdminLayout';
@@ -46,6 +46,10 @@ import {
   LastLoginHistory,
   RecentNotification,
   RecentActivity,
+  Queries,
+  AddQuerytype,
+  QueryTypeList,
+  AdminTutorials,
 } from '../pages/Admin';
 
 // Manager Pages
@@ -59,6 +63,8 @@ import {
 import ViewCandidatesDetails from '../pages/Manager/Candidates/ViewCandidatesDetails';
 import { ViewHiringDetails as ManagerViewHiringDetails } from '../pages/Manager/Hiring';
 import { ManagerProfile } from '../pages/Manager/Profiles';
+import ManagerTutorials from '../pages/Manager/tutorials/tutorials';
+import ManagerQuery from '../pages/Manager/Query/Query';
 
 // HR Pages
 import { HrDashboard } from '../pages/hr/Dashboard';
@@ -67,6 +73,8 @@ import { Hiringpages, ViewData } from '../pages/hr/HiringData';
 import { HrProfile } from '../pages/hr/Profiles';
 import HrCertificates from '../pages/hr/Certificates';
 import HrCertificateCreation from '../pages/hr/CertificateCreation';
+import HrQuery from '../pages/hr/Query/Query';
+import HrTutorials from '../pages/hr/tutorials/tutorials';
 
 // Common Pages
 import {
@@ -85,6 +93,8 @@ import {
   RecentNotification as UserRecentNotification,
   RecentActivity as UserRecentActivity,
 } from '../pages/Users';
+import UserQuery from '../pages/Users/Query/Query';
+import UserTutorials from '../pages/Users/tutorials/tutorials';
 import { ViewCandidatesDetails as UserViewCandidatesDetails } from '../pages/Users/Forms';
 import { ViewHiringDetails as UserViewHiringDetails } from '../pages/Users/JobHirings';
 
@@ -486,6 +496,46 @@ const AppRouter = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/admin/queries"
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+              <AdminLayout>
+                <Queries />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/queries/add-query-type"
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+              <AdminLayout>
+                <AddQuerytype />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/queries/query-types"
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+              <AdminLayout>
+                <QueryTypeList />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/tutorials"
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+              <AdminLayout>
+                <AdminTutorials />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
 
         {/* Protected Routes - HR */}
         <Route
@@ -504,6 +554,8 @@ const AppRouter = () => {
           <Route path="hiring-data" element={<Hiringpages />} />
           <Route path="hiring-data/:id" element={<ViewData />} />
           <Route path="profile" element={<HrProfile />} />
+          <Route path="queries" element={<HrQuery />} />
+          <Route path="tutorials" element={<HrTutorials />} />
           <Route path="notifications" element={<UserRecentNotification />} />
           <Route path="activities" element={<UserRecentActivity />} />
         </Route>
@@ -609,6 +661,26 @@ const AppRouter = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/manager/queries"
+          element={
+            <ProtectedRoute allowedRoles={['spa_manager', 'admin', 'super_admin']}>
+              <ManagerLayout>
+                <ManagerQuery />
+              </ManagerLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/manager/tutorials"
+          element={
+            <ProtectedRoute allowedRoles={['spa_manager', 'admin', 'super_admin']}>
+              <ManagerLayout>
+                <ManagerTutorials />
+              </ManagerLayout>
+            </ProtectedRoute>
+          }
+        />
 
         {/* Protected Routes - User (Regular Users) */}
         <Route
@@ -701,6 +773,26 @@ const AppRouter = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/user/queries"
+          element={
+            <ProtectedRoute allowedRoles={['user', 'admin', 'super_admin', 'spa_manager', 'hr']}>
+              <UserLayout>
+                <UserQuery />
+              </UserLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/user/tutorials"
+          element={
+            <ProtectedRoute allowedRoles={['user', 'admin', 'super_admin', 'spa_manager', 'hr']}>
+              <UserLayout>
+                <UserTutorials />
+              </UserLayout>
+            </ProtectedRoute>
+          }
+        />
 
         {/* Protected Routes - Common (Authenticated Users) */}
         <Route
@@ -759,12 +851,12 @@ const NotFoundPage = () => {
       <div className="text-center">
         <h1 className="text-6xl font-bold text-gray-900 mb-4">404</h1>
         <p className="text-xl text-gray-600 mb-8">Page not found</p>
-        <a
-          href="/"
-          className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
+        <Link
+          to="/"
+          className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
         >
           Go Home
-        </a>
+        </Link>
       </div>
     </div>
   );

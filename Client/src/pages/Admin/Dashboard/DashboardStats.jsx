@@ -78,6 +78,8 @@ const DashboardStats = () => {
           console.log('Fallback: Certificates count from list:', count);
         } catch (e) {
           console.error('Failed to fetch certificates count:', e);
+          // Set to 0 if both methods fail
+          newStats.totalCertificates = 0;
         }
       }
 

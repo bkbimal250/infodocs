@@ -7,10 +7,24 @@ import apiClient from '../../utils/apiConfig';
 export const certificateApi = {
   /**
    * Get all public certificate templates
+   * @param {string} category - Optional category filter
+   * @param {string} variant - Optional variant filter
    * @returns {Promise}
    */
-  getPublicTemplates: () => {
-    return apiClient.get('/certificates/templates');
+  getPublicTemplates: (category = null, variant = null) => {
+    const params = {};
+    if (category) params.category = category;
+    if (variant) params.variant = variant;
+    return apiClient.get('/certificates/templates', { params });
+  },
+
+  /**
+   * Get templates by category grouped by variant
+   * @param {string} category - Certificate category
+   * @returns {Promise} - Returns { variantName: [templates] }
+   */
+  getTemplatesByCategory: (category) => {
+    return apiClient.get(`/certificates/templates/by-category/${category}`);
   },
 
   /**

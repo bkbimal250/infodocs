@@ -268,6 +268,13 @@ export const prepareCertificateData = (category, formData, invoiceItems = []) =>
         candidate_photo: formData.candidate_photo || '',
       };
 
+    case CERTIFICATE_CATEGORIES.DAILY_SHEET:
+      // Daily Sheet only uses SPA data - no additional fields needed
+      return {
+        ...baseData,
+        // SPA data is already included in baseData
+      };
+
     default:
       return baseData;
   }

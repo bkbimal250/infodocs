@@ -107,175 +107,176 @@ const PrintApplicationDetails = ({ data = {}, onDownload }) => {
         @media print {
           @page {
             size: A4;
-            margin: 15mm 20mm;
+            margin: 10mm 15mm;
           }
           body {
             margin: 0;
             padding: 0;
           }
+          * {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+          .a4-page {
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+          }
         }
         .a4-page {
           width: 210mm;
-          min-height: 297mm;
-          padding: 15mm 20mm;
+          height: 297mm;
+          max-height: 297mm;
+          padding: 10mm 15mm;
           margin: 0 auto;
           background: white;
           box-sizing: border-box;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
         }
         @media screen {
           .a4-page {
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
           }
         }
+        .form-content {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+        }
       `}</style>
       <div className="print-container">
-        <div ref={printRef} className="a4-page text-[13px] leading-tight font-[Times_New_Roman]">
-          {/* HEADER */}
-          <h2 className="text-center uppercase font-bold text-lg mb-3 mt-0">
-            Job Application Form
-          </h2>
-
-          {/* SPA NAME */}
-          <div className="mb-2">
-            <span className="font-semibold">SPA NAME:</span>
-            <div className="border-b border-black mt-0.5 min-h-[18px] pb-1">
-              {spaName}
-            </div>
-          </div>
-
-          {/* PERSONAL INFORMATION */}
-          <div className="mb-2">
-            <h3 className="font-semibold mb-1.5 text-[13px]">PERSONAL INFORMATION:</h3>
-            
-            <div className="mb-1">
-              <span>First Name</span>
-              <div className="border-b border-black mt-0.5 min-h-[18px] inline-block w-full pb-1">
-                {firstName}
+        <div ref={printRef} className="a4-page text-[12px] leading-snug font-[Times_New_Roman]">
+          <div className="form-content">
+            <h2 className="text-center uppercase font-bold text-base mb-2 mt-0" style={{ fontSize: '16px', marginBottom: '8px' }}>
+              Job Application Form
+            </h2>
+            <div className="mb-1.5" style={{ marginBottom: '6px' }}>
+              <span className="font-semibold text-[12px]">SPA NAME:</span>
+              <div className="border-b border-black mt-0.5 min-h-[16px] pb-0.5" style={{ minHeight: '14px', paddingBottom: '2px' }}>
+                {spaName}
               </div>
             </div>
-
-            <div className="mb-1">
-              <span>Middle Name</span>
-              <div className="border-b border-black mt-0.5 min-h-[18px] inline-block w-full pb-1">
-                {middleName}
-              </div>
-            </div>
-
-            <div className="mb-1">
-              <span>Last Name</span>
-              <div className="border-b border-black mt-0.5 min-h-[18px] inline-block w-full pb-1">
-                {lastName}
-              </div>
-            </div>
-
-            <div className="mb-1">
-              <span>Address</span>
-              <div className="border-b border-black mt-0.5 min-h-[18px] pb-1">
-                {address}
-              </div>
-            </div>
-
-            <div className="mb-1">
-              <span>City, State, Zip Code</span>
-              <div className="border-b border-black mt-0.5 min-h-[18px] pb-1">
-                {cityStateZip}
-              </div>
-            </div>
-
-            <div className="mb-1">
-              <span>Phone Number and Alternate phone number</span>
-              <div className="border-b border-black mt-0.5 min-h-[18px] inline-block w-full pb-1">
-                {phoneNumber} {alternateNumber && ` / ${alternateNumber}`}
-              </div>
-            </div>
-
-            <div className="mb-1 flex gap-4">
-              <div className="flex-1">
-                <span>AGE:</span>
-                <div className="border-b border-black mt-0.5 min-h-[18px] inline-block w-full pb-1">
-                  {age}
+            <div className="mb-1.5" style={{ marginBottom: '6px' }}>
+              <h3 className="font-semibold mb-1 text-[12px]" style={{ marginBottom: '4px', fontSize: '12px' }}>PERSONAL INFORMATION:</h3>
+              <div className="mb-0.5" style={{ marginBottom: '2px' }}>
+                <span className="text-[11px]">First Name</span>
+                <div className="border-b border-black mt-0.5 min-h-[16px] inline-block w-full pb-0.5" style={{ minHeight: '14px', paddingBottom: '2px' }}>
+                  {firstName}
                 </div>
               </div>
-              <div className="flex-1">
-                <span>AGE PROOF DOCUMENT:</span>
-                <div className="border-b border-black mt-0.5 min-h-[18px] inline-block w-full pb-1">
-                  {ageProof}
+              <div className="mb-0.5" style={{ marginBottom: '2px' }}>
+                <span className="text-[11px]">Middle Name</span>
+                <div className="border-b border-black mt-0.5 min-h-[16px] inline-block w-full pb-0.5" style={{ minHeight: '14px', paddingBottom: '2px' }}>
+                  {middleName}
+                </div>
+              </div>
+              <div className="mb-0.5" style={{ marginBottom: '2px' }}>
+                <span className="text-[11px]">Last Name</span>
+                <div className="border-b border-black mt-0.5 min-h-[16px] inline-block w-full pb-0.5" style={{ minHeight: '14px', paddingBottom: '2px' }}>
+                  {lastName}
+                </div>
+              </div>
+              <div className="mb-0.5" style={{ marginBottom: '2px' }}>
+                <span className="text-[11px]">Address</span>
+                <div className="border-b border-black mt-0.5 min-h-[16px] pb-0.5" style={{ minHeight: '14px', paddingBottom: '2px' }}>
+                  {address}
+                </div>
+              </div>
+              <div className="mb-0.5" style={{ marginBottom: '2px' }}>
+                <span className="text-[11px]">City, State, Zip Code</span>
+                <div className="border-b border-black mt-0.5 min-h-[16px] pb-0.5" style={{ minHeight: '14px', paddingBottom: '2px' }}>
+                  {cityStateZip}
+                </div>
+              </div>
+              <div className="mb-0.5" style={{ marginBottom: '2px' }}>
+                <span className="text-[11px]">Phone Number and Alternate phone number</span>
+                <div className="border-b border-black mt-0.5 min-h-[16px] inline-block w-full pb-0.5" style={{ minHeight: '14px', paddingBottom: '2px' }}>
+                  {phoneNumber} {alternateNumber && ` / ${alternateNumber}`}
+                </div>
+              </div>
+              <div className="mb-0.5 flex gap-4" style={{ marginBottom: '2px' }}>
+                <div className="flex-1">
+                  <span className="text-[11px]">AGE:</span>
+                  <div className="border-b border-black mt-0.5 min-h-[16px] inline-block w-full pb-0.5" style={{ minHeight: '14px', paddingBottom: '2px' }}>
+                    {age}
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <span className="text-[11px]">AGE PROOF DOCUMENT:</span>
+                  <div className="border-b border-black mt-0.5 min-h-[16px] inline-block w-full pb-0.5" style={{ minHeight: '14px', paddingBottom: '2px' }}>
+                    {ageProof}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* POSITION/AVAILABILITY */}
-          <div className="mb-2">
-            <h3 className="font-semibold mb-1.5 text-[13px]">POSITION/AVAILABILITY:</h3>
-            <div className="mb-1">
-              <span>Position Applied For</span>
-              <div className="border-b border-black mt-0.5 min-h-[18px] inline-block w-full pb-1">
-                {position}
+            <div className="mb-1.5" style={{ marginBottom: '6px' }}>
+              <h3 className="font-semibold mb-1 text-[12px]" style={{ marginBottom: '4px', fontSize: '12px' }}>POSITION/AVAILABILITY:</h3>
+              <div className="mb-0.5" style={{ marginBottom: '2px' }}>
+                <span className="text-[11px]">Position Applied For</span>
+                <div className="border-b border-black mt-0.5 min-h-[16px] inline-block w-full pb-0.5" style={{ minHeight: '14px', paddingBottom: '2px' }}>
+                  {position}
+                </div>
               </div>
             </div>
-          </div>
-
-          {/* EDUCATION/ CERTIFIED COURSE */}
-          <div className="mb-2">
-            <h3 className="font-semibold mb-1.5 text-[13px]">EDUCATION/ CERTIFIED COURSE:</h3>
-            <div className="mb-1">
-              <span className="font-semibold">Skills and Qualifications: Skills, Training</span>
-            </div>
-            <div className="border-b border-black min-h-[35px] pb-1">
-              {education}
-            </div>
-          </div>
-
-          {/* DECLARATION */}
-          <div className="mb-2">
-            <p className="text-justify leading-tight text-[12px]">
-              I certify that information contained in this application is true and complete. 
-              I understand that false information may be grounds for not hiring me or for immediate 
-              termination of employment at any point in the future if I am hired. I authorize the 
-              verification of any or all information listed above.
-            </p>
-          </div>
-
-          {/* SIGNATURES */}
-          <div className="mt-3 flex gap-8">
-            <div className="flex-1">
-              <span>Signature</span>
-              <div className="border-b border-black mt-0.5 min-h-[40px] pb-1 flex items-center">
-                {candidate.signature && imageCache[candidate.signature] ? (
-                  <img
-                    src={imageCache[candidate.signature]}
-                    alt="Signature"
-                    className="max-h-[35px] max-w-full object-contain"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                    }}
-                  />
-                ) : candidate.signature ? (
-                  <img
-                    src={getFileUrl(candidate.signature)}
-                    alt="Signature"
-                    className="max-h-[35px] max-w-full object-contain"
-                    onLoad={async (e) => {
-                      // Try to convert to data URL after load
-                      const dataUrl = await fetchImageAsDataUrl(candidate.signature);
-                      if (dataUrl) {
-                        e.target.src = dataUrl;
-                      }
-                    }}
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                    }}
-                  />
-                ) : (
-                  <span>&nbsp;</span>
-                )}
+            <div className="mb-1.5" style={{ marginBottom: '6px' }}>
+              <h3 className="font-semibold mb-1 text-[12px]" style={{ marginBottom: '4px', fontSize: '12px' }}>EDUCATION/ CERTIFIED COURSE:</h3>
+              <div className="mb-0.5" style={{ marginBottom: '2px' }}>
+                <span className="font-semibold text-[11px]">Skills and Qualifications: Skills, Training</span>
+              </div>
+              <div className="border-b border-black min-h-[28px] pb-0.5" style={{ minHeight: '24px', paddingBottom: '2px' }}>
+                {education}
               </div>
             </div>
-            <div className="flex-1">
-              <span>Date</span>
-              <div className="border-b border-black mt-0.5 min-h-[18px] pb-1">
-                {submissionDate}
+            <div className="mb-1.5 flex-1" style={{ marginBottom: '6px', flex: '1 1 auto' }}>
+              <p className="text-justify leading-tight text-[10px]" style={{ fontSize: '10px', lineHeight: '1.3' }}>
+                I certify that information contained in this application is true and complete. 
+                I understand that false information may be grounds for not hiring me or for immediate 
+                termination of employment at any point in the future if I am hired. I authorize the 
+                verification of any or all information listed above.
+              </p>
+            </div>
+            <div className="mt-2 flex gap-8" style={{ marginTop: '8px' }}>
+              <div className="flex-1">
+                <span className="text-[11px]">Signature</span>
+                <div className="border-b border-black mt-0.5 min-h-[32px] pb-0.5 flex items-center" style={{ minHeight: '28px', paddingBottom: '2px' }}>
+                  {candidate.signature && imageCache[candidate.signature] ? (
+                    <img
+                      src={imageCache[candidate.signature]}
+                      alt="Signature"
+                      className="max-h-[28px] max-w-full object-contain"
+                      style={{ maxHeight: '26px' }}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                  ) : candidate.signature ? (
+                    <img
+                      src={getFileUrl(candidate.signature)}
+                      alt="Signature"
+                      className="max-h-[28px] max-w-full object-contain"
+                      style={{ maxHeight: '26px' }}
+                      onLoad={async (e) => {
+                        const dataUrl = await fetchImageAsDataUrl(candidate.signature);
+                        if (dataUrl) {
+                          e.target.src = dataUrl;
+                        }
+                      }}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <span>&nbsp;</span>
+                  )}
+                </div>
+              </div>
+              <div className="flex-1">
+                <span className="text-[11px]">Date</span>
+                <div className="border-b border-black mt-0.5 min-h-[16px] pb-0.5" style={{ minHeight: '14px', paddingBottom: '2px' }}>
+                  {submissionDate}
+                </div>
               </div>
             </div>
           </div>

@@ -15,6 +15,7 @@ export const CERTIFICATE_CATEGORIES = {
   APPOINTMENT_LETTER: 'appointment_letter',
   INVOICE_SPA_BILL: 'invoice_spa_bill',
   ID_CARD: 'id_card',
+  DAILY_SHEET: 'daily_sheet',
 };
 
 export const CERTIFICATE_CATEGORY_METADATA = {
@@ -53,6 +54,11 @@ export const CERTIFICATE_CATEGORY_METADATA = {
     icon: 'id-card',
     description: 'Photo identity card for employees',
   },
+  [CERTIFICATE_CATEGORIES.DAILY_SHEET]: {
+    title: 'Daily Sheet',
+    icon: 'daily-sheet',
+    description: 'Daily transaction and activity sheet',
+  },
 };
 
 export const SPA_REQUIRED_CATEGORIES = [
@@ -61,6 +67,7 @@ export const SPA_REQUIRED_CATEGORIES = [
   CERTIFICATE_CATEGORIES.APPOINTMENT_LETTER,
   CERTIFICATE_CATEGORIES.INVOICE_SPA_BILL,
   CERTIFICATE_CATEGORIES.ID_CARD,
+  CERTIFICATE_CATEGORIES.DAILY_SHEET,
 ];
 
 // ========================
@@ -90,7 +97,7 @@ export const CERTIFICATE_FIELDS = {
     description: 'Matches ManagerSalaryCertificate model',
     requiredFields: ['manager_name', 'position', 'joining_date', 'monthly_salary', 'spa_id'],
     fields: [
-      { name: 'manager_name', label: 'Manager Name', type: 'text', placeholder: 'Full Name' },
+      { name: 'manager_name', label: 'Candidate Name', type: 'text', placeholder: 'Full Name' },
       { name: 'position', label: 'Position', type: 'text', placeholder: 'Manager', defaultValue: 'Manager' },
       { name: 'joining_date', label: 'Joining Date', type: 'date', placeholder: '15th Oct, 2025' },
       { name: 'monthly_salary', label: 'Monthly Salary', type: 'text', placeholder: 'Rs. 40,000/-' },
@@ -173,6 +180,17 @@ export const CERTIFICATE_FIELDS = {
       { name: 'contact_number', label: 'Contact Number', type: 'text', placeholder: 'Mobile Number' },
       { name: 'issue_date', label: 'Issue Date', type: 'date' },
       { name: 'candidate_photo', label: 'Candidate Photo', type: 'file' },
+    ],
+  },
+
+  [CERTIFICATE_CATEGORIES.DAILY_SHEET]: {
+    title: 'Daily Sheet',
+    icon: 'daily-sheet',
+    description: 'Daily transaction and activity tracking sheet - uses SPA data only',
+    requiredFields: ['spa_id'],
+    fields: [
+      // Daily Sheet only uses SPA data - no additional fields needed
+      // The template will display spa_name and spa_location from the selected SPA
     ],
   },
 };

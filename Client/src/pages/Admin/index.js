@@ -43,3 +43,11 @@ export {
 export { RecentNotification } from './RecentNotification';
 export { RecentActivity } from './RecentActivity';
 
+// Admin Query
+export { default as Queries } from './Query/Queries';
+export { default as AddQuerytype } from './Query/AddQuerytype';
+export { default as QueryTypeList } from './Query/QueryTypeList';
+
+// Admin Tutorials
+export { default as AdminTutorials } from './tutorials/Tutorials';
+

@@ -72,7 +72,8 @@ const HrLayout = () => {
             {/* Mobile Sidebar Toggle Button */}
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="lg:hidden fixed top-20 left-4 z-50 bg-gray-900 text-white p-2 rounded-md"
+              className="lg:hidden fixed top-20 left-4 z-50 bg-gradient-to-r from-purple-600 to-pink-600 text-white p-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-110"
+              aria-label="Toggle sidebar"
             >
               <svg
                 className="w-6 h-6"
@@ -84,14 +85,14 @@ const HrLayout = () => {
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    strokeWidth={2}
+                    strokeWidth={2.5}
                     d="M6 18L18 6M6 6l12 12"
                   />
                 ) : (
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    strokeWidth={2}
+                    strokeWidth={2.5}
                     d="M4 6h16M4 12h16M4 18h16"
                   />
                 )}
@@ -104,7 +105,7 @@ const HrLayout = () => {
                 sidebarOpen ? 'translate-x-0' : '-translate-x-full'
               } fixed lg:static lg:translate-x-0 top-16 bottom-0 left-0 z-40 w-64 transition-transform duration-300 ease-in-out lg:transition-none`}
             >
-              <HrSidebar />
+              <HrSidebar onLinkClick={() => setSidebarOpen(false)} />
             </div>
 
             {/* Overlay for mobile */}

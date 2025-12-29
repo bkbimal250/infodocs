@@ -47,6 +47,7 @@ const CertificateTable = ({
     'appointment_letter': 'Appointment Letter',
     'invoice_spa_bill': 'Invoice/SPA Bill',
     'id_card': 'ID Card',
+    'daily_sheet': 'Daily Sheet',
   };
 
   const formatCategory = (category) => {

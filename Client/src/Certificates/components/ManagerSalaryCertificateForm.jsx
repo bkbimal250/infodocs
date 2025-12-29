@@ -319,7 +319,7 @@ const ManagerSalaryCertificateForm = ({ formData, handleInputChange }) => {
         <div className="grid gap-3 md:grid-cols-2">
           <Input
             name="manager_name"
-            label={label('manager_name', 'Manager Name')}
+            label={label('manager_name', 'Employee Full Name')}
             placeholder={placeholder('manager_name', 'Full name')}
             value={formData.manager_name}
             onChange={handleInputChange}

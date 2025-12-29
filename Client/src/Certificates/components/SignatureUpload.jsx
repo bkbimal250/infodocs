@@ -52,8 +52,13 @@ const SignatureUpload = ({ value, onChange, label = 'Signature', required = fals
       // Create a File object from the blob
       const file = new File([blob], 'signature.png', { type: 'image/png' });
 
-      // Call backend API to remove background
-      const result = await certificateApi.removeBackground(file, 'PNG');
+      // Call backend API to remove background with timeout
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 25000)
+      );
+      
+      const apiPromise = certificateApi.removeBackground(file, 'PNG');
+      const result = await Promise.race([apiPromise, timeoutPromise]);
       
       if (result.data && result.data.success && result.data.image) {
         // Use the processed image from backend
@@ -70,7 +75,15 @@ const SignatureUpload = ({ value, onChange, label = 'Signature', required = fals
       
       // Determine error message
       let errorMessage = 'Failed to remove background. Using original image.';
-      if (error.response?.status === 503) {
+      
+      // Check for network/CORS errors first
+      if (error.code === 'ERR_NETWORK' || error.message?.includes('Network Error') || error.message?.includes('Unable to connect')) {
+        errorMessage = 'Cannot connect to backend server. Using original image. Please check if the backend is running.';
+      } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout') || error.message?.includes('Request timeout')) {
+        errorMessage = 'Request timed out. Backend server may be slow or unavailable. Using original image.';
+      } else if (error.message?.includes('CORS') || error.message?.includes('Access-Control-Allow-Origin')) {
+        errorMessage = 'CORS error: Backend server is not allowing requests from this domain. Using original image.';
+      } else if (error.response?.status === 503) {
         // Show the detailed error from backend
         const backendMessage = error.response?.data?.detail || 'Background removal service is not available.';
         errorMessage = `${backendMessage} Using original image.`;
@@ -121,7 +134,12 @@ const SignatureUpload = ({ value, onChange, label = 'Signature', required = fals
       toast.loading('Removing background...', { id: 'bg-removal' });
 
       // Use base64 endpoint since we already have the image as data URL
-      const result = await certificateApi.removeBackgroundFromBase64(value, 'PNG');
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 25000)
+      );
+      
+      const apiPromise = certificateApi.removeBackgroundFromBase64(value, 'PNG');
+      const result = await Promise.race([apiPromise, timeoutPromise]);
       
       if (result.data && result.data.success && result.data.image) {
         onChange({ target: { name, value: result.data.image } });
@@ -134,7 +152,15 @@ const SignatureUpload = ({ value, onChange, label = 'Signature', required = fals
       console.error('Background removal error:', error);
       
       let errorMessage = 'Failed to remove background.';
-      if (error.response?.status === 503) {
+      
+      // Check for network/CORS errors first
+      if (error.code === 'ERR_NETWORK' || error.message?.includes('Network Error') || error.message?.includes('Unable to connect')) {
+        errorMessage = 'Cannot connect to backend server. Please check if the backend is running.';
+      } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout') || error.message?.includes('Request timeout')) {
+        errorMessage = 'Request timed out. Backend server may be slow or unavailable.';
+      } else if (error.message?.includes('CORS') || error.message?.includes('Access-Control-Allow-Origin')) {
+        errorMessage = 'CORS error: Backend server is not allowing requests from this domain.';
+      } else if (error.response?.status === 503) {
         // Show the detailed error from backend
         errorMessage = error.response?.data?.detail || 'Background removal service is not available.';
       } else if (error.response?.data?.detail) {

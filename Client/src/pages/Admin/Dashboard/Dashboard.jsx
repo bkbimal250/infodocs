@@ -117,9 +117,9 @@ const AdminDashboard = () => {
               </div>
             ) : notifications.length > 0 ? (
               <div className="space-y-3">
-                {notifications.slice(0, 5).map((notification) => (
+                {notifications.slice(0, 5).map((notification, index) => (
                   <div
-                    key={notification.id}
+                    key={`notification-${notification.id}-${index}`}
                     className={`p-3 rounded-lg border ${
                       notification.is_read
                         ? 'bg-gray-50 border-gray-200'
@@ -186,8 +186,8 @@ const AdminDashboard = () => {
               </div>
             ) : activities.length > 0 ? (
               <div className="space-y-3">
-                {activities.slice(0, 5).map((activity) => (
-                  <div key={activity.id} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50">
+                {activities.slice(0, 5).map((activity, index) => (
+                  <div key={`activity-${activity.id}-${index}`} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50">
                     <div className="flex-shrink-0 mt-1">
                       <HiOutlineClock className="h-5 w-5 text-gray-500" />
                     </div>
@@ -234,9 +234,9 @@ const AdminDashboard = () => {
               </div>
             ) : recentCertificates.length > 0 ? (
               <div className="space-y-3">
-                {recentCertificates.map((cert) => (
+                {recentCertificates.map((cert, index) => (
                   <Link
-                    key={cert.id}
+                    key={`cert-${cert.id}-${index}`}
                     to={`/admin/certificates/${cert.id}`}
                     className="block border-b border-gray-200 pb-3 last:border-0 hover:bg-gray-50 -mx-2 px-2 rounded transition-colors"
                   >
@@ -360,9 +360,9 @@ const AdminDashboard = () => {
               </div>
             ) : recentHiringForms.length > 0 ? (
               <div className="space-y-3">
-                {recentHiringForms.map((form) => (
+                {recentHiringForms.map((form, index) => (
                   <Link
-                    key={form.id}
+                    key={`hiring-form-${form.id}-${index}`}
                     to={`/admin/hiring/${form.id}`}
                     className="block border-b border-gray-200 pb-3 last:border-0 hover:bg-gray-50 -mx-2 px-2 rounded transition-colors"
                   >

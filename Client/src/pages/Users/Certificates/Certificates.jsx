@@ -196,6 +196,13 @@ const Certificates = () => {
   };
 
   const getCandidateName = (certificate) => {
+    // For Daily Sheet, show SPA name instead
+    const category = (certificate.certificate_data?.category || certificate.category || '').toLowerCase();
+    if (category === 'daily_sheet') {
+      return certificate.certificate_data?.spa?.name || 
+             certificate.spa?.name || 
+             'N/A';
+    }
     return certificate.candidate_name || 
            certificate.therapist_name || 
            certificate.employee_name || 
@@ -268,6 +275,7 @@ const Certificates = () => {
                 <option value="invoice_spa_bill">Invoice/SPA Bill</option>
                 <option value="id_card">ID Card</option>
                 <option value="offer_letter">Offer Letter</option>
+                <option value="daily_sheet">Daily Sheet</option>
               </select>
             </div>
             <div>

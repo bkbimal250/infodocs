@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useState, useRef } from 'react';
+import { createRoot } from 'react-dom/client';
 import PrintApplicationDetails from './components/PrintApplicationDetails';
 import PrintUdertakingDetails from './components/PrintUdertakingDetails';
 
@@ -8,27 +9,8 @@ import PrintUdertakingDetails from './components/PrintUdertakingDetails';
  * Displays candidate forms in a table format
  */
 const CandidatesTable = ({ candidates, loading, onEdit, onDelete }) => {
-  const [showPrintModal, setShowPrintModal] = useState(false);
-  const [printType, setPrintType] = useState(null); // 'application' or 'undertaking'
-  const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [downloading, setDownloading] = useState(false);
-  const printContentRef = useRef(null);
-
-  const handlePrint = (candidate, type) => {
-    setSelectedCandidate(candidate);
-    setPrintType(type);
-    setShowPrintModal(true);
-  };
-
-  const handleClosePrintModal = () => {
-    setShowPrintModal(false);
-    setSelectedCandidate(null);
-    setPrintType(null);
-  };
-
-  const handlePrintPage = () => {
-    window.print();
-  };
+  const [downloadingId, setDownloadingId] = useState(null);
 
   const preloadAndConvertImages = async (element) => {
     const images = element.querySelectorAll('img');
@@ -105,14 +87,44 @@ const CandidatesTable = ({ candidates, loading, onEdit, onDelete }) => {
     await new Promise(resolve => setTimeout(resolve, 300));
   };
 
-  const handleDownloadPDF = async (element) => {
-    if (!element) return;
+  const handleDownloadPDF = async (candidate, type) => {
+    if (!candidate) return;
     
     try {
       setDownloading(true);
+      setDownloadingId(candidate.id);
+      
+      // Create a temporary container for the form
+      const tempContainer = document.createElement('div');
+      tempContainer.style.position = 'absolute';
+      tempContainer.style.left = '-9999px';
+      tempContainer.style.top = '-9999px';
+      tempContainer.style.width = '210mm';
+      document.body.appendChild(tempContainer);
+      
+      // Render the form component in the temp container
+      const root = createRoot(tempContainer);
+      
+      const FormComponent = type === 'application' ? PrintApplicationDetails : PrintUdertakingDetails;
+      root.render(
+        <FormComponent 
+          data={{ candidate }} 
+          onDownload={null}
+        />
+      );
+      
+      // Wait for component to render and images to load
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Get the form element
+      const formElement = tempContainer.querySelector('.print-container') || tempContainer.querySelector('.a4-page') || tempContainer;
+      
+      if (!formElement) {
+        throw new Error('Form element not found');
+      }
       
       // Preload and convert all images to base64
-      await preloadAndConvertImages(element);
+      await preloadAndConvertImages(formElement);
       
       // Dynamically import html2pdf.js
       const html2pdf = await import('html2pdf.js');
@@ -120,13 +132,13 @@ const CandidatesTable = ({ candidates, loading, onEdit, onDelete }) => {
       
       const opt = {
         margin: 0.5,
-        filename: `${printType === 'application' ? 'Job_Application_Form' : 'Undertaking_Form'}_${selectedCandidate?.id || 'form'}.pdf`,
+        filename: `${type === 'application' ? 'Job_Application_Form' : 'Undertaking_Form'}_${candidate.id || 'form'}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { 
           scale: 2, 
           useCORS: true, 
           logging: false,
-          allowTaint: true, // Allow taint if base64 conversion fails
+          allowTaint: true,
           backgroundColor: '#ffffff',
           imageTimeout: 15000,
           removeContainer: true
@@ -134,13 +146,17 @@ const CandidatesTable = ({ candidates, loading, onEdit, onDelete }) => {
         jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
       };
 
-      await html2pdfLib().set(opt).from(element).save();
+      await html2pdfLib().set(opt).from(formElement).save();
+      
+      // Cleanup
+      root.unmount();
+      document.body.removeChild(tempContainer);
     } catch (error) {
       console.error('PDF download error:', error);
-      // Fallback to print if html2pdf fails
-      alert('PDF download failed. Please use the Print button instead.');
+      alert('PDF download failed. Please try again.');
     } finally {
       setDownloading(false);
+      setDownloadingId(null);
     }
   };
   if (loading) {
@@ -254,22 +270,24 @@ const CandidatesTable = ({ candidates, loading, onEdit, onDelete }) => {
                       View
                     </Link>
                     <button
-                      onClick={() => handlePrint(candidate, 'application')}
-                      className="text-[var(--color-success)] hover:text-[var(--color-success-dark)] font-medium inline-flex items-center gap-1 px-2 py-1 rounded hover:bg-[var(--color-success-light)]"
+                      onClick={() => handleDownloadPDF(candidate, 'application')}
+                      disabled={downloading && downloadingId === candidate.id}
+                      className="text-[var(--color-success)] hover:text-[var(--color-success-dark)] font-medium inline-flex items-center gap-1 px-2 py-1 rounded hover:bg-[var(--color-success-light)] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
-                      Print Job Form
+                      {downloading && downloadingId === candidate.id ? 'Downloading...' : 'Download Job Form'}
                     </button>
                     <button
-                      onClick={() => handlePrint(candidate, 'undertaking')}
-                      className="text-[var(--color-secondary)] hover:text-[var(--color-secondary-dark)] font-medium inline-flex items-center gap-1 px-2 py-1 rounded hover:bg-[var(--color-secondary-light)]"
+                      onClick={() => handleDownloadPDF(candidate, 'undertaking')}
+                      disabled={downloading && downloadingId === candidate.id}
+                      className="text-[var(--color-secondary)] hover:text-[var(--color-secondary-dark)] font-medium inline-flex items-center gap-1 px-2 py-1 rounded hover:bg-[var(--color-secondary-light)] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
-                      Print Undertaking
+                      {downloading && downloadingId === candidate.id ? 'Downloading...' : 'Download Undertaking'}
                     </button>
                     {onEdit && (
                       <button
@@ -301,66 +319,6 @@ const CandidatesTable = ({ candidates, loading, onEdit, onDelete }) => {
         </table>
       </div>
 
-      {/* Print Modal */}
-      {showPrintModal && selectedCandidate && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 print:hidden">
-          <div className="flex items-center justify-center min-h-screen p-4">
-            <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-              {/* Modal Header */}
-              <div className="flex items-center justify-between p-4 border-b bg-[var(--color-gray-50)] print:hidden">
-                <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
-                  {printType === 'application' ? 'Job Application Form' : 'Undertaking Form'}
-                </h3>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      const element = printContentRef.current;
-                      if (element) handleDownloadPDF(element);
-                    }}
-                    disabled={downloading}
-                    className="px-4 py-2 bg-[var(--color-success)] text-[var(--color-text-inverse)] rounded-lg hover:bg-[var(--color-success-dark)] flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    {downloading ? 'Downloading...' : 'Download PDF'}
-                  </button>
-                  <button
-                    onClick={handlePrintPage}
-                    className="px-4 py-2 bg-[var(--color-primary)] text-[var(--color-text-inverse)] rounded-lg hover:bg-[var(--color-primary-dark)] flex items-center gap-2"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                    </svg>
-                    Print
-                  </button>
-                  <button
-                    onClick={handleClosePrintModal}
-                    className="px-4 py-2 bg-[var(--color-gray-200)] text-[var(--color-text-primary)] rounded-lg hover:bg-[var(--color-gray-300)]"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-
-              {/* Modal Content */}
-              <div className="overflow-y-auto flex-1 bg-[var(--color-bg-primary)]" ref={printContentRef}>
-                {printType === 'application' ? (
-                  <PrintApplicationDetails 
-                    data={{ candidate: selectedCandidate }} 
-                    onDownload={handleDownloadPDF}
-                  />
-                ) : (
-                  <PrintUdertakingDetails 
-                    data={{ candidate: selectedCandidate }} 
-                    onDownload={handleDownloadPDF}
-                  />
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
