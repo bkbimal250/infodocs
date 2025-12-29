@@ -48,6 +48,9 @@ from apps.certificates.models import (
 # Forms App
 from apps.forms_app.models import SPA, CandidateForm, Hiring_Form  # noqa
 
+# Tutorials
+from apps.tutorials.models import Tutorial  # noqa
+
 # ----------------------------------------------------
 # Engine + Session Factory
 # ----------------------------------------------------
@@ -123,10 +126,10 @@ async def connect_to_db():
 
     except asyncio.TimeoutError:
         logger.error("MySQL connection test timed out (10s).")
-        raise
+        raise RuntimeError("Database connection timeout. Please check your database server is running.")
     except Exception as e:
-        logger.error(f"MySQL connection failed: {e}")
-        logger.warning("Server continues, but DB operations may fail.")
+        logger.error(f"MySQL connection failed: {e}", exc_info=True)
+        raise RuntimeError(f"Database connection failed: {str(e)}. Please check your database credentials and server status.")
 
 
 async def _test_connection():
@@ -171,14 +174,29 @@ async def get_db() -> AsyncSession:
                 logger.error(f"Database SQL error: {e}", exc_info=True)
                 await session.rollback()
                 raise
+            except HTTPException:
+                # Re-raise HTTPExceptions as-is (don't wrap them)
+                raise
             except Exception as e:
                 logger.error(f"Database operation error: {e}", exc_info=True)
                 await session.rollback()
                 raise
+    except HTTPException:
+        # Re-raise HTTPExceptions as-is
+        raise
     except Exception as e:
-        # If session creation itself fails, log and re-raise
+        # If session creation itself fails, log and provide better error
         logger.error(f"Failed to create database session: {e}", exc_info=True)
-        raise RuntimeError(f"Database session creation failed: {str(e)}")
+        
+        # Check if it's a connection error
+        error_str = str(e).lower()
+        if "connection" in error_str or "connect" in error_str:
+            raise RuntimeError("Database connection failed. Please check your database server is running and credentials are correct.")
+        elif "timeout" in error_str:
+            raise RuntimeError("Database connection timeout. Please check your network connection.")
+        else:
+            # For other errors, provide the original error but in a cleaner format
+            raise RuntimeError(f"Database error: {str(e)}")
 
 
 # ----------------------------------------------------
@@ -186,6 +204,10 @@ async def get_db() -> AsyncSession:
 # ----------------------------------------------------
 async def init_db():
     """Auto create all tables defined in models."""
+    # Import Query models here to avoid circular import
+    from apps.Query.models import Query, QueryType  # noqa
+    # Tutorial models are already imported at the top
+    
     if not engine:
         raise RuntimeError("Engine not initialized before init_db()")
 

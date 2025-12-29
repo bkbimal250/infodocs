@@ -18,6 +18,8 @@ from apps.certificates.routers import certificates_router
 from apps.forms_app.routers import forms_router
 from apps.analytics.routers import analytics_router
 from apps.notifications.routers import notifications_router
+from apps.Query.routers import query_router
+from apps.tutorials.routers import tutorials_router
 from core.exceptions import CustomException, ValidationError, NotFoundError, AuthenticationError, AuthorizationError
 from core.middleware import ErrorHandlerMiddleware
 from core.rate_limiter import RateLimitMiddleware
@@ -225,6 +227,8 @@ app.include_router(certificates_router, prefix="/api/certificates", tags=["Certi
 app.include_router(forms_router, prefix="/api/forms", tags=["Forms"])
 app.include_router(analytics_router, prefix="/api/analytics", tags=["Analytics"])
 app.include_router(notifications_router, prefix="/api/notifications", tags=["Notifications"])
+app.include_router(query_router, prefix="/api/queries", tags=["Queries"])
+app.include_router(tutorials_router, prefix="/api", tags=["Tutorials"])
 
 
 @app.get("/")

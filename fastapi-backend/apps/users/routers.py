@@ -184,6 +184,13 @@ async def login(
     except AuthenticationError:
         # Re-raise authentication errors
         raise
+    except RuntimeError as e:
+        # Re-raise database connection errors with original message
+        logger.error(f"Database error during login: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=503,
+            detail=f"Database connection error: {str(e)}"
+        )
     except Exception as e:
         logger.error(f"Unexpected error during login: {e}", exc_info=True)
         raise HTTPException(
@@ -294,6 +301,13 @@ async def login_with_email(
     except AuthenticationError:
         # Re-raise authentication errors
         raise
+    except RuntimeError as e:
+        # Re-raise database connection errors with original message
+        logger.error(f"Database error during login: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=503,
+            detail=f"Database connection error: {str(e)}"
+        )
     except Exception as e:
         logger.error(f"Unexpected error during login: {e}", exc_info=True)
         raise HTTPException(
