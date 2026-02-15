@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
-import { 
-  HiOutlinePencil, 
-  HiOutlineTrash, 
+import {
+  HiOutlinePencil,
+  HiOutlineTrash,
   HiOutlineEye,
   HiOutlineUser
 } from 'react-icons/hi';
@@ -10,23 +10,35 @@ import {
  * Users Table Component
  * Displays users in a table format
  */
-const UsersTable = ({ users, onEdit, onDelete, loading = false }) => {
-  const getRoleBadgeColor = (role) => {
-    const colors = {
-      super_admin: 'bg-[var(--color-error-light)] text-[var(--color-error-dark)]',
-      admin: 'bg-[var(--color-primary-light)] text-[var(--color-primary-dark)]',
-      spa_manager: 'bg-[var(--color-secondary-light)] text-[var(--color-secondary-dark)]',
-      hr: 'bg-[var(--color-success-light)] text-[var(--color-success-dark)]',
-      user: 'bg-[var(--color-gray-100)] text-[var(--color-gray-800)]',
-    };
-    return colors[role] || colors.user;
-  };
+import React from 'react';
 
-  const getRoleDisplay = (role) => {
-    return role.replace('_', ' ').toUpperCase();
-  };
+// ... imports
+
+const getRoleBadgeColor = (role) => {
+  switch (role?.toLowerCase()) {
+    case 'admin':
+      return 'bg-purple-100 text-purple-800';
+    case 'manager':
+      return 'bg-blue-100 text-blue-800';
+    case 'hr':
+      return 'bg-pink-100 text-pink-800';
+    case 'employee':
+      return 'bg-green-100 text-green-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+};
+
+const getRoleDisplay = (role) => {
+  if (!role) return 'Unknown';
+  return role.charAt(0).toUpperCase() + role.slice(1);
+};
+
+const UsersTable = React.memo(({ users, onEdit, onDelete, loading = false }) => {
+  // ... helper functions
 
   if (loading) {
+    // ... loading state
     return (
       <div className="text-center py-12">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--color-primary)] mx-auto"></div>
@@ -36,6 +48,7 @@ const UsersTable = ({ users, onEdit, onDelete, loading = false }) => {
   }
 
   if (users.length === 0) {
+    // ... empty state
     return (
       <div className="text-center py-12">
         <HiOutlineUser className="h-16 w-16 text-[var(--color-text-tertiary)] mx-auto mb-4" />
@@ -46,7 +59,8 @@ const UsersTable = ({ users, onEdit, onDelete, loading = false }) => {
 
   return (
     <div className="bg-[var(--color-bg-primary)] rounded-lg shadow overflow-hidden">
-      <div className="overflow-x-auto">
+      {/* Desktop View */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="min-w-full divide-y divide-[var(--color-border-primary)]">
           <thead className="bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-dark)]">
             <tr>
@@ -96,11 +110,10 @@ const UsersTable = ({ users, onEdit, onDelete, loading = false }) => {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex flex-col gap-1">
                     <span
-                      className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        user.is_active
-                          ? 'bg-[var(--color-success-light)] text-[var(--color-success-dark)]'
-                          : 'bg-[var(--color-gray-100)] text-[var(--color-gray-800)]'
-                      }`}
+                      className={`px-2 py-1 text-xs font-medium rounded-full ${user.is_active
+                        ? 'bg-[var(--color-success-light)] text-[var(--color-success-dark)]'
+                        : 'bg-[var(--color-gray-100)] text-[var(--color-gray-800)]'
+                        }`}
                     >
                       {user.is_active ? 'Active' : 'Inactive'}
                     </span>
@@ -144,9 +157,71 @@ const UsersTable = ({ users, onEdit, onDelete, loading = false }) => {
           </tbody>
         </table>
       </div>
+
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-4 p-4">
+        {users.map((user) => (
+          <div key={user.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 space-y-4">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="h-10 w-10 bg-[var(--color-primary-light)] rounded-full flex items-center justify-center">
+                  <HiOutlineUser className="h-5 w-5 text-[var(--color-primary)]" />
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-[var(--color-text-primary)]">
+                    {user.first_name} {user.last_name}
+                  </div>
+                  <div className="text-xs text-[var(--color-text-secondary)]">{user.email}</div>
+                </div>
+              </div>
+              <span
+                className={`px-2 py-1 text-xs font-medium rounded-full ${getRoleBadgeColor(
+                  user.role
+                )}`}
+              >
+                {getRoleDisplay(user.role)}
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center text-sm border-t border-gray-100 pt-3">
+              <div className="flex flex-col gap-1">
+                <span className="text-xs text-gray-500">Status</span>
+                <span
+                  className={`px-2 py-0.5 text-xs font-medium rounded-full w-fit ${user.is_active
+                    ? 'bg-[var(--color-success-light)] text-[var(--color-success-dark)]'
+                    : 'bg-[var(--color-gray-100)] text-[var(--color-gray-800)]'
+                    }`}
+                >
+                  {user.is_active ? 'Active' : 'Inactive'}
+                </span>
+              </div>
+              <div className="flex space-x-1">
+                <Link
+                  to={`/admin/users/${user.id}`}
+                  className="p-2 text-[var(--color-primary)] bg-[var(--color-primary-light)] rounded-full"
+                >
+                  <HiOutlineEye className="h-4 w-4" />
+                </Link>
+                <Link
+                  to={`/admin/users/${user.id}/edit`}
+                  className="p-2 text-[var(--color-info)] bg-[var(--color-info-light)] rounded-full"
+                >
+                  <HiOutlinePencil className="h-4 w-4" />
+                </Link>
+                <button
+                  onClick={() => onDelete && onDelete(user.id)}
+                  className="p-2 text-[var(--color-error)] bg-[var(--color-error-light)] rounded-full"
+                >
+                  <HiOutlineTrash className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
-};
+});
 
 export default UsersTable;
 

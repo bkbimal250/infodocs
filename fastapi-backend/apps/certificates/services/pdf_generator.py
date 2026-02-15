@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 WEASYPRINT_AVAILABLE = False
 XHTML2PDF_AVAILABLE = False
 PDF2IMAGE_AVAILABLE = False
+_FONT_CONFIG = None  # Global cache for WeasyPrint font configuration
 
 try:
     from weasyprint import HTML, CSS
@@ -105,9 +106,13 @@ def _html_to_pdf_weasyprint(html_content: str, output_path: Optional[str] = None
     from weasyprint import HTML, CSS
     from weasyprint.text.fonts import FontConfiguration
     
-    font_config = FontConfiguration()
+    # Use global font config to avoid reloading fonts on every request (huge performance boost)
+    global _FONT_CONFIG
+    if _FONT_CONFIG is None:
+        _FONT_CONFIG = FontConfiguration()
     
     # Enhanced CSS for professional certificates (A4 portrait)
+    # Added hyphens: none to improve performance
     css = CSS(string="""
         @page {
             size: A4;
@@ -119,6 +124,7 @@ def _html_to_pdf_weasyprint(html_content: str, output_path: Optional[str] = None
             font-family: Arial, sans-serif;
             width: 100%;
             overflow: hidden;
+            hyphens: none;
         }
         * {
             -webkit-print-color-adjust: exact;
@@ -144,7 +150,7 @@ def _html_to_pdf_weasyprint(html_content: str, output_path: Optional[str] = None
         html = HTML(string=html_content)
         pdf_bytes = html.write_pdf(
             stylesheets=[css], 
-            font_config=font_config,
+            font_config=_FONT_CONFIG,
             optimize_size=('fonts', 'images')  # Optimize PDF size
         )
         
@@ -275,7 +281,7 @@ def _html_to_image_weasyprint(
         html = HTML(string=html_content)
         pdf_bytes = html.write_pdf(
             stylesheets=[css], 
-            font_config=font_config,
+            font_config=_FONT_CONFIG,
             optimize_size=('fonts', 'images')
         )
         

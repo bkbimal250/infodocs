@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { adminApi } from '../../../api/Admin/adminApi';
 import { CERTIFICATE_CATEGORY_METADATA } from '../../../utils/certificateConstants';
 import TemplateTable from './TemplateComponent/TemplateTable';
+import Pagination from '../../common/Pagination';
 
 /**
  * Admin Templates List Page
@@ -61,6 +62,14 @@ const TemplatesList = () => {
     }
   };
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  const paginatedTemplates = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return templates.slice(startIndex, startIndex + itemsPerPage);
+  }, [templates, currentPage]);
+
   if (loading && templates.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -94,12 +103,23 @@ const TemplatesList = () => {
           </div>
         )}
 
-        <TemplateTable
-          templates={templates}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          getCategoryLabel={getCategoryLabel}
-        />
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          <TemplateTable
+            templates={paginatedTemplates}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            getCategoryLabel={getCategoryLabel}
+          />
+          {templates.length > itemsPerPage && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={Math.ceil(templates.length / itemsPerPage)}
+              onPageChange={setCurrentPage}
+              totalItems={templates.length}
+              itemsPerPage={itemsPerPage}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

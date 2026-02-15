@@ -8,7 +8,7 @@ if (import.meta.env.DEV) {
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000,
+  timeout: 60000,
 });
 
 apiClient.interceptors.request.use(

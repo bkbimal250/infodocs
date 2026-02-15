@@ -12,7 +12,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:8009 ',
+        target: 'https://infodocs.api.d0s369.co.in',
         changeOrigin: true,
         secure: false, // Disable SSL verification for local development
         rewrite: (path) => path.replace(/^\/api/, '/api'),
@@ -37,11 +37,11 @@ export default defineConfig({
             }
             // Bundle @imgly/background-removal and ONNX together in vendor chunk
             // They must stay together due to tight coupling and module format requirements
-            if (id.includes('@imgly') || 
-                id.includes('background-removal') || 
-                id.includes('ort') || 
-                id.includes('onnxruntime') ||
-                id.includes('onnxruntime-web')) {
+            if (id.includes('@imgly') ||
+              id.includes('background-removal') ||
+              id.includes('ort') ||
+              id.includes('onnxruntime') ||
+              id.includes('onnxruntime-web')) {
               // Bundle with other vendor libraries to avoid splitting
               return 'vendor';
             }

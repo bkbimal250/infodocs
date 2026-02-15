@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { adminApi } from '../../../api/Admin/adminApi';
 import UsersTable from './Userstable';
@@ -12,11 +12,9 @@ import Pagination from '../../common/Pagination';
 const AdminUsers = () => {
   const navigate = useNavigate();
   const [allUsers, setAllUsers] = useState([]);
-  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
   const [filter, setFilter] = useState({
     search: '',
     role: '',
@@ -27,11 +25,6 @@ const AdminUsers = () => {
   useEffect(() => {
     loadUsers();
   }, []);
-
-  useEffect(() => {
-    // Apply filters and pagination whenever allUsers, filter, or currentPage changes
-    applyFiltersAndPagination();
-  }, [allUsers, filter, currentPage]);
 
   const loadUsers = async () => {
     try {
@@ -48,9 +41,9 @@ const AdminUsers = () => {
     }
   };
 
-  const applyFiltersAndPagination = () => {
-    // Apply filters
-    let filtered = allUsers.filter((user) => {
+  // Memoized filtered users
+  const filteredUsers = useMemo(() => {
+    return allUsers.filter((user) => {
       // Search filter
       if (filter.search) {
         const searchLower = filter.search.toLowerCase();
@@ -78,15 +71,13 @@ const AdminUsers = () => {
 
       return true;
     });
+  }, [allUsers, filter]);
 
-    // Update total items
-    setTotalItems(filtered.length);
-
-    // Apply pagination
+  // Memoized paginated users
+  const paginatedUsers = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    setUsers(filtered.slice(startIndex, endIndex));
-  };
+    return filteredUsers.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredUsers, currentPage]);
 
   const handleFilterChange = (newFilter) => {
     setFilter(newFilter);
@@ -121,7 +112,7 @@ const AdminUsers = () => {
   };
 
 
-  if (loading && users.length === 0) {
+  if (loading && allUsers.length === 0) {
     return (
       <div className="min-h-screen bg-[var(--color-bg-secondary)] flex items-center justify-center">
         <div className="text-center">
@@ -167,17 +158,17 @@ const AdminUsers = () => {
         {/* Users Table */}
         <div className="bg-[var(--color-bg-primary)] rounded-lg shadow overflow-hidden">
           <UsersTable
-            users={users}
+            users={paginatedUsers}
             onEdit={handleEdit}
             onDelete={handleDelete}
-            loading={loading && users.length === 0}
+            loading={loading && paginatedUsers.length === 0}
           />
-          {totalItems > itemsPerPage && (
+          {filteredUsers.length > itemsPerPage && (
             <Pagination
               currentPage={currentPage}
-              totalPages={Math.ceil(totalItems / itemsPerPage)}
+              totalPages={Math.ceil(filteredUsers.length / itemsPerPage)}
               onPageChange={setCurrentPage}
-              totalItems={totalItems}
+              totalItems={filteredUsers.length}
               itemsPerPage={itemsPerPage}
             />
           )}
