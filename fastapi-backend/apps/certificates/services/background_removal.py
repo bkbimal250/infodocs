@@ -258,18 +258,24 @@ async def remove_background_from_image(
             raise Exception("Background removal returned None")
         
         # If output format is not PNG, convert it
+        # If output format is not PNG, convert it
         if output_format.upper() != "PNG":
-            img = Image.open(BytesIO(output_bytes))
-            # Convert RGBA to RGB if output format doesn't support transparency
-            if output_format.upper() in ["JPEG", "JPG"]:
-                # Create white background for JPEG
-                rgb_img = Image.new("RGB", img.size, (255, 255, 255))
-                rgb_img.paste(img, mask=img.split()[-1] if img.mode == "RGBA" else None)
-                img = rgb_img
-            
-            output_buffer = BytesIO()
-            img.save(output_buffer, format=output_format.upper())
-            output_bytes = output_buffer.getvalue()
+            def convert_format(data, fmt):
+                img = Image.open(BytesIO(data))
+                # Convert RGBA to RGB if output format doesn't support transparency
+                if fmt.upper() in ["JPEG", "JPG"]:
+                    # Create white background for JPEG
+                    rgb_img = Image.new("RGB", img.size, (255, 255, 255))
+                    rgb_img.paste(img, mask=img.split()[-1] if img.mode == "RGBA" else None)
+                    img = rgb_img
+                
+                output_buffer = BytesIO()
+                img.save(output_buffer, format=fmt.upper())
+                return output_buffer.getvalue()
+
+            # Run blocking PIL operations in thread pool
+            from starlette.concurrency import run_in_threadpool
+            output_bytes = await run_in_threadpool(convert_format, output_bytes, output_format)
         
         logger.info(f"Successfully removed background. Output size: {len(output_bytes)} bytes")
         return output_bytes

@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pathlib import Path
 import io
 import logging
+from starlette.concurrency import run_in_threadpool
 
 from config.database import get_db
 from config.settings import settings
@@ -449,7 +450,8 @@ async def generate_certificate(
         # Generate PDF with detailed error logging
         try:
             logger.info(f"Generating PDF for certificate {certificate.id}")
-            pdf_bytes = html_to_pdf(rendered_html)
+            # Run blocking PDF generation in a thread pool
+            pdf_bytes = await run_in_threadpool(html_to_pdf, rendered_html)
             logger.info(f"PDF generated successfully: {len(pdf_bytes)} bytes")
         except Exception as pdf_error:
             logger.error(f"PDF generation failed: {pdf_error}", exc_info=True)
@@ -721,7 +723,8 @@ async def download_certificate_pdf(
     data = await prepare_certificate_data(template, cert_data, certificate_name, use_http_urls=False)
     html_content = template.template_html
     rendered_html = render_html_template(html_content, data)
-    pdf_bytes = html_to_pdf(rendered_html)
+    # Run blocking PDF generation in a thread pool
+    pdf_bytes = await run_in_threadpool(html_to_pdf, rendered_html)
 
     return StreamingResponse(io.BytesIO(pdf_bytes), media_type="application/pdf",
                              headers={"Content-Disposition": f"attachment; filename=certificate_{certificate_id}.pdf"})
@@ -763,8 +766,9 @@ async def download_certificate_image(
                     with open(pdf_path, 'rb') as f:
                         pdf_bytes = f.read()
                     
-                    # Convert PDF to image
-                    image_bytes = pdf_to_image(pdf_bytes, format="PNG", dpi=150)
+                    
+                    # Convert PDF to image (blocking operation)
+                    image_bytes = await run_in_threadpool(pdf_to_image, pdf_bytes, format="PNG", dpi=150)
                     
                     logger.info(f"Successfully converted PDF to image for certificate {certificate_id}")
                     return StreamingResponse(
@@ -873,7 +877,8 @@ async def download_certificate_image(
     data = await prepare_certificate_data(template, cert_data, certificate_name, use_http_urls=False)
     html_content = template.template_html
     rendered_html = render_html_template(html_content, data)
-    image_bytes = html_to_image(rendered_html)
+    # Run blocking image generation in a thread pool
+    image_bytes = await run_in_threadpool(html_to_image, rendered_html)
 
     return StreamingResponse(io.BytesIO(image_bytes), media_type="image/png",
                              headers={"Content-Disposition": f"attachment; filename=certificate_{certificate_id}.png"})
