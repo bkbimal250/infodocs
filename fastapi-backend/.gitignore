@@ -10,6 +10,19 @@ ENV/
 .venv
 
 requirements.txt/
+check_rembg.py
+.gitignore
+add_banner_image_column.py
+add_description_column.py
+add_hr_role.py
+add_soft_delete_fields.py
+add_template_variant_column.py
+create_all_tables.py
+create_certificate_tables_new.py
+create_tables.py
+create_users_table.py
+create_default_users.py
+run_category_enum_migration.py
 
 # Environment
 .env
