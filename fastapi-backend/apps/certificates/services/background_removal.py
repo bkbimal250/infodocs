@@ -1,6 +1,6 @@
 """
 Background Removal Service
-Reusable service for removing backgrounds from images using remove.bg API or rembg
+Reusable service for removing backgrounds from images using rembg (Local CPU)
 Author: Bimal Developer (Refactored for Production)
 """
 import logging
@@ -10,8 +10,9 @@ from PIL import Image
 import base64
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-import httpx
-from config.settings import settings
+
+# Removed external API imports
+# from config.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -22,17 +23,7 @@ logger = logging.getLogger(__name__)
 # Thread pool executor for running CPU-intensive operations
 _executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="bg-removal")
 
-# 1. remove.bg API Configuration
-REMOVE_BG_AVAILABLE = False
-REMOVE_BG_ERROR = None
-
-if settings.REMOVE_BG_API_KEY:
-    REMOVE_BG_AVAILABLE = True
-    logger.info("✓ remove.bg API is configured for background removal")
-else:
-    REMOVE_BG_ERROR = "REMOVE_BG_API_KEY not set in environment variables"
-
-# 2. rembg Configuration (Global Model Loading)
+# rembg Configuration (Global Model Loading)
 REMBG_AVAILABLE = False
 REMBG_SESSION = None
 REMBG_ERROR = None
@@ -43,17 +34,14 @@ try:
     
     # Initialize session globally to avoid per-request reload overhead
     # using 'isnet-general-use' as it is better for signatures/general edges
-    if not REMOVE_BG_AVAILABLE: # Only load if we are likely to use it (or load anyway if fallback desired, but user wanted strict separation)
-        # Actually, user said "Choose ONE". 
-        # But for safety, let's load it if installed, but only use it if API is NOT set.
-        try:
-             logger.info("Initializing rembg session (isnet-general-use)...")
-             REMBG_SESSION = new_session("isnet-general-use")
-             logger.info("✓ rembg session initialized (isnet-general-use)")
-        except Exception as e:
-            logger.warning(f"Failed to initialize isnet-general-use, falling back to u2net: {e}")
-            REMBG_SESSION = new_session("u2net")
-            logger.info("✓ rembg session initialized (u2net)")
+    try:
+         logger.info("Initializing rembg session (isnet-general-use)...")
+         REMBG_SESSION = new_session("isnet-general-use")
+         logger.info("✓ rembg session initialized (isnet-general-use)")
+    except Exception as e:
+        logger.warning(f"Failed to initialize isnet-general-use, falling back to u2net: {e}")
+        REMBG_SESSION = new_session("u2net")
+        logger.info("✓ rembg session initialized (u2net)")
 
 except ImportError as e:
     REMBG_ERROR = str(e)
@@ -63,44 +51,6 @@ except ImportError as e:
 # ==============================================================================
 # CORE SERVICES
 # ==============================================================================
-
-async def _remove_background_using_api(image_data: bytes, preserve_dark_ink: bool = True) -> bytes:
-    """
-    Remove background using remove.bg API
-    """
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            files = {'image_file': ('image.png', BytesIO(image_data), 'image/png')}
-            data = {'size': 'auto'}
-            
-            if preserve_dark_ink:
-                data['type'] = 'auto'  # 'auto' is generally best for signatures
-            
-            headers = {'X-Api-Key': settings.REMOVE_BG_API_KEY}
-            
-            logger.info(f"Calling remove.bg API with {len(image_data)} bytes")
-            response = await client.post(
-                settings.REMOVE_BG_API_URL,
-                headers=headers,
-                files=files,
-                data=data
-            )
-            
-            if response.status_code == 200:
-                logger.info(f"✓ API Success. Size: {len(response.content)} bytes")
-                return response.content
-            else:
-                error_msg = f"remove.bg API status {response.status_code}: {response.text}"
-                logger.error(error_msg)
-                raise Exception(error_msg)
-    
-    except httpx.TimeoutException:
-        logger.error("remove.bg API timed out")
-        raise Exception("Background removal API timed out")
-    except Exception as e:
-        logger.error(f"remove.bg API error: {e}")
-        raise
-
 
 async def _remove_background_using_rembg(image_data: bytes) -> bytes:
     """
@@ -135,13 +85,12 @@ async def remove_background_from_image(
     preserve_dark_ink: bool = True
 ) -> Optional[bytes]:
     """
-    Remove background from an image.
-    Strictly chooses method based on configuration:
-    1. If REMOVE_BG_API_KEY is set -> Use API
-    2. Else if rembg is installed -> Use generic local model
-    3. Else -> Error
+    Remove background from an image using local rembg.
     
-    Includes validation and error handling.
+    Args:
+        image_data: Raw bytes of the image
+        output_format: Target format (PNG/JPEG). Note: JPEG loses transparency.
+        preserve_dark_ink: Ignored (was for external API compatibility)
     """
     try:
         # 1. Validation
@@ -152,21 +101,15 @@ async def remove_background_from_image(
         if len(image_data) > 10 * 1024 * 1024:
             raise ValueError("Image too large (>10MB). Please optimize first.")
 
-        output_bytes = None
-
-        # 2. Process
-        if REMOVE_BG_AVAILABLE:
-            # Method A: API
-            output_bytes = await _remove_background_using_api(image_data, preserve_dark_ink)
-        elif REMBG_AVAILABLE:
-            # Method B: Local Library
-            output_bytes = await _remove_background_using_rembg(image_data)
-        else:
-            # No method available
-            error_msg = "No background removal service available. Set REMOVE_BG_API_KEY or install 'rembg'."
+        if not REMBG_AVAILABLE:
+            error_msg = f"Local background removal service unavailable. {REMBG_ERROR or 'Install rembg[cpu]'}"
             logger.error(error_msg)
             raise RuntimeError(error_msg)
 
+        # 2. Process
+        logger.info("Using local rembg for background removal")
+        output_bytes = await _remove_background_using_rembg(image_data)
+        
         if output_bytes is None:
             raise RuntimeError("Background removal result was empty")
 
