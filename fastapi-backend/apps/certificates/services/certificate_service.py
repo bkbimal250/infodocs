@@ -610,32 +610,10 @@ async def prepare_certificate_data(template: CertificateTemplate, certificate_da
                     data["candidate_photo"] = photo
                     logger.debug("Keeping base64 image for preview")
                 else:
-                    # For PDF: WeasyPrint can't handle base64 directly, need to convert to file
-                    # Try to save to a temporary file if we have certificate_id
-                    # Otherwise, try to use a temp file with a unique name
-                    import uuid
-                    temp_id = certificate_data.get("certificate_id") or int(uuid.uuid4().int % 1000000)
-                    temp_path = await save_base64_image(photo, temp_id, "id_card_photo_temp")
-                    if temp_path:
-                        # Check both uploads and media directories
-                        # save_base64_image saves to media/certificates/, so check there first
-                        media_photo_path = Path(media_base_path) / temp_path
-                        uploads_photo_path = uploads_base_path / temp_path
-                        media_base_path_str_clean = media_base_path_str.lstrip("/")
-                        
-                        if media_photo_path.exists():
-                            data["candidate_photo"] = f"file:///{media_base_path_str_clean}/{temp_path}"
-                            logger.info(f"PDF: Converted base64 to file path (media): {data['candidate_photo']}")
-                        elif uploads_photo_path.exists():
-                            data["candidate_photo"] = f"file:///{uploads_base_path_str}/{temp_path}"
-                            logger.info(f"PDF: Converted base64 to file path (uploads): {data['candidate_photo']}")
-                        else:
-                            # File was just saved, use media path (where save_base64_image saves)
-                            data["candidate_photo"] = f"file:///{media_base_path_str_clean}/{temp_path}"
-                            logger.warning(f"PDF: Using saved file path (may not exist yet): {data['candidate_photo']}")
-                    else:
-                        logger.error("Failed to save base64 image to file for PDF generation")
-                        data["candidate_photo"] = ""  # Empty to avoid broken image
+                    # For PDF: Keep base64 as is - WeasyPrint supports data URIs
+                    # This avoids disk I/O and speeds up generation
+                    data["candidate_photo"] = photo
+                    logger.debug("Keeping base64 image for PDF (direct embedding)")
             # If it's a relative file path (certificates/filename.jpg), convert to appropriate URL
             elif photo.startswith("certificates/"):
                 if use_http_urls:
@@ -1325,11 +1303,26 @@ async def delete_certificate(db: AsyncSession, certificate_id: int, category: Op
     return False
 
 
+
 async def get_certificate_statistics(db: AsyncSession):
-    """Get certificate statistics: total, by user, by category"""
-    from sqlalchemy import func
+    """Get certificate statistics: total, by user, by category (Optimized with parallel queries & Redis caching)"""
+    import asyncio
+    import json
+    from sqlalchemy import func, select
     from apps.users.models import User
-    
+    from config.redis import get_redis
+
+    # Try to get from cache first
+    try:
+        redis = await get_redis()
+        if redis:
+            cached_stats = await redis.get("certificate_statistics")
+            if cached_stats:
+                logger.info("Returning cached certificate statistics")
+                return json.loads(cached_stats)
+    except Exception as e:
+        logger.warning(f"Redis cache error: {e}")
+
     models = [
         (SpaTherapistCertificate, CertificateCategory.SPA_THERAPIST),
         (ManagerSalaryCertificate, CertificateCategory.MANAGER_SALARY),
@@ -1341,45 +1334,87 @@ async def get_certificate_statistics(db: AsyncSession):
         (GeneratedCertificate, None),
     ]
     
-    # Total count
+    # Helper to fetch stats for a single model
+    async def fetch_model_stats(model, category):
+        try:
+            # Total count
+            stmt = select(func.count(model.id))
+            count_result = await db.execute(stmt)
+            count = count_result.scalar() or 0
+            
+            # Count by user
+            user_stmt = select(model.created_by, func.count(model.id)).group_by(model.created_by)
+            user_result = await db.execute(user_stmt)
+            user_counts = {str(uid): c for uid, c in user_result.all() if uid} # Ensure keys are strings for JSON
+            
+            return {
+                "count": count,
+                "category": category.value if category else None,
+                "user_counts": user_counts
+            }
+        except Exception as e:
+            logger.warning(f"Error fetching stats for {model.__tablename__}: {e}")
+            return {"count": 0, "category": category.value if category else None, "user_counts": {}}
+
+    # Execute all queries concurrently
+    results = await asyncio.gather(*[fetch_model_stats(m, c) for m, c in models])
+    
+    # Aggregate results
     total_count = 0
     category_counts = {}
-    user_counts = {}
+    aggregated_user_counts = {}
     
-    for model, category in models:
-        stmt = select(func.count(model.id))
-        result = await db.execute(stmt)
-        count = result.scalar() or 0
+    for res in results:
+        count = res["count"]
+        cat = res["category"]
+        u_counts = res["user_counts"]
+        
         total_count += count
-        
-        if category:
-            category_counts[category.value] = count
-        
-        # Count by user
-        user_stmt = select(model.created_by, func.count(model.id)).group_by(model.created_by)
-        user_result = await db.execute(user_stmt)
-        for user_id, cert_count in user_result.all():
-            if user_id:
-                user_counts[user_id] = user_counts.get(user_id, 0) + cert_count
+        if cat:
+            category_counts[cat] = count
+            
+        for uid, c in u_counts.items():
+            # uid is string from fetch_model_stats, convert to int for accumulation if needed, but dict keys are strings in JSON
+            # Let's keep uid as int for DB lookup, then convert to string for final JSON
+            try:
+                uid_int = int(uid)
+                aggregated_user_counts[uid_int] = aggregated_user_counts.get(uid_int, 0) + c
+            except ValueError:
+                pass
+
+
+    # Get user details for the aggregated counts
+    user_ids = list(aggregated_user_counts.keys())
+    user_details = []
     
-    # Get user details
-    user_ids = list(user_counts.keys())
-    user_details = {}
     if user_ids:
+        # Fetch users in chunks if too many? For now, fetch all related users
         user_stmt = select(User).where(User.id.in_(user_ids))
         user_result = await db.execute(user_stmt)
         for user in user_result.scalars().all():
-            user_details[user.id] = {
+            user_details.append({
                 "id": user.id,
                 "first_name": user.first_name,
                 "last_name": user.last_name,
                 "email": user.email,
-                "count": user_counts[user.id]
-            }
+                "count": aggregated_user_counts.get(user.id, 0)
+            })
+            
+    # Sort users by count desc
+    sorted_users = sorted(user_details, key=lambda x: x["count"], reverse=True)
     
-    return {
+    stats = {
         "total_certificates": total_count,
         "by_category": category_counts,
-        "by_user": list(user_details.values())
+        "by_user": sorted_users
     }
+
+    # Cache the result
+    try:
+        if redis:
+            await redis.set("certificate_statistics", json.dumps(stats), ex=600) # Cache for 10 minutes
+    except Exception as e:
+        logger.warning(f"Failed to cache statistics: {e}")
+
+    return stats
 

@@ -151,7 +151,9 @@ def _html_to_pdf_weasyprint(html_content: str, output_path: Optional[str] = None
         pdf_bytes = html.write_pdf(
             stylesheets=[css], 
             font_config=_FONT_CONFIG,
-            optimize_size=('fonts', 'images')  # Optimize PDF size
+            optimize_images=True,  # Reduce image size
+            jpeg_quality=75,       # Aggressive compression for <5MB target
+            optimize_size=('fonts', 'images')  # Enable full optimization
         )
         
         # Save to file if path provided
@@ -282,7 +284,7 @@ def _html_to_image_weasyprint(
         pdf_bytes = html.write_pdf(
             stylesheets=[css], 
             font_config=_FONT_CONFIG,
-            optimize_size=('fonts', 'images')
+            # optimize_size=('fonts', 'images')
         )
         
         # Convert PDF to image using pdf2image

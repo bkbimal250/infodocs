@@ -1,220 +1,108 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Appointment Letter</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
     <style>
         @page {
             size: A4;
             margin: 0;
         }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html, body {
-            width: 210mm;
-            height: 297mm;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-        }
-
-        body {
-            font-family: "Arial", sans-serif;
-            background: #fcf8f4;
-            color: #333;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        /* Outer & inner frame (same feel as certificate) */
-        .page-frame {
-            width: 100%;
-            max-width: 190mm;
-            border: 8px double #b58a6b;
-            padding: 10px;
-            background: #ffffff;
-        }
-
-        .content-wrapper {
-            border: 2px solid #d6bfae;
-            background: #fffdf9;
-            padding: 35px 40px 40px 40px;
-            min-height: 250mm;
-            position: relative;
-        }
-
-        /* Header */
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 35px;
-        }
-
-        .spa_name {
-            font-size: 32px;
-            font-weight: bold;
-            color: #8f5d46;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            line-height: 1.2;
-        }
-
-        .spa_city {
-            font-size: 15px;
-            color: #8f5d46;
-        }
-
-        .header-right {
-            text-align: right;
-        }
-
-        .letter-title {
-            font-size: 22px;
-            font-weight: bold;
-            text-decoration: underline;
-            color: #8f5d46;
-        }
-
-        .date {
-            margin-top: 10px;
-            font-size: 14px;
-            color: #000;
-        }
-
-        /* Body text */
-        .salutation {
-            margin: 25px 0 15px 0;
-            font-size: 14px;
-            line-height: 1.8;
-        }
-
-        .salutation strong {
-            font-size: 15px;
-        }
-
-        .content {
-            font-size: 14px;
-            line-height: 1.8;
-            text-align: justify;
-            margin-bottom: 20px;
-        }
-
-        .content strong {
-            font-weight: bold;
-            color: #000;
-        }
-
-        .terms {
-            margin: 15px 0 5px 0;
-            padding-left: 30px;
-            list-style-type: disc;
-            font-size: 14px;
-        }
-
-        .terms li {
-            margin: 8px 0;
-            line-height: 1.7;
-        }
-
-        .closing {
-            margin-top: 25px;
-            font-size: 14px;
-            line-height: 1.8;
-        }
-
-        /* Signature & footer row */
-        .signature-row {
-            margin-top: 45px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            gap: 20px;
-        }
-
-        .signature-block {
-            flex: 1;
-        }
-
-        .signature-image {
-            width: 180px;
-            height: auto;
-            display: block;
-            margin-bottom: 5px;
-        }
-
-        .signature-name {
-            font-weight: 700;
-            font-size: 14px;
-        }
-
-        .footer-contact {
-            flex: 1;
-            text-align: right;
-            font-size: 13px;
-            line-height: 1.7;
-        }
-
-        .footer-phone {
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .footer-address {
-            font-weight: bold;
-            font-size: 12px;
-        }
-
-        .bootstrap-icons {
-            font-size: 18px;
-            color: #8f5d46;
-            vertical-align: middle;
-            margin-right: 6px;
-        }
-
-        @media print {
-            body {
-                margin: 0;
-            }
-        }
     </style>
+
 </head>
-<body>
-    <div class="page-frame">
-        <div class="content-wrapper">
+
+<body style="
+    width:210mm;
+    height:297mm;
+    margin:0;
+    padding:0;
+    font-family:Arial, sans-serif;
+    background:#fcf8f4;
+    color:#333;
+">
+
+    <div style="
+    width:190mm;
+    margin:10mm auto;
+    border:8px double #b58a6b;
+    padding:10px;
+    background:#ffffff;
+">
+
+        <div style="
+    border:2px solid #d6bfae;
+    background:#fffdf9;
+    padding:35px 40px 40px 40px;
+    min-height:250mm;
+">
 
             <!-- HEADER -->
-            <div class="header">
+            <div style="
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    margin-bottom:35px;
+">
+
                 <div>
-                    <div class="spa_name">
+                    <div style="
+            font-size:32px;
+            font-weight:bold;
+            color:#8f5d46;
+            text-transform:uppercase;
+            letter-spacing:2px;
+            line-height:1.2;
+        ">
                         {{ spa_name }}
                     </div>
-                    <div class="spa_city">
-                        {{  spa_area }}
+
+                    <div style="
+            font-size:15px;
+            color:#8f5d46;
+        ">
+                        {{ spa_area }}
                     </div>
                 </div>
-                <div class="header-right">
-                    <div class="letter-title">Appointment Letter</div>
-                    <div class="date">DATE: {{ date }}</div>
+
+                <div style="text-align:right;">
+                    <div style="
+            font-size:22px;
+            font-weight:bold;
+            text-decoration:underline;
+            color:#8f5d46;
+        ">
+                        Appointment Letter
+                    </div>
+
+                    <div style="
+            margin-top:10px;
+            font-size:14px;
+            color:#000;
+        ">
+                        DATE: {{ date }}
+                    </div>
                 </div>
             </div>
 
             <!-- BODY -->
-            <div class="salutation">
+            <div style="
+    margin:25px 0 15px 0;
+    font-size:14px;
+    line-height:1.8;
+">
                 <p>Dear,</p>
-                <p><strong>{{ employee_name }}</strong></p>
+                <p><strong style="font-size:15px;">{{ employee_name }}</strong></p>
             </div>
 
-            <div class="content">
+            <div style="
+    font-size:14px;
+    line-height:1.8;
+    text-align:justify;
+    margin-bottom:20px;
+">
                 <p>
                     With reference to your recent interview for the position of
                     <strong>{{ position }}</strong>, we are pleased to appoint you at
@@ -223,58 +111,81 @@
                 </p>
             </div>
 
-            <ul class="terms">
-                <li>
-                    <strong>SALARY:</strong> You are entitled to a salary of
+            <ul style="
+    margin:15px 0 5px 30px;
+    font-size:14px;
+    line-height:1.7;
+">
+                <li style="margin:8px 0;">
+                    <strong>SALARY:</strong>
+                    You are entitled to a salary of
                     <strong>{{ salary }}</strong> per month.
                 </li>
-                <li>
-                    <strong>WORK ENVIRONMENT:</strong> It is expected that you treat your colleagues
-                    with respect and maintain a harmonious work environment. Please refrain from engaging
-                    in unnecessary relations or conflicts within the organization.
+
+                <li style="margin:8px 0;">
+                    <strong>WORK ENVIRONMENT:</strong>
+                    It is expected that you treat your colleagues with respect and
+                    maintain a harmonious work environment.
                 </li>
-                
             </ul>
 
-
-            <div class="closing">
+            <div style="
+    margin-top:25px;
+    font-size:14px;
+    line-height:1.8;
+">
                 <p>We look forward to your continued dedication to your work.</p>
                 <p>Best regards,</p>
             </div>
 
             <!-- SIGNATURE + CONTACT -->
-            <div class="signature-row">
+            <div style="
+    margin-top:45px;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+">
 
-                <!-- Signature block (structure kept, styling improved) -->
-                <div class="signature-block">
+                <!-- Signature -->
+                <div style="flex:1;">
                     {{#if manager_signature}}
-                        <img src="{{ manager_signature }}" class="signature-image" alt="Signature">
+                    <img src="{{ manager_signature }}" alt="Signature"
+                        style="width:180px;height:auto;display:block;margin-bottom:5px;">
                     {{else}}
-                        <img src="{{ default_signature_image }}" class="signature-image" alt="Signature">
+                    <img src="{{ default_signature_image }}" alt="Signature"
+                        style="width:180px;height:auto;display:block;margin-bottom:5px;">
                     {{/if}}
-                    <div class="signature-name">
+
+                    <div style="font-weight:700;font-size:14px;">
                         {{#if signatory_name}}
-                            {{ signatory_name }}
+                        {{ signatory_name }}
                         {{else}}
-                            Authorized Signatory
+                        Authorized Signatory
                         {{/if}}
                     </div>
                 </div>
 
-                <!-- Footer contact -->
-                <div class="footer-contact">
-                    <div class="footer-phone">
-                        <i class="bi bi-telephone-fill bootstrap-icons"></i>
-                        {{ spa_phone }}{{#if spa_phone1}} / {{ spa_phone1 }}{{/if}}
+                <!-- Contact -->
+                <div style="
+        flex:1;
+        text-align:right;
+        font-size:13px;
+        line-height:1.7;
+    ">
+                    <div style="font-weight:bold;margin-bottom:5px;">
+                        Phone: {{ spa_phone }}{{#if spa_phone1}} / {{ spa_phone1 }}{{/if}}
                     </div>
-                    <div class="footer-address">
-                        <i class="bi bi-geo-alt-fill bootstrap-icons"></i>
-                        {{ spa_address }}
+
+                    <div style="font-weight:bold;font-size:12px;">
+                        Address: {{ spa_address }}
                     </div>
                 </div>
+
             </div>
 
         </div>
     </div>
+
 </body>
+
 </html>

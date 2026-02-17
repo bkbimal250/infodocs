@@ -94,8 +94,8 @@ async def connect_to_db():
             pool_pre_ping=True,  # Verify connections before using
             pool_recycle=3600,  # Recycle connections after 1 hour
             pool_timeout=30,  # Wait up to 30s for connection from pool
-            pool_size=50,  # Increased from 5 to 50 base connections
-            max_overflow=100,  # Increased from 10 to 100 overflow connections
+            pool_size=10,  # Increased from 5 to 50 base connections
+            max_overflow=20,  # Increased from 10 to 100 overflow connections
             connect_args={
                 "connect_timeout": 10,
             },

@@ -1,7 +1,7 @@
 """
 Background Removal Service
-Reusable service for removing backgrounds from images using remove.bg API
-Author: Bimal Developer
+Reusable service for removing backgrounds from images using remove.bg API or rembg
+Author: Bimal Developer (Refactored for Production)
 """
 import logging
 from io import BytesIO
@@ -15,7 +15,14 @@ from config.settings import settings
 
 logger = logging.getLogger(__name__)
 
-# Check if remove.bg API is configured
+# ==============================================================================
+# CONFIGURATION & GLOBAL STATE
+# ==============================================================================
+
+# Thread pool executor for running CPU-intensive operations
+_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="bg-removal")
+
+# 1. remove.bg API Configuration
 REMOVE_BG_AVAILABLE = False
 REMOVE_BG_ERROR = None
 
@@ -24,55 +31,52 @@ if settings.REMOVE_BG_API_KEY:
     logger.info("✓ remove.bg API is configured for background removal")
 else:
     REMOVE_BG_ERROR = "REMOVE_BG_API_KEY not set in environment variables"
-    logger.warning(f"remove.bg API not configured: {REMOVE_BG_ERROR}")
 
-# Fallback: Check if rembg is available as backup
+# 2. rembg Configuration (Global Model Loading)
 REMBG_AVAILABLE = False
+REMBG_SESSION = None
 REMBG_ERROR = None
+
 try:
-    from rembg import remove
+    from rembg import remove, new_session
     REMBG_AVAILABLE = True
-    logger.info("✓ rembg is available as fallback for background removal")
+    
+    # Initialize session globally to avoid per-request reload overhead
+    # using 'isnet-general-use' as it is better for signatures/general edges
+    if not REMOVE_BG_AVAILABLE: # Only load if we are likely to use it (or load anyway if fallback desired, but user wanted strict separation)
+        # Actually, user said "Choose ONE". 
+        # But for safety, let's load it if installed, but only use it if API is NOT set.
+        try:
+             logger.info("Initializing rembg session (isnet-general-use)...")
+             REMBG_SESSION = new_session("isnet-general-use")
+             logger.info("✓ rembg session initialized (isnet-general-use)")
+        except Exception as e:
+            logger.warning(f"Failed to initialize isnet-general-use, falling back to u2net: {e}")
+            REMBG_SESSION = new_session("u2net")
+            logger.info("✓ rembg session initialized (u2net)")
+
 except ImportError as e:
     REMBG_ERROR = str(e)
-    logger.warning(f"rembg not available: {e}.")
+    logger.warning(f"rembg not available: {e}. Install with 'pip install rembg[cpu]'")
 
-# Thread pool executor for running CPU-intensive operations
-_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="bg-removal")
 
+# ==============================================================================
+# CORE SERVICES
+# ==============================================================================
 
 async def _remove_background_using_api(image_data: bytes, preserve_dark_ink: bool = True) -> bytes:
     """
     Remove background using remove.bg API
-    
-    Args:
-        image_data: Raw image bytes
-        preserve_dark_ink: If True, uses settings optimized for signatures
-    
-    Returns:
-        Bytes of the image with background removed
     """
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
-            # Prepare multipart form data for remove.bg API
-            # remove.bg expects 'image_file' as the file field name
-            files = {
-                'image_file': ('image.png', BytesIO(image_data), 'image/png')
-            }
+            files = {'image_file': ('image.png', BytesIO(image_data), 'image/png')}
+            data = {'size': 'auto'}
             
-            # API parameters
-            data = {
-                'size': 'auto',  # Auto-detect best size
-            }
-            
-            # For signatures, use specific settings
             if preserve_dark_ink:
-                # Use 'auto' type for better detection
-                data['type'] = 'auto'  # Auto-detect type (person/product/auto)
+                data['type'] = 'auto'  # 'auto' is generally best for signatures
             
-            headers = {
-                'X-Api-Key': settings.REMOVE_BG_API_KEY
-            }
+            headers = {'X-Api-Key': settings.REMOVE_BG_API_KEY}
             
             logger.info(f"Calling remove.bg API with {len(image_data)} bytes")
             response = await client.post(
@@ -83,129 +87,47 @@ async def _remove_background_using_api(image_data: bytes, preserve_dark_ink: boo
             )
             
             if response.status_code == 200:
-                logger.info(f"Successfully removed background using remove.bg API. Response size: {len(response.content)} bytes")
+                logger.info(f"✓ API Success. Size: {len(response.content)} bytes")
                 return response.content
             else:
-                error_msg = f"remove.bg API returned status {response.status_code}: {response.text}"
+                error_msg = f"remove.bg API status {response.status_code}: {response.text}"
                 logger.error(error_msg)
                 raise Exception(error_msg)
     
     except httpx.TimeoutException:
-        logger.error("remove.bg API request timed out")
-        raise Exception("Background removal API request timed out")
+        logger.error("remove.bg API timed out")
+        raise Exception("Background removal API timed out")
     except Exception as e:
-        logger.error(f"Error calling remove.bg API: {e}", exc_info=True)
+        logger.error(f"remove.bg API error: {e}")
         raise
 
 
-async def _remove_background_using_rembg(image_data: bytes, preserve_dark_ink: bool = True) -> bytes:
+async def _remove_background_using_rembg(image_data: bytes) -> bytes:
     """
-    Remove background using rembg library (fallback method)
+    Remove background using local rembg library with global session
     """
-    if not REMBG_AVAILABLE:
-        raise ImportError("rembg library is not installed")
+    if not REMBG_AVAILABLE or REMBG_SESSION is None:
+        raise ImportError("rembg library not installed or session not initialized")
     
     try:
-        # Prepare rembg settings optimized for signatures/dark ink
-        rembg_settings = {}
-        
-        # Run rembg in thread pool to avoid blocking the event loop
+        # Run in thread pool to avoid blocking event loop
         loop = asyncio.get_event_loop()
         
-        if preserve_dark_ink:
-            # For signatures, use alpha matting with optimized thresholds
-            try:
-                from rembg import new_session
-                from rembg import remove as rembg_remove
-                
-                # Use u2net model which is better for fine details like signatures
-                session = new_session('u2net')
-                
-                # Alpha matting settings optimized for dark ink signatures
-                rembg_settings = {
-                    "alpha_matting": True,
-                    "alpha_matting_foreground_threshold": 240,
-                    "alpha_matting_background_threshold": 10,
-                    "alpha_matting_erode_size": 10,
-                    "post_process_mask": True,
-                }
-                
-                logger.info("Using signature-optimized settings with u2net model")
-                
-                def remove_with_settings(data):
-                    return rembg_remove(data, session=session, **rembg_settings)
-                
-                output_bytes = await loop.run_in_executor(_executor, remove_with_settings, image_data)
-            except (ImportError, AttributeError, TypeError) as e:
-                logger.warning(f"Could not use session-based rembg: {e}. Trying alternative approach.")
-                try:
-                    rembg_settings = {
-                        "alpha_matting": True,
-                        "alpha_matting_foreground_threshold": 240,
-                        "alpha_matting_background_threshold": 10,
-                        "alpha_matting_erode_size": 10,
-                    }
-                    output_bytes = await loop.run_in_executor(
-                        _executor,
-                        lambda: remove(image_data, **rembg_settings)
-                    )
-                except TypeError:
-                    logger.warning("Alpha matting parameters not supported, using basic remove")
-                    output_bytes = await loop.run_in_executor(_executor, remove, image_data)
-                    output_bytes = await _enhance_signature_preservation(output_bytes)
-        else:
-            output_bytes = await loop.run_in_executor(_executor, remove, image_data)
-        
+        # Use lambda to pass the global session
+        output_bytes = await loop.run_in_executor(
+            _executor,
+            lambda: remove(image_data, session=REMBG_SESSION)
+        )
         return output_bytes
     
     except Exception as e:
-        logger.error(f"Error using rembg: {e}", exc_info=True)
+        logger.error(f"Error using local rembg: {e}", exc_info=True)
         raise
 
 
-async def _enhance_signature_preservation(image_bytes: bytes) -> bytes:
-    """
-    Post-process image to enhance dark ink signature preservation.
-    This function ensures dark pixels (signature) are preserved even if rembg was too aggressive.
-    """
-    try:
-        img = Image.open(BytesIO(image_bytes))
-        
-        # Convert to RGBA if not already
-        if img.mode != 'RGBA':
-            img = img.convert('RGBA')
-        
-        # Get image data
-        pixels = img.load()
-        width, height = img.size
-        
-        # Enhance dark pixels (signature) by ensuring they remain opaque
-        # Dark pixels (low brightness) should be preserved as foreground
-        for y in range(height):
-            for x in range(width):
-                r, g, b, a = pixels[x, y]
-                # Calculate brightness
-                brightness = (r + g + b) / 3
-                
-                # If pixel is dark (likely signature ink) and alpha is low, increase alpha
-                # Dark pixels (brightness < 100) should be preserved
-                if brightness < 100 and a < 200:
-                    # Increase alpha for dark pixels to preserve signature
-                    pixels[x, y] = (r, g, b, min(255, a + 100))
-                # If pixel is very light (likely background) and alpha is high, decrease alpha
-                elif brightness > 240 and a > 50:
-                    # Decrease alpha for very light pixels (background)
-                    pixels[x, y] = (r, g, b, max(0, a - 150))
-        
-        # Save enhanced image
-        output_buffer = BytesIO()
-        img.save(output_buffer, format='PNG')
-        return output_buffer.getvalue()
-    
-    except Exception as e:
-        logger.warning(f"Error in signature enhancement: {e}. Returning original.")
-        return image_bytes
-
+# ==============================================================================
+# PUBLIC INTERFACE
+# ==============================================================================
 
 async def remove_background_from_image(
     image_data: bytes,
@@ -213,76 +135,71 @@ async def remove_background_from_image(
     preserve_dark_ink: bool = True
 ) -> Optional[bytes]:
     """
-    Remove background from an image using remove.bg API (primary) or rembg (fallback)
+    Remove background from an image.
+    Strictly chooses method based on configuration:
+    1. If REMOVE_BG_API_KEY is set -> Use API
+    2. Else if rembg is installed -> Use generic local model
+    3. Else -> Error
     
-    Args:
-        image_data: Raw image bytes
-        output_format: Output format (PNG, JPEG, etc.). Default is PNG for transparency support.
-        preserve_dark_ink: If True, uses settings optimized for preserving dark ink (signatures).
-                          For remove.bg API, this parameter is used to set appropriate API options.
-    
-    Returns:
-        Bytes of the image with background removed, or None if processing fails
+    Includes validation and error handling.
     """
     try:
-        output_bytes = None
+        # 1. Validation
+        if not image_data:
+            raise ValueError("Empty image data")
         
-        # Try remove.bg API first (preferred method)
-        if REMOVE_BG_AVAILABLE:
-            try:
-                output_bytes = await _remove_background_using_api(image_data, preserve_dark_ink)
-                logger.info("Successfully used remove.bg API for background removal")
-            except Exception as e:
-                logger.warning(f"remove.bg API failed: {e}. Falling back to rembg if available.")
-                # Fall through to rembg fallback
-                if REMBG_AVAILABLE:
-                    try:
-                        output_bytes = await _remove_background_using_rembg(image_data, preserve_dark_ink)
-                        logger.info("Successfully used rembg fallback for background removal")
-                    except Exception as rembg_error:
-                        logger.error(f"Both remove.bg API and rembg failed: {rembg_error}")
-                        raise Exception(f"Background removal failed: remove.bg API error: {e}, rembg error: {rembg_error}")
-                else:
-                    raise Exception(f"remove.bg API failed and rembg is not available: {e}")
-        else:
-            # Use rembg if API is not configured
-            if not REMBG_AVAILABLE:
-                error_msg = "Background removal service is not available. "
-                error_msg += "REMOVE_BG_API_KEY not configured and rembg library is not installed."
-                logger.error(error_msg)
-                raise ImportError(error_msg + " Please configure REMOVE_BG_API_KEY or install rembg: pip install rembg pillow")
-            
-            output_bytes = await _remove_background_using_rembg(image_data, preserve_dark_ink)
-        
-        if output_bytes is None:
-            raise Exception("Background removal returned None")
-        
-        # If output format is not PNG, convert it
-        # If output format is not PNG, convert it
-        if output_format.upper() != "PNG":
-            def convert_format(data, fmt):
-                img = Image.open(BytesIO(data))
-                # Convert RGBA to RGB if output format doesn't support transparency
-                if fmt.upper() in ["JPEG", "JPG"]:
-                    # Create white background for JPEG
-                    rgb_img = Image.new("RGB", img.size, (255, 255, 255))
-                    rgb_img.paste(img, mask=img.split()[-1] if img.mode == "RGBA" else None)
-                    img = rgb_img
-                
-                output_buffer = BytesIO()
-                img.save(output_buffer, format=fmt.upper())
-                return output_buffer.getvalue()
+        # Limit file size to 10MB to prevent crashes
+        if len(image_data) > 10 * 1024 * 1024:
+            raise ValueError("Image too large (>10MB). Please optimize first.")
 
-            # Run blocking PIL operations in thread pool
-            from starlette.concurrency import run_in_threadpool
-            output_bytes = await run_in_threadpool(convert_format, output_bytes, output_format)
+        output_bytes = None
+
+        # 2. Process
+        if REMOVE_BG_AVAILABLE:
+            # Method A: API
+            output_bytes = await _remove_background_using_api(image_data, preserve_dark_ink)
+        elif REMBG_AVAILABLE:
+            # Method B: Local Library
+            output_bytes = await _remove_background_using_rembg(image_data)
+        else:
+            # No method available
+            error_msg = "No background removal service available. Set REMOVE_BG_API_KEY or install 'rembg'."
+            logger.error(error_msg)
+            raise RuntimeError(error_msg)
+
+        if output_bytes is None:
+            raise RuntimeError("Background removal result was empty")
+
+        # 3. Format Conversion
+        if output_format.upper() != "PNG":
+            output_bytes = await _convert_format(output_bytes, output_format)
         
-        logger.info(f"Successfully removed background. Output size: {len(output_bytes)} bytes")
         return output_bytes
-    
+
     except Exception as e:
-        logger.error(f"Error removing background: {e}", exc_info=True)
-        raise Exception(f"Failed to remove background: {str(e)}")
+        logger.error(f"Background removal failed: {e}")
+        raise
+
+
+async def _convert_format(image_bytes: bytes, target_format: str) -> bytes:
+    """Helper to convert image format asynchronously"""
+    def convert(data, fmt):
+        img = Image.open(BytesIO(data))
+        if fmt.upper() in ["JPEG", "JPG"]:
+            # Drop alpha channel for JPEG
+            if img.mode == 'RGBA':
+                rgb_img = Image.new("RGB", img.size, (255, 255, 255))
+                rgb_img.paste(img, mask=img.split()[3])
+                img = rgb_img
+            elif img.mode != 'RGB':
+                img = img.convert('RGB')
+        
+        out = BytesIO()
+        img.save(out, format=fmt.upper())
+        return out.getvalue()
+
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(_executor, convert, image_bytes, target_format)
 
 
 async def remove_background_from_base64(
@@ -291,37 +208,24 @@ async def remove_background_from_base64(
     preserve_dark_ink: bool = True
 ) -> Optional[str]:
     """
-    Remove background from a base64-encoded image
-    
-    Args:
-        base64_string: Base64-encoded image string (with or without data URL prefix)
-        output_format: Output format (PNG, JPEG, etc.). Default is PNG.
-        preserve_dark_ink: If True, uses settings optimized for preserving dark ink (signatures).
-    
-    Returns:
-        Base64-encoded string of the image with background removed
+    Wrapper for base64 inputs
     """
     try:
-        # Remove data URL prefix if present
-        if base64_string.startswith("data:image"):
-            base64_string = base64_string.split(",")[1]
+        # Strip header
+        if "base64," in base64_string:
+            header, base64_string = base64_string.split("base64,")
         
-        # Decode base64 to bytes
         image_data = base64.b64decode(base64_string)
         
-        # Remove background with signature-optimized settings
         output_bytes = await remove_background_from_image(image_data, output_format, preserve_dark_ink)
         
-        if output_bytes is None:
+        if not output_bytes:
             return None
-        
-        # Encode back to base64
+            
         output_base64 = base64.b64encode(output_bytes).decode("utf-8")
+        mime = "image/png" if output_format.upper() == "PNG" else "image/jpeg"
+        return f"data:{mime};base64,{output_base64}"
         
-        # Add data URL prefix
-        mime_type = f"image/{output_format.lower()}" if output_format.upper() != "JPG" else "image/jpeg"
-        return f"data:{mime_type};base64,{output_base64}"
-    
     except Exception as e:
-        logger.error(f"Error processing base64 image: {e}", exc_info=True)
-        raise Exception(f"Failed to process base64 image: {str(e)}")
+        logger.error(f"Base64 processing error: {e}")
+        raise

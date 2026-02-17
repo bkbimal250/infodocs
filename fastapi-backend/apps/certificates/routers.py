@@ -365,6 +365,134 @@ async def preview_certificate(
     return {"html": rendered_html}
 
 
+
+from fastapi import BackgroundTasks
+
+async def generate_pdf_background_task(
+    certificate_id: int,
+    template_html: str,
+    data: dict,
+    db_session_factory
+):
+    """Background task to generate PDF and update database"""
+    # Create a new session for the background task
+    async with db_session_factory() as db:
+        try:
+            from apps.certificates.services.certificate_service import get_generated_certificate_by_id
+            from sqlalchemy import update
+            from apps.certificates.models import GeneratedCertificate
+
+            logger.info(f"Starting background PDF generation for certificate {certificate_id}")
+            
+            # 1. Render HTML
+            rendered_html = render_html_template(template_html, data)
+            
+            # 2. Generate PDF (Blocking)
+            pdf_bytes = await run_in_threadpool(html_to_pdf, rendered_html)
+            
+            # 3. Save file
+            filename = await save_certificate_file(certificate_id, pdf_bytes)
+            
+            # 4. Update certificate record
+            stmt = update(GeneratedCertificate).where(GeneratedCertificate.id == certificate_id).values(certificate_pdf=filename)
+            await db.execute(stmt)
+            await db.commit()
+            
+            logger.info(f"Background PDF generation complete for certificate {certificate_id}: {filename}")
+            
+        except Exception as e:
+            logger.error(f"Background PDF generation failed for certificate {certificate_id}: {e}", exc_info=True)
+
+
+@certificates_router.post("/generate/async")
+async def generate_certificate_async(
+    certificate_data: PublicCertificateCreate,
+    background_tasks: BackgroundTasks,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Generate certificate in background (Non-blocking).
+    Returns certificate ID immediately. Client can poll for status or wait for email.
+    """
+    try:
+        # Get IP address and user agent
+        ip_address = request.client.host if request.client else None
+        user_agent = request.headers.get("user-agent")
+        
+        # 1. Create DB Record (Fast)
+        certificate = await create_generated_certificate(
+            db=db,
+            template_id=certificate_data.template_id,
+            name=certificate_data.name,
+            certificate_data=certificate_data.certificate_data,
+            created_by=current_user.id,
+            is_public=False,
+            ip_address=ip_address,
+            user_agent=user_agent
+        )
+
+        template = await get_template_by_id(db, certificate.template_id)
+        if not template:
+            raise HTTPException(status_code=404, detail="Template not found")
+            
+        if not template.template_html:
+             raise HTTPException(status_code=400, detail="Template HTML missing")
+
+        # 2. Prepare Data (Fast)
+        display_name = get_certificate_name(certificate)
+        
+        # Helper to load SPA data (similar to sync endpoint)
+        cert_data = certificate.certificate_data or {}
+        if certificate_data.spa_id:
+            from apps.forms_app.models import SPA
+            from sqlalchemy import select
+            spa_stmt = select(SPA).where(SPA.id == certificate_data.spa_id)
+            spa_result = await db.execute(spa_stmt)
+            spa_obj = spa_result.scalar_one_or_none()
+            if spa_obj:
+                if cert_data.get("spa"):
+                     cert_data["spa"]["logo"] = spa_obj.logo or cert_data["spa"].get("logo", "")
+                     cert_data["spa"]["id"] = spa_obj.id
+                     cert_data["spa"]["name"] = spa_obj.name or ""
+                     cert_data["spa"]["address"] = spa_obj.address or ""
+                else:
+                    cert_data["spa"] = {
+                        "id": spa_obj.id,
+                        "name": spa_obj.name or "",
+                        "address": spa_obj.address or "",
+                        "logo": spa_obj.logo or "",
+                        # Add other fields as needed
+                    }
+                cert_data["spa_id"] = spa_obj.id
+
+        data = await prepare_certificate_data(template, cert_data, display_name, use_http_urls=False)
+
+        # 3. Queue Background Task
+        # Need session factory to create new session in background task
+        from config.database import async_session
+        background_tasks.add_task(
+            generate_pdf_background_task, 
+            certificate.id, 
+            template.template_html, 
+            data,
+            async_session
+        )
+
+        return {
+            "status": "processing",
+            "message": "Certificate generation started in background",
+            "certificate_id": certificate.id
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error starting async generation: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @certificates_router.post("/generate")
 async def generate_certificate(
     certificate_data: PublicCertificateCreate,
