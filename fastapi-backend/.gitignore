@@ -9,7 +9,6 @@ env/
 ENV/
 .venv
 
-requirements.txt/
 check_rembg.py
 .gitignore
 add_banner_image_column.py
