@@ -1,6 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { adminApi } from '../../../api/Admin/adminApi';
+import { getFileUrl } from '../../../utils/fileUtils';
+import PrintApplicationDetails from './components/PrintApplicationDetails';
+import PrintUdertakingDetails from './components/PrintUdertakingDetails';
 
 /**
  * Candidate View Details Component
@@ -12,6 +15,10 @@ const CandidateViewDetails = () => {
   const [candidate, setCandidate] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [printType, setPrintType] = useState(null);
+  const [downloading, setDownloading] = useState(false);
+  const printContentRef = useRef(null);
 
   useEffect(() => {
     if (id) {
@@ -31,6 +38,100 @@ const CandidateViewDetails = () => {
       console.error('Load candidate details error:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePrint = (type) => {
+    setPrintType(type);
+    setShowPrintModal(true);
+  };
+
+  const handleClosePrintModal = () => {
+    setShowPrintModal(false);
+    setPrintType(null);
+  };
+
+  const handlePrintPage = () => {
+    window.print();
+  };
+
+  const preloadAndConvertImages = async (element) => {
+    const images = element.querySelectorAll('img');
+    
+    const loadPromises = Array.from(images).map((img) => {
+      return new Promise((resolve) => {
+        if (!img.src || img.src.startsWith('data:')) {
+          resolve();
+          return;
+        }
+
+        // Create a new image to convert to base64
+        const newImg = new Image();
+        newImg.crossOrigin = 'anonymous';
+        
+        newImg.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = newImg.width;
+            canvas.height = newImg.height;
+            ctx.drawImage(newImg, 0, 0);
+            const dataURL = canvas.toDataURL('image/png');
+            img.src = dataURL;
+            resolve();
+          } catch (error) {
+            console.warn('Failed to convert image to base64:', error);
+            resolve();
+          }
+        };
+        
+        newImg.onerror = () => {
+          console.warn('Failed to load image for conversion:', img.src);
+          resolve();
+        };
+        
+        newImg.src = img.src;
+      });
+    });
+
+    await Promise.all(loadPromises);
+    // Short delay to ensure browser has processed the updated src
+    await new Promise(resolve => setTimeout(resolve, 500));
+  };
+
+  const handleDownloadPDF = async (element) => {
+    if (!element) return;
+    
+    try {
+      setDownloading(true);
+      
+      // Ensure images are converted to data URLs first
+      await preloadAndConvertImages(element);
+      
+      const html2pdf = await import('html2pdf.js');
+      const html2pdfLib = html2pdf.default || html2pdf;
+      
+      const opt = {
+        margin: 0, // Let the component handle its own internal padding
+        filename: `${printType === 'application' ? 'Job_Application_Form' : 'Undertaking_Form'}_${candidate?.id || 'form'}.pdf`,
+        image: { type: 'jpeg', quality: 1.0 },
+        html2canvas: { 
+          scale: 2, 
+          useCORS: true, 
+          logging: false,
+          allowTaint: false,
+          backgroundColor: '#ffffff',
+          imageTimeout: 30000,
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      await html2pdfLib().set(opt).from(element).save();
+    } catch (error) {
+      console.error('PDF download error:', error);
+      alert('PDF download failed. Please use the Print button instead.');
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -65,33 +166,6 @@ const CandidateViewDetails = () => {
     return null;
   }
 
-  const getFileUrl = (filePath) => {
-    if (!filePath) return null;
-    
-    // Get API base URL from environment or use default
-    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://infodocs.api.d0s369.co.in/api';
-    
-    // Handle different file path formats
-    // Files are stored as "uploads/candidate_forms/uuid.jpg" or "candidate_forms/uuid.jpg"
-    let cleanPath = filePath;
-    
-    // Remove "uploads/" prefix if present
-    if (filePath.startsWith('uploads/')) {
-      cleanPath = filePath.replace('uploads/', '');
-    } else if (filePath.startsWith('/uploads/')) {
-      cleanPath = filePath.replace('/uploads/', '');
-    }
-    
-    // Construct the file serving URL using the forms router endpoint
-    const url = `${apiBaseUrl}/forms/files/${cleanPath}`;
-    
-    // Debug logging (remove in production)
-    if (import.meta.env.DEV) {
-      console.log('File URL:', { original: filePath, clean: cleanPath, url });
-    }
-    
-    return url;
-  };
 
   return (
     <div className="min-h-screen bg-[var(--color-bg-secondary)] py-8 px-4">
@@ -103,15 +177,35 @@ const CandidateViewDetails = () => {
               <h1 className="text-3xl font-bold text-[var(--color-text-primary)]">Candidate Details</h1>
               <p className="text-[var(--color-text-secondary)] mt-1">Form ID: #{candidate.id}</p>
             </div>
-            <Link
-              to="/admin/forms-data/candidates"
-              className="text-[var(--color-primary)] hover:text-blue-700 font-semibold flex items-center gap-2"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              Back to Candidates
-            </Link>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => handlePrint('application')}
+                className="text-green-600 hover:text-green-700 font-semibold flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-green-50"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+                Print Job Form
+              </button>
+              <button
+                onClick={() => handlePrint('undertaking')}
+                className="text-purple-600 hover:text-purple-700 font-semibold flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-purple-50"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+                Print Undertaking
+              </button>
+              <Link
+                to="/admin/forms-data/candidates"
+                className="text-[var(--color-primary)] hover:text-blue-700 font-semibold flex items-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to Candidates
+              </Link>
+            </div>
           </div>
         </div>
 
@@ -438,6 +532,67 @@ const CandidateViewDetails = () => {
             </div>
           </div>
         </div>
+
+        {/* Print Modal */}
+        {showPrintModal && candidate && (
+          <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 print:hidden">
+            <div className="flex items-center justify-center min-h-screen p-4">
+              <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+                {/* Modal Header */}
+                <div className="flex items-center justify-between p-4 border-b bg-[var(--color-bg-secondary)] print:hidden">
+                  <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
+                    {printType === 'application' ? 'Job Application Form' : 'Undertaking Form'}
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        const element = printContentRef.current;
+                        if (element) handleDownloadPDF(element);
+                      }}
+                      disabled={downloading}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      {downloading ? 'Downloading...' : 'Download PDF'}
+                    </button>
+                    <button
+                      onClick={handlePrintPage}
+                      className="px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                      </svg>
+                      Print
+                    </button>
+                    <button
+                      onClick={handleClosePrintModal}
+                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+
+                {/* Modal Content */}
+                <div className="overflow-y-auto flex-1 bg-[var(--color-bg-primary)]" ref={printContentRef}>
+                  {printType === 'application' ? (
+                    <PrintApplicationDetails 
+                      data={{ candidate }} 
+                      onDownload={handleDownloadPDF}
+                    />
+                  ) : (
+                    <PrintUdertakingDetails 
+                      data={{ candidate }} 
+                      onDownload={handleDownloadPDF}
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

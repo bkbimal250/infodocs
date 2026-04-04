@@ -1,94 +1,16 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef } from "react";
+import { getFileUrl } from "../../../../utils/fileUtils";
+
 const PrintUdertakingDetails = ({ data = {}, onDownload }) => {
     // Map candidate data to undertaking form format
     const candidate = data.candidate || data;
     const printRef = useRef(null);
-    const [imageCache, setImageCache] = useState({});
 
     const employeeName = `${candidate.first_name || ""} ${candidate.middle_name || ""} ${candidate.last_name || ""}`.trim();
     const designation = candidate.position_applied_for || "";
     const companyName = candidate.spa?.name || candidate.spa_name_text || "";
     const date = candidate.created_at ? new Date(candidate.created_at).toLocaleDateString() : new Date().toLocaleDateString();
     const ageProof = candidate.age_proof_document ? "AadharCard" : "";
-
-
-    const getFileUrl = (filePath) => {
-        if (!filePath) return null;
-        
-        // Get API base URL from environment or use default
-        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://infodocs.api.d0s369.co.in/api';
-        
-        // Handle different file path formats
-        let cleanPath = filePath;
-        
-        // Remove "uploads/" prefix if present
-        if (filePath.startsWith('uploads/')) {
-            cleanPath = filePath.replace('uploads/', '');
-        } else if (filePath.startsWith('/uploads/')) {
-            cleanPath = filePath.replace('/uploads/', '');
-        }
-        
-        // Construct the file serving URL using the forms router endpoint
-        const url = `${apiBaseUrl}/forms/files/${cleanPath}`;
-        
-        return url;
-    };
-
-    // Fetch image as blob and convert to data URL to bypass CORS
-    const fetchImageAsDataUrl = async (filePath) => {
-        if (!filePath) return null;
-        
-        // Check cache first
-        if (imageCache[filePath]) {
-            return imageCache[filePath];
-        }
-
-        try {
-            const url = getFileUrl(filePath);
-            if (!url) return null;
-
-            const response = await fetch(url, {
-                method: 'GET',
-                credentials: 'include',
-            });
-
-            if (!response.ok) {
-                console.warn('Failed to fetch image:', url);
-                return null;
-            }
-
-            const blob = await response.blob();
-            return new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                    const dataUrl = reader.result;
-                    setImageCache(prev => ({ ...prev, [filePath]: dataUrl }));
-                    resolve(dataUrl);
-                };
-                reader.onerror = () => {
-                    console.warn('Failed to convert image to data URL:', url);
-                    resolve(null);
-                };
-                reader.readAsDataURL(blob);
-            });
-        } catch (error) {
-            console.warn('Error fetching image:', error);
-            return null;
-        }
-    };
-
-    // Preload images on mount
-    useEffect(() => {
-        const preloadImages = async () => {
-            if (candidate.signature) {
-                await fetchImageAsDataUrl(candidate.signature);
-            }
-            if (candidate.passport_size_photo) {
-                await fetchImageAsDataUrl(candidate.passport_size_photo);
-            }
-        };
-        preloadImages();
-    }, [candidate.signature, candidate.passport_size_photo]);
 
     const handleDownload = () => {
         if (onDownload && printRef.current) {
@@ -135,13 +57,11 @@ const PrintUdertakingDetails = ({ data = {}, onDownload }) => {
                 }
                 .a4-page {
                     width: 210mm;
-                    height: 297mm;
-                    max-height: 297mm;
+                    min-height: 297mm;
                     padding: 10mm 15mm;
                     margin: 0 auto;
                     background: white;
                     box-sizing: border-box;
-                    overflow: hidden;
                     display: flex;
                     flex-direction: column;
                 }
@@ -219,37 +139,16 @@ const PrintUdertakingDetails = ({ data = {}, onDownload }) => {
                                 <div className="flex-1">
                                     <span className="text-[10px]">Employee Signature</span>
                                     <div className="border-b border-black mt-0.5 min-h-[40px] pb-0.5 flex items-center" style={{ minHeight: '35px', paddingBottom: '2px' }}>
-                                        {candidate.signature && imageCache[candidate.signature] ? (
-                                            <img
-                                                src={imageCache[candidate.signature]}
-                                                alt="Signature"
-                                                style={{
-                                                    maxHeight: '32px',
-                                                    maxWidth: '100%',
-                                                    objectFit: 'contain',
-                                                    display: 'block',
-                                                    position: 'relative'
-                                                }}
-                                                onError={(e) => {
-                                                    e.target.style.display = 'none';
-                                                }}
-                                            />
-                                        ) : candidate.signature ? (
+                                        {candidate.signature ? (
                                             <img
                                                 src={getFileUrl(candidate.signature)}
                                                 alt="Signature"
+                                                crossOrigin="anonymous"
                                                 style={{
                                                     maxHeight: '32px',
                                                     maxWidth: '100%',
                                                     objectFit: 'contain',
                                                     display: 'block',
-                                                    position: 'relative'
-                                                }}
-                                                onLoad={async (e) => {
-                                                    const dataUrl = await fetchImageAsDataUrl(candidate.signature);
-                                                    if (dataUrl) {
-                                                        e.target.src = dataUrl;
-                                                    }
                                                 }}
                                                 onError={(e) => {
                                                     e.target.style.display = 'none';
@@ -263,37 +162,17 @@ const PrintUdertakingDetails = ({ data = {}, onDownload }) => {
                                 <div className="flex-1">
                                     <span className="text-[10px]">Passport Size Photo</span>
                                     <div className="border-b border-black mt-0.5 min-h-[40px] pb-0.5 flex items-center justify-center" style={{ minHeight: '35px', paddingBottom: '2px' }}>
-                                        {candidate.passport_size_photo && imageCache[candidate.passport_size_photo] ? (
-                                            <img
-                                                src={imageCache[candidate.passport_size_photo]}
-                                                alt="Passport Photo"
-                                                style={{
-                                                    width: '35px',
-                                                    height: '42px',
-                                                    objectFit: 'cover',
-                                                    objectPosition: 'center',
-                                                    display: 'block'
-                                                }}
-                                                onError={(e) => {
-                                                    e.target.style.display = 'none';
-                                                }}
-                                            />
-                                        ) : candidate.passport_size_photo ? (
+                                        {candidate.passport_size_photo ? (
                                             <img
                                                 src={getFileUrl(candidate.passport_size_photo)}
                                                 alt="Passport Photo"
+                                                crossOrigin="anonymous"
                                                 style={{
                                                     width: '35px',
                                                     height: '42px',
                                                     objectFit: 'cover',
                                                     objectPosition: 'center',
                                                     display: 'block'
-                                                }}
-                                                onLoad={async (e) => {
-                                                    const dataUrl = await fetchImageAsDataUrl(candidate.passport_size_photo);
-                                                    if (dataUrl) {
-                                                        e.target.src = dataUrl;
-                                                    }
                                                 }}
                                                 onError={(e) => {
                                                     e.target.style.display = 'none';
@@ -322,37 +201,16 @@ const PrintUdertakingDetails = ({ data = {}, onDownload }) => {
                             <div className="mb-0.5" style={{ marginBottom: '2px' }}>
                                 <span className="text-[10px]">Employer Signature</span>
                                 <div className="border-b border-black mt-0.5 min-h-[14px] inline-block w-full pb-0.5" style={{ minHeight: '12px', paddingBottom: '2px' }}>
-                                    {candidate.signature && imageCache[candidate.signature] ? (
-                                        <img
-                                            src={imageCache[candidate.signature]}
-                                            alt="Signature"
-                                            style={{
-                                                maxHeight: '32px',
-                                                maxWidth: '100%',
-                                                objectFit: 'contain',
-                                                display: 'block',
-                                                position: 'relative'
-                                            }}
-                                            onError={(e) => {
-                                                e.target.style.display = 'none';
-                                            }}
-                                        />
-                                    ) : candidate.signature ? (
+                                    {candidate.signature ? (
                                         <img
                                             src={getFileUrl(candidate.signature)}
                                             alt="Signature"
+                                            crossOrigin="anonymous"
                                             style={{
                                                 maxHeight: '32px',
                                                 maxWidth: '100%',
                                                 objectFit: 'contain',
                                                 display: 'block',
-                                                position: 'relative'
-                                            }}
-                                            onLoad={async (e) => {
-                                                const dataUrl = await fetchImageAsDataUrl(candidate.signature);
-                                                if (dataUrl) {
-                                                    e.target.src = dataUrl;
-                                                }
                                             }}
                                             onError={(e) => {
                                                 e.target.style.display = 'none';

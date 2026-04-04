@@ -79,7 +79,7 @@ if isinstance(cors_origins, str):
 # Add default localhost origins for development if not present
 default_origins = ["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173", "http://127.0.0.1:3000"]
 # Add production frontend if not present
-production_origins = ["https://docs.dishaonlinesolution.in", "https://www.docs.dishaonlinesolution.in"]
+production_origins = ["https://docs.dishaonlinesolution.in", "https://www.docs.dishaonlinesolution.in","http://localhost:5173",]
 all_defaults = default_origins + production_origins
 
 for origin in all_defaults:

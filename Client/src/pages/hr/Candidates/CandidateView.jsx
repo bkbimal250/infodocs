@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { hrApi } from '../../../api/hr/hrApi';
+import { getFileUrl } from '../../../utils/fileUtils';
 import PrintApplicationDetails from './Components/PrintApplicationDetails';
 import PrintUdertakingDetails from './Components/PrintUdertakingDetails';
 
@@ -59,36 +60,12 @@ const CandidateView = () => {
     
     const loadPromises = Array.from(images).map((img) => {
       return new Promise((resolve) => {
-        if (!img.src) {
-          resolve();
-          return;
-        }
-        
-        if (img.src.startsWith('data:')) {
-          resolve();
-          return;
-        }
-        
-        if (img.complete && img.naturalHeight !== 0) {
-          resolve();
-          return;
-        }
-
-        img.onload = () => resolve();
-        img.onerror = () => resolve();
-      });
-    });
-
-    await Promise.all(loadPromises);
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    const convertPromises = Array.from(images).map((img) => {
-      return new Promise((resolve) => {
         if (!img.src || img.src.startsWith('data:')) {
           resolve();
           return;
         }
 
+        // Create a new image to convert to base64
         const newImg = new Image();
         newImg.crossOrigin = 'anonymous';
         
@@ -103,7 +80,7 @@ const CandidateView = () => {
             img.src = dataURL;
             resolve();
           } catch (error) {
-            console.warn('Failed to convert image to base64 (CORS issue):', error);
+            console.warn('Failed to convert image to base64:', error);
             resolve();
           }
         };
@@ -117,8 +94,9 @@ const CandidateView = () => {
       });
     });
 
-    await Promise.all(convertPromises);
-    await new Promise(resolve => setTimeout(resolve, 300));
+    await Promise.all(loadPromises);
+    // Short delay to ensure browser has processed the updated src
+    await new Promise(resolve => setTimeout(resolve, 500));
   };
 
   const handleDownloadPDF = async (element) => {
@@ -127,25 +105,25 @@ const CandidateView = () => {
     try {
       setDownloading(true);
       
+      // Ensure images are converted to data URLs first
       await preloadAndConvertImages(element);
       
       const html2pdf = await import('html2pdf.js');
       const html2pdfLib = html2pdf.default || html2pdf;
       
       const opt = {
-        margin: 0.5,
+        margin: 0, // Let the component handle its own internal padding
         filename: `${printType === 'application' ? 'Job_Application_Form' : 'Undertaking_Form'}_${candidate?.id || 'form'}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
+        image: { type: 'jpeg', quality: 1.0 },
         html2canvas: { 
           scale: 2, 
           useCORS: true, 
           logging: false,
-          allowTaint: true,
+          allowTaint: false,
           backgroundColor: '#ffffff',
-          imageTimeout: 15000,
-          removeContainer: true
+          imageTimeout: 30000,
         },
-        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
 
       await html2pdfLib().set(opt).from(element).save();
@@ -188,33 +166,6 @@ const CandidateView = () => {
     return null;
   }
 
-  const getFileUrl = (filePath) => {
-    if (!filePath) return null;
-    
-    // Get API base URL from environment or use default
-    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://infodocs.api.d0s369.co.in/api';
-    
-    // Handle different file path formats
-    // Files are stored as "uploads/candidate_forms/uuid.jpg" or "candidate_forms/uuid.jpg"
-    let cleanPath = filePath;
-    
-    // Remove "uploads/" prefix if present
-    if (filePath.startsWith('uploads/')) {
-      cleanPath = filePath.replace('uploads/', '');
-    } else if (filePath.startsWith('/uploads/')) {
-      cleanPath = filePath.replace('/uploads/', '');
-    }
-    
-    // Construct the file serving URL using the forms router endpoint
-    const url = `${apiBaseUrl}/forms/files/${cleanPath}`;
-    
-    // Debug logging (remove in production)
-    if (import.meta.env.DEV) {
-      console.log('File URL:', { original: filePath, clean: cleanPath, url });
-    }
-    
-    return url;
-  };
 
   return (
     <div className="min-h-screen bg-[var(--color-bg-secondary)] py-8 px-4">

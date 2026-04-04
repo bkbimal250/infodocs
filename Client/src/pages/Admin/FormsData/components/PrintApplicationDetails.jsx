@@ -1,10 +1,10 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef } from "react";
+import { getFileUrl } from "../../../../utils/fileUtils";
 
 const PrintApplicationDetails = ({ data = {}, onDownload }) => {
   // Map candidate data to print format
   const candidate = data.candidate || data;
   const printRef = useRef(null);
-  const [imageCache, setImageCache] = useState({});
   
   const spaName = candidate.spa?.name || candidate.spa_name_text || "";
   const firstName = candidate.first_name || "";
@@ -20,80 +20,6 @@ const PrintApplicationDetails = ({ data = {}, onDownload }) => {
   const education = candidate.education_certificate_courses || "";
   const submissionDate = candidate.created_at ? new Date(candidate.created_at).toLocaleDateString() : "";
 
-  const getFileUrl = (filePath) => {
-    if (!filePath) return null;
-    
-    // Get API base URL from environment or use default
-    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://infodocs.api.d0s369.co.in/api';
-    
-    // Handle different file path formats
-    let cleanPath = filePath;
-    
-    // Remove "uploads/" prefix if present
-    if (filePath.startsWith('uploads/')) {
-      cleanPath = filePath.replace('uploads/', '');
-    } else if (filePath.startsWith('/uploads/')) {
-      cleanPath = filePath.replace('/uploads/', '');
-    }
-    
-    // Construct the file serving URL using the forms router endpoint
-    const url = `${apiBaseUrl}/forms/files/${cleanPath}`;
-    
-    return url;
-  };
-
-  // Fetch image as blob and convert to data URL to bypass CORS
-  const fetchImageAsDataUrl = async (filePath) => {
-    if (!filePath) return null;
-    
-    // Check cache first
-    if (imageCache[filePath]) {
-      return imageCache[filePath];
-    }
-
-    try {
-      const url = getFileUrl(filePath);
-      if (!url) return null;
-
-      const response = await fetch(url, {
-        method: 'GET',
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        console.warn('Failed to fetch image:', url);
-        return null;
-      }
-
-      const blob = await response.blob();
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const dataUrl = reader.result;
-          setImageCache(prev => ({ ...prev, [filePath]: dataUrl }));
-          resolve(dataUrl);
-        };
-        reader.onerror = () => {
-          console.warn('Failed to convert image to data URL:', url);
-          resolve(null);
-        };
-        reader.readAsDataURL(blob);
-      });
-    } catch (error) {
-      console.warn('Error fetching image:', error);
-      return null;
-    }
-  };
-
-  // Preload images on mount
-  useEffect(() => {
-    const preloadImages = async () => {
-      if (candidate.signature) {
-        await fetchImageAsDataUrl(candidate.signature);
-      }
-    };
-    preloadImages();
-  }, [candidate.signature]);
 
   const handleDownload = () => {
     if (onDownload && printRef.current) {
@@ -124,13 +50,11 @@ const PrintApplicationDetails = ({ data = {}, onDownload }) => {
         }
         .a4-page {
           width: 210mm;
-          height: 297mm;
-          max-height: 297mm;
+          min-height: 297mm;
           padding: 10mm 15mm;
           margin: 0 auto;
           background: white;
           box-sizing: border-box;
-          overflow: hidden;
           display: flex;
           flex-direction: column;
         }
@@ -143,7 +67,6 @@ const PrintApplicationDetails = ({ data = {}, onDownload }) => {
           flex: 1;
           display: flex;
           flex-direction: column;
-          overflow: hidden;
         }
       `}</style>
       <div className="print-container">
@@ -261,29 +184,13 @@ const PrintApplicationDetails = ({ data = {}, onDownload }) => {
               <div className="flex-1">
                 <span className="text-[11px]">Signature</span>
                 <div className="border-b border-black mt-0.5 min-h-[32px] pb-0.5 flex items-center" style={{ minHeight: '28px', paddingBottom: '2px' }}>
-                  {candidate.signature && imageCache[candidate.signature] ? (
-                    <img
-                      src={imageCache[candidate.signature]}
-                      alt="Signature"
-                      className="max-h-[28px] max-w-full object-contain"
-                      style={{ maxHeight: '26px' }}
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                      }}
-                    />
-                  ) : candidate.signature ? (
+                  {candidate.signature ? (
                     <img
                       src={getFileUrl(candidate.signature)}
                       alt="Signature"
+                      crossOrigin="anonymous"
                       className="max-h-[28px] max-w-full object-contain"
                       style={{ maxHeight: '26px' }}
-                      onLoad={async (e) => {
-                        // Try to convert to data URL after load
-                        const dataUrl = await fetchImageAsDataUrl(candidate.signature);
-                        if (dataUrl) {
-                          e.target.src = dataUrl;
-                        }
-                      }}
                       onError={(e) => {
                         e.target.style.display = 'none';
                       }}
