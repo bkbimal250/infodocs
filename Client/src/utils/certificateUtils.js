@@ -10,8 +10,53 @@ import {
 } from './certificateConstants';
 
 /**
+ * Compress image using Canvas API
+ * @param {Blob} blob - Image blob
+ * @param {number} maxWidth - Maximum width (default 1024px)
+ * @param {number} quality - JPEG quality (0 to 1, default 0.7)
+ * @returns {Promise<string>} Compressed base64 string
+ */
+export const compressImage = (blob, maxWidth = 1024, quality = 0.7) => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(blob);
+    img.src = url;
+
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+
+      // Calculate new dimensions
+      if (width > maxWidth) {
+        height = Math.round((height * maxWidth) / width);
+        width = maxWidth;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+
+      // Compress to JPEG
+      const dataUrl = canvas.toDataURL('image/jpeg', quality);
+
+      URL.revokeObjectURL(url);
+      resolve(dataUrl);
+    };
+
+    img.onerror = (error) => {
+      URL.revokeObjectURL(url);
+      reject(error);
+    };
+  });
+};
+
+/**
  * Convert blob URL to base64 data URL
  * Needed for PDF generation as blob URLs don't work server-side
+ * Includes automatic compression for images
  * @param {string} blobUrl - Blob URL (blob:http://...)
  * @returns {Promise<string>} Base64 data URL (data:image/...)
  */
@@ -24,6 +69,17 @@ export const blobToBase64 = async (blobUrl) => {
   try {
     const response = await fetch(blobUrl);
     const blob = await response.blob();
+
+    // If it's an image, compress it
+    if (blob.type.startsWith('image/')) {
+      try {
+        return await compressImage(blob);
+      } catch (compressionError) {
+        console.warn('Image compression failed, falling back to original:', compressionError);
+        // Fallback to normal reader if compression fails
+      }
+    }
+
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onloadend = () => resolve(reader.result);
@@ -50,7 +106,7 @@ export const convertBlobUrlsInData = async (data) => {
   }
 
   const result = { ...data };
-  
+
   for (const [key, value] of Object.entries(result)) {
     if (typeof value === 'string' && value.startsWith('blob:')) {
       // Convert blob URL to base64
@@ -61,15 +117,15 @@ export const convertBlobUrlsInData = async (data) => {
     } else if (Array.isArray(value)) {
       // Process array items
       result[key] = await Promise.all(
-        value.map(item => 
-          typeof item === 'string' && item.startsWith('blob:') 
-            ? blobToBase64(item) 
+        value.map(item =>
+          typeof item === 'string' && item.startsWith('blob:')
+            ? blobToBase64(item)
             : (item && typeof item === 'object' ? convertBlobUrlsInData(item) : item)
         )
       );
     }
   }
-  
+
   return result;
 };
 
@@ -115,7 +171,7 @@ export const prepareCertificateData = (category, formData, invoiceItems = []) =>
   const baseData = {
     date: formData.date || new Date().toLocaleDateString('en-GB'),
   };
-  
+
   // Add signatory and spa fields only for categories that need them
   if (category !== CERTIFICATE_CATEGORIES.SPA_THERAPIST) {
     baseData.signatory_name = formData.signatory_name || '';
@@ -144,7 +200,7 @@ export const prepareCertificateData = (category, formData, invoiceItems = []) =>
       // This is the primary source from ManagerSalaryCertificateForm
       let monthYearList = formData.month_year_list;
       let monthSalaryList = formData.month_salary_list;
-      
+
       // Ensure they are arrays
       if (!Array.isArray(monthYearList)) {
         monthYearList = [];
@@ -152,7 +208,7 @@ export const prepareCertificateData = (category, formData, invoiceItems = []) =>
       if (!Array.isArray(monthSalaryList)) {
         monthSalaryList = [];
       }
-      
+
       // Filter out empty entries
       const validEntries = [];
       for (let i = 0; i < Math.max(monthYearList.length, monthSalaryList.length); i++) {
@@ -162,12 +218,12 @@ export const prepareCertificateData = (category, formData, invoiceItems = []) =>
           validEntries.push({ month, salary });
         }
       }
-      
+
       // If we have valid entries from formData, use them
-      let salaryBreakdown = validEntries.length > 0 
-        ? validEntries 
+      let salaryBreakdown = validEntries.length > 0
+        ? validEntries
         : null;
-      
+
       // If not, try to get from salary_breakdown or month_salary_data
       if (!salaryBreakdown) {
         let breakdown = formData.salary_breakdown || formData.month_salary_data;
@@ -183,12 +239,12 @@ export const prepareCertificateData = (category, formData, invoiceItems = []) =>
           salaryBreakdown = breakdown;
         }
       }
-      
+
       // If still no data, generate default breakdown
       if (!salaryBreakdown || salaryBreakdown.length === 0) {
         salaryBreakdown = generateSalaryBreakdown(formData);
       }
-      
+
       // Extract month_year_list and month_salary_list from salaryBreakdown
       // This ensures they're always in sync
       const finalMonthYearList = salaryBreakdown.map((entry) => entry.month || entry.month_year || '');
@@ -288,18 +344,18 @@ export const prepareCertificateData = (category, formData, invoiceItems = []) =>
 export const generateSalaryBreakdown = (formData) => {
   const months = [];
   const currentDate = new Date();
-  
+
   for (let i = 5; i >= 0; i--) {
     const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
     const monthStr = date.toLocaleString('default', { month: 'short' }).toUpperCase();
     const year = date.getFullYear();
-    
+
     months.push({
       month: `${monthStr}-${year}`,
       salary: formData.monthly_salary || '40,000',
     });
   }
-  
+
   return months;
 };
 
@@ -334,7 +390,7 @@ export const numberToWords = (num) => {
   const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
   const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
   const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
-  
+
   const convert = (n) => {
     if (n === 0) return '';
     if (n < 10) return ones[n];
@@ -346,7 +402,7 @@ export const numberToWords = (num) => {
     }
     return convert(Math.floor(n / 1000000)) + ' Million' + (n % 1000000 ? ' ' + convert(n % 1000000) : '');
   };
-  
+
   return convert(num) + ' Only';
 };
 
@@ -376,13 +432,13 @@ export const formatDateVerbose = (date) => {
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const month = monthNames[d.getMonth()];
   const year = d.getFullYear();
-  
+
   // Add suffix to day (st, nd, rd, th)
   let daySuffix = 'th';
   if (day === 1 || day === 21 || day === 31) daySuffix = 'st';
   else if (day === 2 || day === 22) daySuffix = 'nd';
   else if (day === 3 || day === 23) daySuffix = 'rd';
-  
+
   return `${day}${daySuffix} ${month}, ${year}`;
 };
 
@@ -504,4 +560,5 @@ export default {
   getCategoryIcon,
   blobToBase64,
   convertBlobUrlsInData,
+  compressImage,
 };
