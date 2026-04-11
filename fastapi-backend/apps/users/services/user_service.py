@@ -62,7 +62,8 @@ async def create_user(
     first_name: str,
     last_name: str,
     role: UserRole = UserRole.USER,
-    phone_number: Optional[str] = None
+    phone_number: Optional[str] = None,
+    spa_id: Optional[int] = None
 ) -> User:
     """Create a new user"""
     # Check if user already exists
@@ -84,6 +85,7 @@ async def create_user(
         last_name=last_name,
         role=role,
         phone_number=phone_number,
+        spa_id=spa_id,
         is_active=True,
         is_verified=False,
     )
@@ -91,6 +93,18 @@ async def create_user(
     db.add(user)
     await db.commit()
     await db.refresh(user)
+    
+    # Record current spa in history if provided
+    if spa_id:
+        from apps.users.models import user_spa_history
+        from sqlalchemy import insert
+        try:
+            await db.execute(
+                insert(user_spa_history).values(user_id=user.id, spa_id=spa_id)
+            )
+            await db.commit()
+        except Exception:
+            pass  # Ignore duplicates or errors in history recording
     
     return user
 
@@ -160,6 +174,19 @@ async def update_user(db: AsyncSession, user_id: int, update_data: dict) -> User
     for key, value in update_data.items():
         if hasattr(user, key) and key != 'password':  # password is already handled above
             setattr(user, key, value)
+            
+            # If spa_id is updated to a non-null value, record in history
+            if key == 'spa_id' and value:
+                from apps.users.models import user_spa_history
+                from sqlalchemy import insert
+                try:
+                    # Explicitly insert into association table to track history
+                    await db.execute(
+                        insert(user_spa_history).values(user_id=user.id, spa_id=value)
+                    )
+                except Exception:
+                    # Ignore if already in history or other errors
+                    pass
     
     user.updated_at = datetime.now(timezone.utc)
     await db.commit()

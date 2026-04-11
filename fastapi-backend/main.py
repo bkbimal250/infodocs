@@ -20,6 +20,7 @@ from apps.analytics.routers import analytics_router
 from apps.notifications.routers import notifications_router
 from apps.Query.routers import query_router
 from apps.tutorials.routers import tutorials_router
+from apps.StaffManagement.routers import router as staff_router
 from core.exceptions import CustomException, ValidationError, NotFoundError, AuthenticationError, AuthorizationError
 from core.middleware import ErrorHandlerMiddleware
 from core.rate_limiter import RateLimitMiddleware
@@ -229,6 +230,7 @@ app.include_router(analytics_router, prefix="/api/analytics", tags=["Analytics"]
 app.include_router(notifications_router, prefix="/api/notifications", tags=["Notifications"])
 app.include_router(query_router, prefix="/api/queries", tags=["Queries"])
 app.include_router(tutorials_router, prefix="/api", tags=["Tutorials"])
+app.include_router(staff_router, prefix="/api/staff", tags=["Staff Management"])
 
 
 @app.get("/")

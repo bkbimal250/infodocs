@@ -4,12 +4,22 @@ User Models for MySQL (SQLAlchemy ORM)
 from datetime import datetime
 from sqlalchemy import (
     Column, Integer, String, Boolean, DateTime,
-    Enum as SQLEnum, ForeignKey, Text, JSON
+    Enum as SQLEnum, ForeignKey, Text, JSON, Table
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from enum import Enum as PyEnum
 from config.database import Base
+
+
+# Association table for User and SPA history
+user_spa_history = Table(
+    "user_spa_history",
+    Base.metadata,
+    Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
+    Column("spa_id", Integer, ForeignKey("spas.id", ondelete="CASCADE"), primary_key=True),
+    Column("assigned_at", DateTime(timezone=True), server_default=func.now())
+)
 
 
 class UserRole(str, PyEnum):
@@ -39,6 +49,10 @@ class User(Base):
     role = Column(SQLEnum(UserRole, native_enum=False, length=20), default=UserRole.USER, nullable=False)
 
     phone_number = Column(String(20), nullable=True)
+    
+    # Link to SPA branch (optional for all, self-assignable by managers)
+    spa_id = Column(Integer, ForeignKey("spas.id", ondelete="SET NULL"), nullable=True, index=True)
+
     is_active = Column(Boolean, default=True, nullable=False)
     is_verified = Column(Boolean, default=False, nullable=False)
 
@@ -60,6 +74,12 @@ class User(Base):
     login_history = relationship("LoginHistory", back_populates="user", cascade="all, delete-orphan")
     notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
     activities = relationship("UserActivity", back_populates="user", cascade="all, delete-orphan")
+
+    # SPA Relationships
+    # Link to current branch
+    branch = relationship("SPA", foreign_keys=[spa_id], backref="managers")
+    # Link to history of branches worked at
+    worked_at_spas = relationship("SPA", secondary=user_spa_history, backref="past_managers")
 
     @property
     def full_name(self) -> str:

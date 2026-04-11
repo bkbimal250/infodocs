@@ -49,6 +49,7 @@ async def register(user_data: UserRegistrationSchema, db: AsyncSession = Depends
             last_name=user_data.last_name,
             role=user_data.role,
             phone_number=user_data.phone_number,
+            spa_id=user_data.spa_id,
         )
         # Try to send OTP for email verification (non-blocking)
         # Registration succeeds even if email fails
@@ -624,6 +625,7 @@ async def get_current_user_info(current_user: User = Depends(get_current_active_
             phone_number=current_user.phone_number,
             is_active=current_user.is_active,
             is_verified=current_user.is_verified,
+            spa_id=current_user.spa_id,
             created_at=current_user.created_at.isoformat(),
             updated_at=current_user.updated_at.isoformat(),
         )
@@ -643,7 +645,7 @@ async def update_current_user_profile(
     """Update current user's own profile (any authenticated user can update their own profile)"""
     try:
         # Only allow updating own profile fields, not role, is_active, is_verified
-        allowed_fields = ['username', 'email', 'first_name', 'last_name', 'phone_number', 'password']
+        allowed_fields = ['username', 'email', 'first_name', 'last_name', 'phone_number', 'password', 'spa_id']
         update_dict = {k: v for k, v in user_data.model_dump(exclude_unset=True).items() if k in allowed_fields}
         
         if not update_dict:
@@ -660,6 +662,7 @@ async def update_current_user_profile(
             phone_number=user.phone_number,
             is_active=user.is_active,
             is_verified=user.is_verified,
+            spa_id=user.spa_id,
             created_at=user.created_at.isoformat(),
             updated_at=user.updated_at.isoformat(),
         )
@@ -696,6 +699,7 @@ async def list_users(
                 phone_number=user.phone_number,
                 is_active=user.is_active,
                 is_verified=user.is_verified,
+                spa_id=user.spa_id,
                 created_at=user.created_at.isoformat(),
                 updated_at=user.updated_at.isoformat(),
             )
@@ -725,6 +729,7 @@ async def create_user_by_admin(
             last_name=user_data.last_name,
             role=user_data.role,
             phone_number=user_data.phone_number,
+            spa_id=user_data.spa_id,
         )
         return UserResponseSchema(
             id=user.id,
@@ -736,6 +741,7 @@ async def create_user_by_admin(
             phone_number=user.phone_number,
             is_active=user.is_active,
             is_verified=user.is_verified,
+            spa_id=user.spa_id,
             created_at=user.created_at.isoformat(),
             updated_at=user.updated_at.isoformat(),
         )
@@ -764,6 +770,7 @@ async def get_user(
         phone_number=user.phone_number,
         is_active=user.is_active,
         is_verified=user.is_verified,
+        spa_id=user.spa_id,
         created_at=user.created_at.isoformat(),
         updated_at=user.updated_at.isoformat(),
     )
@@ -789,6 +796,7 @@ async def update_user_info(
         phone_number=user.phone_number,
         is_active=user.is_active,
         is_verified=user.is_verified,
+        spa_id=user.spa_id,
         created_at=user.created_at.isoformat(),
         updated_at=user.updated_at.isoformat(),
     )

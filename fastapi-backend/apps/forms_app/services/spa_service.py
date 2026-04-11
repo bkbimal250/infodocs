@@ -6,6 +6,7 @@ from typing import Optional, List
 from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
+from sqlalchemy.orm import load_only
 from apps.forms_app.models import SPA
 from apps.forms_app.schemas import SPACreate, SPAUpdate
 from core.exceptions import NotFoundError, ValidationError
@@ -46,10 +47,17 @@ async def get_spa_by_id(db: AsyncSession, spa_id: int) -> Optional[SPA]:
     return result.scalar_one_or_none()
 
 
-async def get_all_spas(db: AsyncSession, active_only: bool = True) -> List[SPA]:
+async def get_all_spas(db: AsyncSession, active_only: bool = True, minimal: bool = False) -> List[SPA]:
+    """Get all SPAs with optional column-specific loading for performance"""
     stmt = select(SPA)
+    
+    if minimal:
+        # Load only necessary columns for dropdowns to reduce IO
+        stmt = stmt.options(load_only(SPA.id, SPA.name, SPA.code, SPA.area, SPA.city))
+        
     if active_only:
         stmt = stmt.where(SPA.is_active == True)
+        
     stmt = stmt.order_by(SPA.name)
     result = await db.execute(stmt)
     return list(result.scalars().all())

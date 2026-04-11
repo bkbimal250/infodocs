@@ -60,6 +60,17 @@ class SPAResponse(SPABase):
     model_config = {"from_attributes": True}
 
 
+# Minimal SPA response for dropdowns/searches
+class SPASelectionResponse(BaseModel):
+    id: int
+    name: str
+    code: Optional[int] = None
+    area: Optional[str] = None
+    city: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
 # Candidate Form Schemas
 class CandidateFormBase(BaseModel):
     """Base candidate form schema"""
@@ -162,5 +173,4 @@ class HiringFormResponse(HiringFormBase):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}

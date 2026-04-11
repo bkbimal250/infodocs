@@ -16,6 +16,7 @@ class UserRegistrationSchema(BaseModel):
     last_name: str
     phone_number: Optional[str] = None
     role: UserRole = UserRole.USER
+    spa_id: Optional[int] = None
     
     @field_validator('password')
     @classmethod
@@ -99,6 +100,7 @@ class UserUpdateSchema(BaseModel):
     role: Optional[UserRole] = None
     is_active: Optional[bool] = None
     is_verified: Optional[bool] = None
+    spa_id: Optional[int] = None
     
     @field_validator('password')
     @classmethod
@@ -130,6 +132,7 @@ class UserResponseSchema(BaseModel):
     phone_number: Optional[str] = None
     is_active: bool
     is_verified: bool
+    spa_id: Optional[int] = None
     created_at: str
     updated_at: str
     

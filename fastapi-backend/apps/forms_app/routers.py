@@ -2,7 +2,7 @@
 Forms Routers
 API endpoints for form submissions and SPA management
 """
-from typing import List, Optional
+from typing import List, Optional, Union
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +12,15 @@ from apps.users.models import User
 from core.dependencies import require_role, get_current_active_user
 import logging
 import traceback
+import aiofiles
+from apps.forms_app.schemas import (
+    CandidateFormCreate, CandidateFormUpdate, CandidateFormResponse,
+    HiringFormCreate, HiringFormUpdate, HiringFormResponse,
+    SPACreate, SPAUpdate, SPAResponse,
+    SPASelectionResponse
+)
+
+from apps.users.schemas import MessageResponseSchema
 
 logger = logging.getLogger(__name__)
 from apps.forms_app.services.spa_service import (
@@ -71,17 +80,17 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 (UPLOAD_DIR / "candidate_forms").mkdir(exist_ok=True)
 
 
-def save_uploaded_file(file: UploadFile, subdirectory: str = "") -> str:
-    """Save uploaded file and return the relative file path"""
+async def save_uploaded_file(file: UploadFile, subdirectory: str = "") -> str:
+    """Save uploaded file asynchronously and return the relative file path"""
     file_ext = Path(file.filename).suffix if file.filename else ""
     unique_filename = f"{uuid.uuid4()}{file_ext}"
     save_dir = UPLOAD_DIR / subdirectory
-    save_dir.mkdir(exist_ok=True)
+    save_dir.mkdir(parents=True, exist_ok=True)
     file_path = save_dir / unique_filename
     
-    with open(file_path, "wb") as buffer:
-        content = file.file.read()
-        buffer.write(content)
+    async with aiofiles.open(file_path, "wb") as buffer:
+        content = await file.read()
+        await buffer.write(content)
     
     # Return relative path from UPLOAD_DIR for easier serving
     relative_path = file_path.relative_to(UPLOAD_DIR)
@@ -91,10 +100,10 @@ def save_uploaded_file(file: UploadFile, subdirectory: str = "") -> str:
 # Public Endpoints (No authentication required)
 
 
-@forms_router.get("/spas", response_model=List[SPAResponse])
-async def list_spas(db: AsyncSession = Depends(get_db)):
-    """List all active SPAs/locations (Public endpoint)"""
-    spas = await get_all_spas(db, active_only=True)
+@forms_router.get("/spas", response_model=List[Union[SPAResponse, SPASelectionResponse]])
+async def list_spas(minimal: bool = True, db: AsyncSession = Depends(get_db)):
+    """List all active SPAs/locations (Optional minimal data for public forms)"""
+    spas = await get_all_spas(db, active_only=True, minimal=minimal)
     return spas
 
 
@@ -155,12 +164,12 @@ async def submit_candidate_form(
 
         for key, upload in upload_targets:
             if upload:
-                file_paths[key] = save_uploaded_file(upload, "candidate_forms")
+                file_paths[key] = await save_uploaded_file(upload, "candidate_forms")
         
         if documents:
             doc_paths = []
             for doc in documents:
-                doc_path = save_uploaded_file(doc, "candidate_forms")
+                doc_path = await save_uploaded_file(doc, "candidate_forms")
                 doc_paths.append(doc_path)
             file_paths['documents'] = doc_paths
         
@@ -323,7 +332,7 @@ async def create_spa_test(
         if logo:
             if logo.content_type not in ["image/jpeg", "image/png", "image/webp"]:
                 raise HTTPException(400, "Invalid logo file type")
-            logo_path = save_uploaded_file(logo, "spa_logos")
+            logo_path = await save_uploaded_file(logo, "spa_logos")
 
         # Clean all fields
         name_clean = to_none_if_empty(name.strip() if isinstance(name, str) else name)
@@ -403,7 +412,7 @@ async def create_spa_location(
         if logo:
             if logo.content_type not in ["image/jpeg", "image/png", "image/webp"]:
                 raise HTTPException(400, "Invalid logo file type")
-            logo_path = save_uploaded_file(logo, "spa_logos")
+            logo_path = await save_uploaded_file(logo, "spa_logos")
 
         # Clean all fields
         name_clean = to_none_if_empty(name.strip() if isinstance(name, str) else name)
@@ -526,7 +535,7 @@ async def update_spa_location(
 
         # Handle optional logo upload
         if logo:
-            logo_path = save_uploaded_file(logo, "spa_logos")
+            logo_path = await save_uploaded_file(logo, "spa_logos")
             update_dict["logo"] = logo_path
 
         update_payload = SPAUpdate(**update_dict)

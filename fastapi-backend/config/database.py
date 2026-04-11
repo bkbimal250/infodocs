@@ -26,32 +26,6 @@ logger = logging.getLogger(__name__)
 Base = declarative_base()
 
 # ----------------------------------------------------
-# Import all models so Base.metadata.create_all works
-# ----------------------------------------------------
-# Users
-from apps.users.models import User, OTP  # noqa
-
-# Certificates
-from apps.certificates.models import (
-    CertificateTemplate,
-    GeneratedCertificate,
-    SpaTherapistCertificate,
-    ManagerSalaryCertificate,
-    ExperienceLetterCertificate,
-    AppointmentLetterCertificate,
-    InvoiceSpaBillCertificate,
-    IDCardCertificate,
-    DailySheet,
-    DailySheetCertificate,
-)  # noqa
-
-# Forms App
-from apps.forms_app.models import SPA, CandidateForm, Hiring_Form  # noqa
-
-# Tutorials
-from apps.tutorials.models import Tutorial  # noqa
-
-# ----------------------------------------------------
 # Engine + Session Factory
 # ----------------------------------------------------
 engine = None
@@ -203,10 +177,35 @@ async def get_db() -> AsyncSession:
 # Create Tables Automatically
 # ----------------------------------------------------
 async def init_db():
-    """Auto create all tables defined in models."""
-    # Import Query models here to avoid circular import
+    # Import all models so Base.metadata.create_all works
+    # Users
+    from apps.users.models import User, OTP  # noqa
+
+    # Certificates
+    from apps.certificates.models import (
+        CertificateTemplate,
+        GeneratedCertificate,
+        SpaTherapistCertificate,
+        ManagerSalaryCertificate,
+        ExperienceLetterCertificate,
+        AppointmentLetterCertificate,
+        InvoiceSpaBillCertificate,
+        IDCardCertificate,
+        DailySheet,
+        DailySheetCertificate,
+    )  # noqa
+
+    # Forms App
+    from apps.forms_app.models import SPA, CandidateForm, Hiring_Form  # noqa
+
+    # Tutorials
+    from apps.tutorials.models import Tutorial  # noqa
+
+    # Staff Management
+    from apps.StaffManagement.models import Staff, StaffEvent, WorkHistory  # noqa
+
+    # Query models
     from apps.Query.models import Query, QueryType  # noqa
-    # Tutorial models are already imported at the top
     
     if not engine:
         raise RuntimeError("Engine not initialized before init_db()")
