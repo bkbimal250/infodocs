@@ -52,18 +52,18 @@ const Queries = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const params = {
         skip: (currentPage - 1) * itemsPerPage,
         limit: itemsPerPage,
       };
-      
+
       if (filters.status) params.status = filters.status;
       if (filters.spa_id) params.spa_id = filters.spa_id;
-      
+
       const response = await queryApi.getQueries(params);
       const data = response.data;
-      
+
       // Handle both array and paginated response
       if (Array.isArray(data)) {
         setQueries(data);
@@ -138,10 +138,10 @@ const Queries = () => {
       resolved: { color: 'bg-green-100 text-green-800', icon: HiCheckCircle },
       closed: { color: 'bg-gray-100 text-gray-800', icon: HiXCircle },
     };
-    
+
     const config = statusConfig[status] || statusConfig.pending;
     const Icon = config.icon;
-    
+
     return (
       <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>
         <Icon className="w-3 h-3" />
@@ -171,19 +171,19 @@ const Queries = () => {
   const filteredQueries = queries.filter((query) => {
     // Status filter
     if (filters.status && query.status !== filters.status) return false;
-    
+
     // SPA filter
     if (filters.spa_id && String(query.spa_id) !== filters.spa_id) return false;
-    
+
     // State filter
     if (filters.state && query.spa_state !== filters.state) return false;
-    
+
     // City filter
     if (filters.city && query.spa_city !== filters.city) return false;
-    
+
     // Area filter
     if (filters.area && query.spa_area !== filters.area) return false;
-    
+
     // Search filter
     if (filters.search) {
       const searchLower = filters.search.toLowerCase();
@@ -198,7 +198,7 @@ const Queries = () => {
         query.spa_state?.toLowerCase().includes(searchLower)
       );
     }
-    
+
     return true;
   });
 
@@ -243,7 +243,7 @@ const Queries = () => {
               <HiFilter className="w-5 h-5 text-gray-500" />
               <span className="text-sm font-medium text-gray-700">Filters:</span>
             </div>
-            
+
             <div className="flex-1 min-w-[200px]">
               <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
               <select
@@ -383,14 +383,14 @@ const Queries = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SPA</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Query Type</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Query</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">ID</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">SPA</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">Query Type</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">Query</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">Created By</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">Created</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500  tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -527,12 +527,11 @@ const ViewQueryModal = ({ query, onClose }) => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-              <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
-                query.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                query.status === 'processing' ? 'bg-blue-100 text-blue-800' :
-                query.status === 'resolved' ? 'bg-green-100 text-green-800' :
-                'bg-gray-100 text-gray-800'
-              }`}>
+              <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${query.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                  query.status === 'processing' ? 'bg-blue-100 text-blue-800' :
+                    query.status === 'resolved' ? 'bg-green-100 text-green-800' :
+                      'bg-gray-100 text-gray-800'
+                }`}>
                 {query.status?.charAt(0).toUpperCase() + query.status?.slice(1)}
               </span>
             </div>

@@ -31,8 +31,8 @@ const VideoCard = ({ tutorial, onView }) => {
   return (
     <div className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 border border-gray-200 group">
       {/* Thumbnail Section */}
-      <div 
-        className="relative w-full h-56 bg-gradient-to-br from-blue-100 to-indigo-100 overflow-hidden cursor-pointer" 
+      <div
+        className="relative w-full h-56 bg-gradient-to-br from-blue-100 to-indigo-100 overflow-hidden cursor-pointer"
         onClick={() => videoUrl && onView && onView(tutorial)}
       >
         {tutorial.thumbnail_url ? (
@@ -55,7 +55,7 @@ const VideoCard = ({ tutorial, onView }) => {
             <HiPlay className="w-20 h-20 text-blue-400" />
           </div>
         )}
-        
+
         {/* Play Overlay on Hover */}
         {videoUrl && (
           <div className="absolute inset-0 bg-gradient-to-t from-blue-900/60 via-blue-900/0 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">

@@ -49,7 +49,18 @@ async def create_staff(db: AsyncSession, staff_data: schemas.StaffCreate, create
         db.add(staff)
         await db.flush() # Get ID
 
-    # Add Event
+    # 1. Close any existing active work history records to prevent duplicates
+    stmt_close = select(models.WorkHistory).where(
+        models.WorkHistory.staff_id == staff.id,
+        models.WorkHistory.status == models.WorkStatusEnum.active
+    )
+    res_close = await db.execute(stmt_close)
+    active_histories = res_close.scalars().all()
+    for h in active_histories:
+        h.status = models.WorkStatusEnum.completed
+        h.leave_date = staff_data.joining_date or datetime.utcnow()
+
+    # 2. Add Event
     event = models.StaffEvent(
         staff_id=staff.id,
         type=staff_data.staff_type,
@@ -60,7 +71,7 @@ async def create_staff(db: AsyncSession, staff_data: schemas.StaffCreate, create
     )
     db.add(event)
 
-    # Add Work History
+    # 3. Add Work History
     work_history = models.WorkHistory(
         staff_id=staff.id,
         spa_id=staff_data.spa_id,
@@ -70,8 +81,11 @@ async def create_staff(db: AsyncSession, staff_data: schemas.StaffCreate, create
     db.add(work_history)
 
     await db.commit()
-    await db.refresh(staff)
-    return staff
+    
+    # Re-fetch with relationship loaded for proper serialization
+    stmt = select(models.Staff).options(joinedload(models.Staff.spa)).where(models.Staff.id == staff.id)
+    result = await db.execute(stmt)
+    return result.scalar_one()
 
 
 # -----------------------------
@@ -137,16 +151,16 @@ async def mark_staff_left(db: AsyncSession, staff_id: int, leave_data: schemas.S
     staff.leave_date = leave_data.leave_date
     staff.spa_id = None # No longer at any branch
 
-    # Update active work history
+    # Update active work history (Handles duplicates gracefully)
     stmt = select(models.WorkHistory).where(
         models.WorkHistory.staff_id == staff_id,
         models.WorkHistory.spa_id == old_spa_id,
         models.WorkHistory.status == models.WorkStatusEnum.active
     )
     result = await db.execute(stmt)
-    work_history = result.scalar_one_or_none()
-
-    if work_history:
+    active_histories = result.scalars().all()
+    
+    for work_history in active_histories:
         work_history.leave_date = leave_data.leave_date
         work_history.status = models.WorkStatusEnum.completed
 
@@ -183,16 +197,16 @@ async def transfer_staff(
     to_spa_id = transfer_data.to_spa_id
     transfer_date = transfer_data.transfer_date
 
-    # 1. Close current work history
+    # 1. Close current work history (Handles duplicates gracefully)
     stmt = select(models.WorkHistory).where(
         models.WorkHistory.staff_id == staff_id,
         models.WorkHistory.spa_id == old_spa_id,
         models.WorkHistory.status == models.WorkStatusEnum.active
     )
     result = await db.execute(stmt)
-    work_history = result.scalar_one_or_none()
+    active_histories = result.scalars().all()
 
-    if work_history:
+    for work_history in active_histories:
         work_history.leave_date = transfer_date
         work_history.status = models.WorkStatusEnum.completed
         work_history.is_transferred = True
@@ -296,6 +310,18 @@ async def delete_staff(db: AsyncSession, staff_id: int):
     if not staff:
         return False
     
+    # 1. Manually clean up children to be 100% safe
+    stmt_ev = select(models.StaffEvent).where(models.StaffEvent.staff_id == staff_id)
+    res_ev = await db.execute(stmt_ev)
+    for ev in res_ev.scalars().all():
+        await db.delete(ev)
+        
+    stmt_wh = select(models.WorkHistory).where(models.WorkHistory.staff_id == staff_id)
+    res_wh = await db.execute(stmt_wh)
+    for wh in res_wh.scalars().all():
+        await db.delete(wh)
+
+    # 2. Delete staff
     await db.delete(staff)
     await db.commit()
     return True

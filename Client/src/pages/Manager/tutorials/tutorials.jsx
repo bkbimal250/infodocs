@@ -88,7 +88,7 @@ const Tutorials = () => {
             <div className="flex-1">
               <p className="font-medium">{error}</p>
             </div>
-            <button 
+            <button
               onClick={() => setError(null)}
               className="text-red-600 hover:text-red-800"
             >
@@ -163,7 +163,7 @@ const Tutorials = () => {
               <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
                 {selectedTutorial.description && (
                   <div className="mb-6 bg-white rounded-xl p-5 shadow-sm border border-gray-200">
-                    <label className="block text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wide">Description</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2  tracking-wide">Description</label>
                     <p className="text-gray-900 whitespace-pre-wrap leading-relaxed">{selectedTutorial.description}</p>
                   </div>
                 )}

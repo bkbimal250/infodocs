@@ -13,32 +13,32 @@ export const colors = {
   primary: '#6366f1',
   primaryDark: '#4f46e5',
   primaryLight: '#818cf8',
-  
+
   // Secondary Colors
   secondary: '#ec4899',
   secondaryDark: '#db2777',
   secondaryLight: '#f472b6',
-  
+
   // Success Colors
   success: '#10b981',
   successDark: '#059669',
   successLight: '#34d399',
-  
+
   // Warning Colors
   warning: '#f59e0b',
   warningDark: '#d97706',
   warningLight: '#fbbf24',
-  
+
   // Error/Danger Colors
   error: '#ef4444',
   errorDark: '#dc2626',
   errorLight: '#f87171',
-  
+
   // Info Colors
   info: '#3b82f6',
   infoDark: '#2563eb',
   infoLight: '#60a5fa',
-  
+
   // Neutral Colors
   gray: {
     50: '#f9fafb',
@@ -52,14 +52,14 @@ export const colors = {
     800: '#1f2937',
     900: '#111827',
   },
-  
+
   // Background Colors
   bg: {
     primary: '#ffffff',
     secondary: '#f9fafb',
     tertiary: '#f3f4f6',
   },
-  
+
   // Text Colors
   text: {
     primary: '#111827',
@@ -67,7 +67,7 @@ export const colors = {
     tertiary: '#9ca3af',
     inverse: '#ffffff',
   },
-  
+
   // Border Colors
   border: {
     primary: '#e5e7eb',
@@ -111,7 +111,7 @@ export const colorUtils = {
     const b = parseInt(hex.substring(4, 6), 16);
     return `rgba(${r}, ${g}, ${b}, ${opacity})`;
   },
-  
+
   /**
    * Get hover color (darker version)
    * @param {string} colorName - Color name from colors object

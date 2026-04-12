@@ -11,7 +11,7 @@ const ViewSpaDetails = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  
+
   // Get the page number from URL query params
   const page = searchParams.get('page') || '1';
 
@@ -58,13 +58,13 @@ const ViewSpaDetails = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
       <div className="max-w-4xl mx-auto bg-[var(--color-bg-primary)] rounded-xl shadow-lg p-8">
-        <button 
-          onClick={() => navigate(`/admin/spas?page=${page}`)} 
+        <button
+          onClick={() => navigate(`/admin/spas?page=${page}`)}
           className="text-[var(--color-primary)] hover:text-blue-800 mb-6 flex items-center gap-2 font-medium transition-colors"
         >
           <FaArrowLeft className="mr-1" /> Back
         </button>
-        
+
         <div className="flex items-center justify-between mb-8 pb-6 border-b border-[var(--color-border-primary)]">
           <div>
             <h1 className="text-3xl font-bold text-[var(--color-text-primary)] mb-2">SPA Details</h1>
@@ -111,13 +111,12 @@ const ViewSpaDetails = () => {
 
 const Detail = ({ label, value, isStatus }) => (
   <div className="bg-[var(--color-bg-secondary)] rounded-lg p-4 border border-[var(--color-border-primary)]">
-    <div className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide mb-2">{label}</div>
+    <div className="text-xs font-semibold text-[var(--color-text-secondary)]  tracking-wide mb-2">{label}</div>
     {isStatus ? (
-      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-        value === 'Active' 
-          ? 'bg-green-100 text-green-800' 
+      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${value === 'Active'
+          ? 'bg-green-100 text-green-800'
           : 'bg-gray-100 text-gray-800'
-      }`}>
+        }`}>
         <span className={`w-2 h-2 rounded-full mr-2 ${value === 'Active' ? 'bg-green-500' : 'bg-gray-400'}`}></span>
         {value}
       </span>

@@ -17,19 +17,19 @@ const TemplateTable = React.memo(({ templates, onEdit, onDelete, getCategoryLabe
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">
                 Name
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">
                 Category
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">
                 Type
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">
                 Status
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">
                 Actions
               </th>
             </tr>
@@ -49,8 +49,8 @@ const TemplateTable = React.memo(({ templates, onEdit, onDelete, getCategoryLabe
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span
                     className={`px-2 py-1 text-xs rounded-full ${template.is_active
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-gray-100 text-gray-800'
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-gray-100 text-gray-800'
                       }`}
                   >
                     {template.is_active ? 'Active' : 'Inactive'}
@@ -93,8 +93,8 @@ const TemplateTable = React.memo(({ templates, onEdit, onDelete, getCategoryLabe
               <div className="flex flex-col items-end gap-1">
                 <span
                   className={`px-2 py-0.5 text-xs rounded-full ${template.is_active
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-gray-100 text-gray-800'
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-gray-100 text-gray-800'
                     }`}
                 >
                   {template.is_active ? 'Active' : 'Inactive'}
@@ -107,7 +107,7 @@ const TemplateTable = React.memo(({ templates, onEdit, onDelete, getCategoryLabe
               </div>
             </div>
 
-            <div className="flex justify-between items-center text-sm border-t border-gray-100 pt-3">
+            <div className="flex justify-between items-center text-sm border-t border-gray-500 pt-3">
               <span className="text-xs text-gray-500">
                 {template.template_type?.toUpperCase() || TEMPLATE_TYPES.IMAGE.toUpperCase()}
               </span>

@@ -114,11 +114,10 @@ const HrDashboard = () => {
                 {notifications.slice(0, 5).map((notification) => (
                   <div
                     key={notification.id}
-                    className={`p-3 rounded-lg border ${
-                      notification.is_read
+                    className={`p-3 rounded-lg border ${notification.is_read
                         ? 'bg-[var(--color-bg-secondary)] border-[var(--color-border-primary)]'
                         : 'bg-blue-50 border-blue-200'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -242,12 +241,12 @@ const HrDashboard = () => {
                         <p className="text-sm text-gray-500">
                           {cert.category
                             ? String(cert.category)
-                                .split('_')
-                                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                                .join(' ')
+                              .split('_')
+                              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                              .join(' ')
                             : cert.template_id
-                            ? `Template #${cert.template_id}`
-                            : 'Template'}
+                              ? `Template #${cert.template_id}`
+                              : 'Template'}
                         </p>
                         <p className="text-xs text-gray-400 mt-1">
                           {cert.generated_at

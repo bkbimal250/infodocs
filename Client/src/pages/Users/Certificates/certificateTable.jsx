@@ -62,19 +62,19 @@ const CertificateTable = ({
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-[var(--color-bg-secondary)]">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">
                 Certificate
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">
                 Category
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">
                 Candidate/Name
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">
                 Created Date
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500  tracking-wider">
                 Actions
               </th>
             </tr>
@@ -93,8 +93,8 @@ const CertificateTable = ({
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
                     {formatCategory(
-                      certificate.category || 
-                      certificate.certificate_data?.category || 
+                      certificate.category ||
+                      certificate.certificate_data?.category ||
                       (getCategoryName ? getCategoryName(certificate) : '')
                     )}
                   </span>
@@ -199,11 +199,10 @@ const CertificateTable = ({
                       <button
                         key={page}
                         onClick={() => handlePageChange(page)}
-                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                          currentPage === page
+                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === page
                             ? 'z-10 bg-[var(--color-primary)] border-[var(--color-primary)] text-white'
                             : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                        }`}
+                          }`}
                       >
                         {page}
                       </button>

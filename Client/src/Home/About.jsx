@@ -17,7 +17,7 @@ export default function About() {
             <div className="text-center lg:text-left">
               <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 mb-4">
                 <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
-                <span className="text-xs font-medium text-blue-700 tracking-wide uppercase">
+                <span className="text-xs font-medium text-blue-700 tracking-wide ">
                   About Infodocs
                 </span>
               </div>
@@ -56,7 +56,7 @@ export default function About() {
             {/* Side Card / Stats */}
             <div className="lg:justify-self-end">
               <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6 sm:p-7">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-500 mb-3">
+                <p className="text-xs font-medium  tracking-wide text-slate-500 mb-3">
                   Why organizations choose Infodocs
                 </p>
                 <div className="grid grid-cols-3 gap-4 text-center">
@@ -96,7 +96,7 @@ export default function About() {
           <h2 className="text-2xl font-semibold text-slate-900 mb-3">
             Project Overview
           </h2>
-          <p className="text-sm uppercase tracking-wide text-slate-400 mb-5">
+          <p className="text-sm  tracking-wide text-slate-400 mb-5">
             Built for modern SPA &amp; wellness operations
           </p>
           <div className="space-y-4 text-slate-700 leading-relaxed">

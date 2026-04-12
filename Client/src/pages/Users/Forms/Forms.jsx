@@ -107,8 +107,8 @@ const Forms = () => {
         </div>
 
         {/* Filter + Table Card */}
-        <div className="mb-8 bg-[var(--color-bg-primary)] rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-4 md:px-6 py-4 border-b border-gray-100 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="mb-8 bg-[var(--color-bg-primary)] rounded-xl border border-gray-500 shadow-sm overflow-hidden">
+          <div className="px-4 md:px-6 py-4 border-b border-gray-500 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
               <h2 className="text-base md:text-lg font-semibold text-[var(--color-text-primary)]">
                 Submitted Candidate Forms
@@ -126,7 +126,7 @@ const Forms = () => {
           </div>
 
           {/* Filter */}
-          <div className="px-4 md:px-6 py-4 border-b border-gray-100">
+          <div className="px-4 md:px-6 py-4 border-b border-gray-500">
             <CandidateFilter onFilterChange={setFilter} />
           </div>
 

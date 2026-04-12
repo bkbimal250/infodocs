@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  HiChevronLeft, 
+import {
+  HiChevronLeft,
   HiChevronRight,
   HiOutlineEye,
   HiOutlineDownload,
@@ -24,11 +24,11 @@ const CertificateList = ({ certificates, loading, onRefresh }) => {
   const [itemsPerPage] = useState(10);
 
   const getCertificateName = (cert) => {
-    return cert.candidate_name || 
-           cert.manager_name || 
-           cert.employee_name || 
-           cert.customer_name || 
-           'N/A';
+    return cert.candidate_name ||
+      cert.manager_name ||
+      cert.employee_name ||
+      cert.customer_name ||
+      'N/A';
   };
 
   const getCertificateCategory = (cert) => {
@@ -104,7 +104,7 @@ const CertificateList = ({ certificates, loading, onRefresh }) => {
     setSelectedIds(newSelected);
   };
 
-  const isAllSelected = filteredCertificates.length > 0 && 
+  const isAllSelected = filteredCertificates.length > 0 &&
     filteredCertificates.every(cert => selectedIds.has(cert.id));
   const isIndeterminate = selectedIds.size > 0 && selectedIds.size < filteredCertificates.length;
 
@@ -114,11 +114,11 @@ const CertificateList = ({ certificates, loading, onRefresh }) => {
         `/certificates/generated/${certificateId}/download/pdf`,
         { responseType: 'blob' }
       );
-      
+
       if (!response.data) {
         throw new Error('No data received from server');
       }
-      
+
       const blob = new Blob([response.data], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -127,7 +127,7 @@ const CertificateList = ({ certificates, loading, onRefresh }) => {
       document.body.appendChild(link);
       link.click();
       link.remove();
-      
+
       // Clean up the URL after a short delay
       setTimeout(() => {
         window.URL.revokeObjectURL(url);
@@ -145,11 +145,11 @@ const CertificateList = ({ certificates, loading, onRefresh }) => {
         `/certificates/generated/${certificateId}/download/image`,
         { responseType: 'blob' }
       );
-      
+
       if (!response.data) {
         throw new Error('No data received from server');
       }
-      
+
       const blob = new Blob([response.data], { type: 'image/png' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -158,7 +158,7 @@ const CertificateList = ({ certificates, loading, onRefresh }) => {
       document.body.appendChild(link);
       link.click();
       link.remove();
-      
+
       // Clean up the URL after a short delay
       setTimeout(() => {
         window.URL.revokeObjectURL(url);
@@ -179,7 +179,7 @@ const CertificateList = ({ certificates, loading, onRefresh }) => {
       const blob = new Blob([response.data], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
       const printWindow = window.open(url, '_blank');
-      
+
       if (printWindow) {
         // Wait for PDF to load before printing
         printWindow.addEventListener('load', () => {
@@ -191,7 +191,7 @@ const CertificateList = ({ certificates, loading, onRefresh }) => {
             }, 1000);
           }, 500);
         });
-        
+
         // Fallback: if window doesn't load, try printing anyway
         setTimeout(() => {
           if (printWindow && !printWindow.closed) {
@@ -252,7 +252,7 @@ const CertificateList = ({ certificates, loading, onRefresh }) => {
       setIsDeleting(true);
       const idsArray = Array.from(selectedIds);
       const response = await adminApi.certificates.bulkDeleteCertificates(idsArray);
-      
+
       // Show result message
       if (response.data.deleted_count > 0) {
         alert(`Successfully deleted ${response.data.deleted_count} certificate(s)`);
@@ -260,10 +260,10 @@ const CertificateList = ({ certificates, loading, onRefresh }) => {
       if (response.data.failed_count > 0) {
         alert(`Failed to delete ${response.data.failed_count} certificate(s)`);
       }
-      
+
       // Clear selection
       setSelectedIds(new Set());
-      
+
       // Refresh the list
       if (onRefresh) {
         onRefresh();
@@ -324,7 +324,7 @@ const CertificateList = ({ certificates, loading, onRefresh }) => {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider w-12">
                 <input
                   type="checkbox"
                   checked={isAllSelected}
@@ -335,22 +335,22 @@ const CertificateList = ({ certificates, loading, onRefresh }) => {
                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">
                 ID
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">
                 Certificate Name
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">
                 Category
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">
                 Created By
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">
                 Generated Date
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">
                 Actions
               </th>
             </tr>
@@ -386,7 +386,7 @@ const CertificateList = ({ certificates, loading, onRefresh }) => {
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {cert.generated_at 
+                  {cert.generated_at
                     ? new Date(cert.generated_at).toLocaleDateString()
                     : 'N/A'}
                 </td>
@@ -401,7 +401,7 @@ const CertificateList = ({ certificates, loading, onRefresh }) => {
                       <HiOutlineEye className="h-4 w-4 mr-1.5" />
                       View
                     </Link>
-                    
+
                     {/* Download PDF Button */}
                     <button
                       onClick={() => handleDownloadPDF(cert.id)}
@@ -412,7 +412,7 @@ const CertificateList = ({ certificates, loading, onRefresh }) => {
                       <HiOutlineDownload className="h-4 w-4 mr-1.5" />
                       PDF
                     </button>
-                    
+
                     {/* Download Image Button */}
                     <button
                       onClick={() => handleDownloadImage(cert.id)}
@@ -423,7 +423,7 @@ const CertificateList = ({ certificates, loading, onRefresh }) => {
                       <HiOutlinePhotograph className="h-4 w-4 mr-1.5" />
                       Image
                     </button>
-                    
+
                     {/* Print Button */}
                     <button
                       onClick={() => handlePrint(cert.id)}
@@ -434,7 +434,7 @@ const CertificateList = ({ certificates, loading, onRefresh }) => {
                       <HiOutlinePrinter className="h-4 w-4 mr-1.5" />
                       Print
                     </button>
-                    
+
                     {/* Delete Button */}
                     <button
                       onClick={() => handleDelete(cert.id, cert.category)}
@@ -518,11 +518,10 @@ const CertificateList = ({ certificates, loading, onRefresh }) => {
                       <button
                         key={page}
                         onClick={() => handlePageChange(page)}
-                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                          currentPage === page
+                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === page
                             ? 'z-10 bg-blue-600 border-blue-600 text-white'
                             : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                        }`}
+                          }`}
                       >
                         {page}
                       </button>

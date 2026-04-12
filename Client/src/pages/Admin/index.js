@@ -51,3 +51,9 @@ export { default as QueryTypeList } from './Query/QueryTypeList';
 // Admin Tutorials
 export { default as AdminTutorials } from './tutorials/Tutorials';
 
+// Admin Staff Management
+export { default as AdminStaffManage } from './StaffManage/AdminStaffManage';
+export { default as AddStaffPage } from './StaffManage/AddStaffPage';
+export { default as EditStaffPage } from './StaffManage/EditStaffPage';
+export { default as ViewStaffPage } from './StaffManage/ViewStaffPage';
+

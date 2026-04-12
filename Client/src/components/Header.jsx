@@ -65,33 +65,28 @@ const Header = ({ user, onLogout }) => {
 
   return (
     <header className="sticky top-0 z-50 border-b bg-white/80 backdrop-blur">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Top bar */}
-        <div className="flex items-center justify-between h-16 md:h-20">
+      <div className="mx-auto w-full max-w-7xl px-3 sm:px-6 lg:px-8">
+        <div className="flex h-14 items-center justify-between sm:h-16 md:h-20">
           {/* Logo + Brand */}
-          <Link to="/" className="flex items-center">
-            <img
-              className="h-12 w-auto object-contain"
-              src="/infodocs.png"
-              alt="Infodocs Logo"
-            />
+          <Link to="/" className="min-w-0 flex items-center">
+            <h2 className="truncate text-sm font-medium text-gray-500 sm:text-base md:text-lg">
+              Document Generator
+            </h2>
           </Link>
-
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-2">
             {user ? (
               <>
-                {/* Role-based navigation */}
                 <div className="flex items-center gap-1">
                   {roleNavLinks.map((link) => (
                     <Link
                       key={link.path}
                       to={link.path}
-                      className={`relative px-3 py-2 rounded-full text-sm font-medium transition-all duration-200
+                      className={`relative rounded-full px-3 py-2 text-sm font-medium transition-all duration-200
                         ${isActive(link.path)
-                          ? 'text-blue-700 bg-blue-50 shadow-sm'
-                          : 'text-gray-600 hover:text-blue-700 hover:bg-gray-50'
+                          ? 'bg-blue-50 text-blue-700 shadow-sm'
+                          : 'text-gray-600 hover:bg-gray-50 hover:text-blue-700'
                         }`}
                     >
                       {link.label}
@@ -102,13 +97,12 @@ const Header = ({ user, onLogout }) => {
                   ))}
                 </div>
 
-                {/* User info + actions */}
-                <div className="flex items-center gap-3 pl-4 ml-4 border-l border-gray-200">
+                <div className="ml-4 flex items-center gap-3 border-l border-gray-200 pl-4">
                   <Link
                     to={user.role === 'user' ? '/user/profile' : '/profile'}
-                    className="flex items-center gap-2 rounded-full border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:border-blue-500 hover:text-blue-700 transition-colors"
+                    className="flex items-center gap-2 rounded-full border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:border-blue-500 hover:text-blue-700"
                   >
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-600/10 text-[11px] font-semibold text-blue-700 uppercase">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-600/10 text-[11px] font-semibold text-blue-700">
                       {user.first_name?.[0]}
                       {user.last_name?.[0]}
                     </span>
@@ -116,7 +110,7 @@ const Header = ({ user, onLogout }) => {
                       <span className="text-xs">
                         {user.first_name} {user.last_name}
                       </span>
-                      <span className="text-[10px] text-gray-500 capitalize">
+                      <span className="text-[10px] capitalize text-gray-500">
                         {user.role?.replace('_', ' ')}
                       </span>
                     </span>
@@ -137,10 +131,10 @@ const Header = ({ user, onLogout }) => {
                     <Link
                       key={link.path}
                       to={link.path}
-                      className={`relative px-3 py-2 rounded-full text-sm font-medium transition-all duration-200
+                      className={`relative rounded-full px-3 py-2 text-sm font-medium transition-all duration-200
                         ${isActive(link.path)
-                          ? 'text-blue-700 bg-blue-50 shadow-sm'
-                          : 'text-gray-600 hover:text-blue-700 hover:bg-gray-50'
+                          ? 'bg-blue-50 text-blue-700 shadow-sm'
+                          : 'text-gray-600 hover:bg-gray-50 hover:text-blue-700'
                         }`}
                     >
                       {link.label}
@@ -151,7 +145,7 @@ const Header = ({ user, onLogout }) => {
                   ))}
                 </div>
 
-                <div className="flex items-center gap-3 pl-4 ml-4 border-l border-gray-200">
+                <div className="ml-4 flex items-center gap-3 border-l border-gray-200 pl-4">
                   <Link
                     to="/login"
                     className="text-sm font-medium text-gray-600 hover:text-blue-700"
@@ -172,11 +166,11 @@ const Header = ({ user, onLogout }) => {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsMenuOpen((prev) => !prev)}
-            className="md:hidden inline-flex items-center justify-center rounded-lg border border-gray-200 p-2 text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+            className="inline-flex items-center justify-center rounded-lg border border-gray-200 p-2 text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 md:hidden"
             aria-label="Toggle menu"
           >
             <svg
-              className="h-5 w-5"
+              className="h-5 w-5 sm:h-6 sm:w-6"
               fill="none"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -195,18 +189,35 @@ const Header = ({ user, onLogout }) => {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden pb-4">
-            <nav className="mt-2 rounded-2xl border border-gray-100 bg-white shadow-lg p-2 space-y-1">
+          <div className="pb-3 md:hidden">
+            <nav className="mt-2 space-y-2 rounded-2xl border border-gray-200 bg-white p-3 shadow-lg">
               {user ? (
                 <>
+                  <div className="mb-2 rounded-xl bg-gray-50 p-3">
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-600/10 text-sm font-semibold text-blue-700">
+                        {user.first_name?.[0]}
+                        {user.last_name?.[0]}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-gray-800">
+                          {user.first_name} {user.last_name}
+                        </p>
+                        <p className="truncate text-xs capitalize text-gray-500">
+                          {user.role?.replace('_', ' ')}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
                   {roleNavLinks.map((link) => (
                     <Link
                       key={link.path}
                       to={link.path}
                       onClick={() => setIsMenuOpen(false)}
-                      className={`block px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${isActive(link.path)
-                          ? 'bg-blue-600 text-white'
-                          : 'text-gray-700 hover:bg-gray-50 hover:text-blue-700'
+                      className={`block rounded-lg px-3 py-3 text-sm font-medium transition-colors duration-200 ${isActive(link.path)
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-700 hover:bg-gray-50 hover:text-blue-700'
                         }`}
                     >
                       {link.label}
@@ -216,14 +227,9 @@ const Header = ({ user, onLogout }) => {
                   <Link
                     to={user.role === 'user' ? '/user/profile' : '/profile'}
                     onClick={() => setIsMenuOpen(false)}
-                    className="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-gray-700 bg-gray-50"
+                    className="block rounded-lg bg-gray-50 px-3 py-3 text-sm font-medium text-gray-700 hover:bg-gray-100"
                   >
-                    <span>
-                      {user.first_name} {user.last_name}
-                    </span>
-                    <span className="text-xs text-gray-500 capitalize">
-                      {user.role?.replace('_', ' ')}
-                    </span>
+                    Profile
                   </Link>
 
                   <button
@@ -231,7 +237,7 @@ const Header = ({ user, onLogout }) => {
                       setIsMenuOpen(false);
                       handleLogout();
                     }}
-                    className="w-full mt-1 px-3 py-2 rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-700 text-left"
+                    className="mt-1 w-full rounded-lg bg-red-600 px-3 py-3 text-left text-sm font-medium text-white hover:bg-red-700"
                   >
                     Logout
                   </button>
@@ -243,29 +249,31 @@ const Header = ({ user, onLogout }) => {
                       key={link.path}
                       to={link.path}
                       onClick={() => setIsMenuOpen(false)}
-                      className={`block px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${isActive(link.path)
-                          ? 'bg-blue-600 text-white'
-                          : 'text-gray-700 hover:bg-gray-50 hover:text-blue-700'
+                      className={`block rounded-lg px-3 py-3 text-sm font-medium transition-colors duration-200 ${isActive(link.path)
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-700 hover:bg-gray-50 hover:text-blue-700'
                         }`}
                     >
                       {link.label}
                     </Link>
                   ))}
 
-                  <Link
-                    to="/login"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
-                  >
-                    Login
-                  </Link>
-                  <Link
-                    to="/register"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="block px-3 py-2 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 text-center"
-                  >
-                    Get Started
-                  </Link>
+                  <div className="space-y-2 pt-1">
+                    <Link
+                      to="/login"
+                      onClick={() => setIsMenuOpen(false)}
+                      className="block rounded-lg border border-gray-200 px-3 py-3 text-center text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                      Login
+                    </Link>
+                    <Link
+                      to="/register"
+                      onClick={() => setIsMenuOpen(false)}
+                      className="block rounded-lg bg-blue-600 px-3 py-3 text-center text-sm font-medium text-white hover:bg-blue-700"
+                    >
+                      Get Started
+                    </Link>
+                  </div>
                 </>
               )}
             </nav>

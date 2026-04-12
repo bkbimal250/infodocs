@@ -29,8 +29,8 @@ const ManagerDashboard = () => {
         usersApi.getUnreadCount(),
       ]);
 
-      const certificates = certsRes.status === 'fulfilled' 
-        ? (certsRes.value.data?.results || certsRes.value.data || []) 
+      const certificates = certsRes.status === 'fulfilled'
+        ? (certsRes.value.data?.results || certsRes.value.data || [])
         : [];
       setRecentCertificates(Array.isArray(certificates) ? certificates.slice(0, 5) : []);
 
@@ -102,11 +102,10 @@ const ManagerDashboard = () => {
                 {notifications.slice(0, 5).map((notification) => (
                   <div
                     key={notification.id}
-                    className={`p-3 rounded-lg border ${
-                      notification.is_read
+                    className={`p-3 rounded-lg border ${notification.is_read
                         ? 'bg-[var(--color-bg-secondary)] border-[var(--color-border-primary)]'
                         : 'bg-blue-50 border-blue-200'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -200,13 +199,13 @@ const ManagerDashboard = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-[var(--color-bg-secondary)]">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 ">
                       Candidate
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 ">
                       Template
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 ">
                       Date
                     </th>
                   </tr>
@@ -217,10 +216,10 @@ const ManagerDashboard = () => {
                     const getTemplateName = () => {
                       // Try template_name first (if backend includes it)
                       if (cert.template_name) return cert.template_name;
-                      
+
                       // Try template object with name property
                       if (cert.template?.name) return cert.template.name;
-                      
+
                       // Format category as fallback (e.g., "spa_therapist" -> "Spa Therapist")
                       if (cert.category) {
                         const categoryStr = String(cert.category);
@@ -229,10 +228,10 @@ const ManagerDashboard = () => {
                           .map(word => word.charAt(0).toUpperCase() + word.slice(1))
                           .join(' ');
                       }
-                      
+
                       // Last resort: show template ID
                       if (cert.template_id) return `Template #${cert.template_id}`;
-                      
+
                       return 'N/A';
                     };
 
@@ -245,7 +244,7 @@ const ManagerDashboard = () => {
                           {getTemplateName()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {cert.generated_at 
+                          {cert.generated_at
                             ? new Date(cert.generated_at).toLocaleDateString()
                             : 'N/A'}
                         </td>
@@ -254,7 +253,7 @@ const ManagerDashboard = () => {
                   })}
                 </tbody>
 
-                
+
               </table>
             </div>
           ) : (

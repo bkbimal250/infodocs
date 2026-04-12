@@ -7,7 +7,7 @@ const AddSpa = ({ isOpen, onCancel, onSuccess }) => {
     code: "",
     address: "",
     city: "",
-    area:"",
+    area: "",
     state: "",
     country: "",
     pincode: "",
@@ -35,7 +35,7 @@ const AddSpa = ({ isOpen, onCancel, onSuccess }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    // Auto uppercase + remove only leading spaces
+    // Auto  + remove only leading spaces
     const processedValue = value.toUpperCase().trimStart();
 
     setFormData({
@@ -120,8 +120,8 @@ const AddSpa = ({ isOpen, onCancel, onSuccess }) => {
             <h2 className="text-2xl font-bold text-gray-900">Add New SPA</h2>
             <p className="text-sm text-gray-500 mt-1">Fill in the details to create a new SPA location</p>
           </div>
-          <button 
-            onClick={onCancel} 
+          <button
+            onClick={onCancel}
             className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-2 transition-colors"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -133,11 +133,10 @@ const AddSpa = ({ isOpen, onCancel, onSuccess }) => {
         {/* Message */}
         {msg.text && (
           <div
-            className={`p-4 rounded-lg mb-4 text-sm flex items-center gap-2 ${
-              msg.type === "success"
+            className={`p-4 rounded-lg mb-4 text-sm flex items-center gap-2 ${msg.type === "success"
                 ? "bg-green-50 border border-green-200 text-green-800"
                 : "bg-red-50 border border-red-200 text-red-800"
-            }`}
+              }`}
           >
             {msg.type === "success" ? (
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">

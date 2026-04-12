@@ -159,7 +159,7 @@ const Spas = () => {
           <div className="bg-[var(--color-bg-primary)] rounded-xl shadow-md p-6 border-l-4 border-[var(--color-primary)] hover:shadow-lg transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-[var(--color-text-secondary)] uppercase tracking-wide">Total SPAs</p>
+                <p className="text-sm font-medium text-[var(--color-text-secondary)]  tracking-wide">Total SPAs</p>
                 <p className="text-3xl font-bold text-[var(--color-text-primary)] mt-2">{filteredSpas.length}</p>
               </div>
               <div className="bg-[var(--color-primary-light)] rounded-full p-3">
@@ -172,7 +172,7 @@ const Spas = () => {
           <div className="bg-[var(--color-bg-primary)] rounded-xl shadow-md p-6 border-l-4 border-[var(--color-success)] hover:shadow-lg transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-[var(--color-text-secondary)] uppercase tracking-wide">Active SPAs</p>
+                <p className="text-sm font-medium text-[var(--color-text-secondary)]  tracking-wide">Active SPAs</p>
                 <p className="text-3xl font-bold text-[var(--color-success)] mt-2">
                   {filteredSpas.filter((s) => s.is_active).length}
                 </p>
@@ -187,7 +187,7 @@ const Spas = () => {
           <div className="bg-[var(--color-bg-primary)] rounded-xl shadow-md p-6 border-l-4 border-[var(--color-gray-400)] hover:shadow-lg transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-[var(--color-text-secondary)] uppercase tracking-wide">Inactive SPAs</p>
+                <p className="text-sm font-medium text-[var(--color-text-secondary)]  tracking-wide">Inactive SPAs</p>
                 <p className="text-3xl font-bold text-[var(--color-gray-500)] mt-2">
                   {filteredSpas.filter((s) => !s.is_active).length}
                 </p>

@@ -112,7 +112,7 @@ const Dashboard = () => {
         <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-2xl shadow-lg p-[1px]">
           <div className="bg-[var(--color-bg-primary)] rounded-2xl px-6 py-5 md:px-8 md:py-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-xs uppercase tracking-wide text-[var(--color-text-secondary)] mb-1">
+              <p className="text-xs  tracking-wide text-[var(--color-text-secondary)] mb-1">
                 Dashboard
               </p>
               <h1 className="text-2xl md:text-3xl font-bold text-[var(--color-text-primary)] tracking-tight">
@@ -153,10 +153,10 @@ const Dashboard = () => {
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
           {/* Certificates */}
-          <div className="bg-[var(--color-bg-primary)] rounded-xl border border-gray-100 shadow-sm p-5 flex flex-col justify-between">
+          <div className="bg-[var(--color-bg-primary)] rounded-xl border border-gray-500 shadow-sm p-5 flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wide">
+                <p className="text-xs font-medium text-[var(--color-text-secondary)]  tracking-wide">
                   My Certificates
                 </p>
                 <p className="text-2xl font-bold text-[var(--color-text-primary)] mt-2">
@@ -176,10 +176,10 @@ const Dashboard = () => {
           </div>
 
           {/* Notifications */}
-          <div className="bg-[var(--color-bg-primary)] rounded-xl border border-gray-100 shadow-sm p-5 flex flex-col justify-between">
+          <div className="bg-[var(--color-bg-primary)] rounded-xl border border-gray-500 shadow-sm p-5 flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wide">
+                <p className="text-xs font-medium text-[var(--color-text-secondary)]  tracking-wide">
                   Notifications
                 </p>
                 <div className="flex items-baseline gap-2 mt-2">
@@ -204,10 +204,10 @@ const Dashboard = () => {
           </div>
 
           {/* Activities */}
-          <div className="bg-[var(--color-bg-primary)] rounded-xl border border-gray-100 shadow-sm p-5 flex flex-col justify-between">
+          <div className="bg-[var(--color-bg-primary)] rounded-xl border border-gray-500 shadow-sm p-5 flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wide">
+                <p className="text-xs font-medium text-[var(--color-text-secondary)]  tracking-wide">
                   Activities
                 </p>
                 <p className="text-2xl font-bold text-[var(--color-text-primary)] mt-2">
@@ -227,10 +227,10 @@ const Dashboard = () => {
           </div>
 
           {/* Forms */}
-          <div className="bg-[var(--color-bg-primary)] rounded-xl border border-gray-100 shadow-sm p-5 flex flex-col justify-between">
+          <div className="bg-[var(--color-bg-primary)] rounded-xl border border-gray-500 shadow-sm p-5 flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wide">
+                <p className="text-xs font-medium text-[var(--color-text-secondary)]  tracking-wide">
                   Forms
                 </p>
                 <p className="text-2xl font-bold text-[var(--color-text-primary)] mt-2">
@@ -256,7 +256,7 @@ const Dashboard = () => {
         {/* Notifications & Activities */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Recent Notifications */}
-          <div className="bg-[var(--color-bg-primary)] rounded-xl border border-gray-100 shadow-sm">
+          <div className="bg-[var(--color-bg-primary)] rounded-xl border border-gray-500 shadow-sm">
             <div className="p-5 border-b border-[var(--color-border-primary)] flex items-center justify-between">
               <h2 className="text-base md:text-lg font-semibold text-[var(--color-text-primary)]">
                 Recent Notifications
@@ -278,11 +278,10 @@ const Dashboard = () => {
                   {notifications.slice(0, 5).map((notification) => (
                     <div
                       key={notification.id}
-                      className={`p-4 rounded-lg border text-sm ${
-                        notification.is_read
-                          ? 'bg-[var(--color-bg-secondary)] border-[var(--color-border-primary)]'
-                          : 'bg-blue-50 border-blue-200'
-                      }`}
+                      className={`p-4 rounded-lg border text-sm ${notification.is_read
+                        ? 'bg-[var(--color-bg-secondary)] border-[var(--color-border-primary)]'
+                        : 'bg-blue-50 border-blue-200'
+                        }`}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1">
@@ -315,7 +314,7 @@ const Dashboard = () => {
           </div>
 
           {/* Recent Activities */}
-          <div className="bg-[var(--color-bg-primary)] rounded-xl border border-gray-100 shadow-sm">
+          <div className="bg-[var(--color-bg-primary)] rounded-xl border border-gray-500 shadow-sm">
             <div className="p-5 border-b border-[var(--color-border-primary)] flex items-center justify-between">
               <h2 className="text-base md:text-lg font-semibold text-[var(--color-text-primary)]">
                 Recent Activities
@@ -365,7 +364,7 @@ const Dashboard = () => {
         </div>
 
         {/* Quick Actions */}
-        <div className="bg-[var(--color-bg-primary)] rounded-xl border border-gray-100 shadow-sm p-6">
+        <div className="bg-[var(--color-bg-primary)] rounded-xl border border-gray-500 shadow-sm p-6">
           <h2 className="text-base md:text-lg font-semibold text-[var(--color-text-primary)] mb-4">
             Quick Actions
           </h2>

@@ -64,19 +64,19 @@ const UsersTable = React.memo(({ users, onEdit, onDelete, loading = false }) => 
         <table className="min-w-full divide-y divide-[var(--color-border-primary)]">
           <thead className="bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-dark)]">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-inverse)] uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-inverse)]  tracking-wider">
                 User
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-inverse)] uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-inverse)]  tracking-wider">
                 Role
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-inverse)] uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-inverse)]  tracking-wider">
                 Status
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-inverse)] uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-inverse)]  tracking-wider">
                 Created
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-[var(--color-text-inverse)] uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium text-[var(--color-text-inverse)]  tracking-wider">
                 Actions
               </th>
             </tr>
@@ -183,7 +183,7 @@ const UsersTable = React.memo(({ users, onEdit, onDelete, loading = false }) => 
               </span>
             </div>
 
-            <div className="flex justify-between items-center text-sm border-t border-gray-100 pt-3">
+            <div className="flex justify-between items-center text-sm border-t border-gray-500 pt-3">
               <div className="flex flex-col gap-1">
                 <span className="text-xs text-gray-500">Status</span>
                 <span

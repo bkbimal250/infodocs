@@ -21,14 +21,14 @@ const QueryTable = ({ queries, onView, onEdit, onDelete }) => {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">SPA</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Query Type</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Query</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created By</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 ">ID</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 ">SPA</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 ">Query Type</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 ">Query</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 ">Created By</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 ">Status</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 ">Created</th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 ">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">

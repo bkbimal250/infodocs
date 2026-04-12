@@ -120,11 +120,10 @@ const AdminDashboard = () => {
                 {notifications.slice(0, 5).map((notification, index) => (
                   <div
                     key={`notification-${notification.id}-${index}`}
-                    className={`p-3 rounded-lg border ${
-                      notification.is_read
+                    className={`p-3 rounded-lg border ${notification.is_read
                         ? 'bg-gray-50 border-gray-200'
                         : 'bg-blue-50 border-blue-200'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -267,11 +266,10 @@ const AdminDashboard = () => {
                         </p>
                       </div>
                       <span
-                        className={`px-2 py-1 text-xs rounded-full whitespace-nowrap ml-2 ${
-                          cert.is_verified
+                        className={`px-2 py-1 text-xs rounded-full whitespace-nowrap ml-2 ${cert.is_verified
                             ? 'bg-green-100 text-green-800'
                             : 'bg-gray-100 text-gray-800'
-                        }`}
+                          }`}
                       >
                         {cert.is_verified ? 'Verified' : 'Pending'}
                       </span>

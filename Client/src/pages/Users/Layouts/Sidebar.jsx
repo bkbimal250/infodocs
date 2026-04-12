@@ -34,7 +34,7 @@ const UserSidebar = ({ onLinkClick }) => {
       icon: HiOutlineDocumentText,
     },
     {
-      name: 'Candidate Data',
+      name: 'Undertaking-jobform',
       path: '/user/forms',
       icon: HiOutlineClipboardList,
     },
@@ -86,7 +86,7 @@ const UserSidebar = ({ onLinkClick }) => {
           {menuItems.map((item) => {
             const active = isActive(item.path);
             const Icon = item.icon;
-            
+
             return (
               <li key={item.path}>
                 <Link
@@ -96,26 +96,24 @@ const UserSidebar = ({ onLinkClick }) => {
                       onLinkClick();
                     }
                   }}
-                  className={`group flex items-center px-4 py-3 rounded-xl transition-all duration-200 relative ${
-                    active
+                  className={`group flex items-center px-4 py-3 rounded-xl transition-all duration-200 relative ${active
                       ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/50 scale-[1.02]'
                       : 'text-gray-300 hover:bg-gray-800/50 hover:text-white hover:translate-x-1'
-                  }`}
+                    }`}
                 >
                   {/* Active indicator */}
                   {active && (
                     <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white rounded-r-full"></span>
                   )}
-                  
-                  <Icon 
-                    className={`mr-3 text-xl transition-transform duration-200 ${
-                      active ? 'text-white' : 'text-gray-400 group-hover:text-blue-400 group-hover:scale-110'
-                    }`} 
+
+                  <Icon
+                    className={`mr-3 text-xl transition-transform duration-200 ${active ? 'text-white' : 'text-gray-400 group-hover:text-blue-400 group-hover:scale-110'
+                      }`}
                   />
                   <span className={`font-medium text-sm ${active ? 'text-white' : 'group-hover:text-white'}`}>
                     {item.name}
                   </span>
-                  
+
                   {/* Hover effect glow */}
                   {!active && (
                     <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-600/0 via-blue-600/0 to-blue-600/0 group-hover:from-blue-600/10 group-hover:via-indigo-600/10 group-hover:to-blue-600/10 transition-all duration-200 -z-10"></span>

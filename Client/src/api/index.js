@@ -6,4 +6,5 @@ export { usersApi } from './Users/usersApi';
 export { certificateApi } from './Certificates/certificateApi';
 export { queryApi } from './Query/queryApi';
 export { tutorialApi } from './Tutorials/tutorialApi';
+export { staffApi } from './Staff/staffApi';
 

@@ -88,19 +88,19 @@ const CandidatesTable = ({ onEdit, onDelete }) => {
 
   const preloadAndConvertImages = async (element) => {
     const images = element.querySelectorAll('img');
-    
+
     const loadPromises = Array.from(images).map((img) => {
       return new Promise((resolve) => {
         if (!img.src) {
           resolve();
           return;
         }
-        
+
         if (img.src.startsWith('data:')) {
           resolve();
           return;
         }
-        
+
         if (img.complete && img.naturalHeight !== 0) {
           resolve();
           return;
@@ -123,7 +123,7 @@ const CandidatesTable = ({ onEdit, onDelete }) => {
 
         const newImg = new Image();
         newImg.crossOrigin = 'anonymous';
-        
+
         newImg.onload = () => {
           try {
             const canvas = document.createElement('canvas');
@@ -139,12 +139,12 @@ const CandidatesTable = ({ onEdit, onDelete }) => {
             resolve();
           }
         };
-        
+
         newImg.onerror = () => {
           console.warn('Failed to load image for conversion:', img.src);
           resolve();
         };
-        
+
         newImg.src = img.src;
       });
     });
@@ -155,22 +155,22 @@ const CandidatesTable = ({ onEdit, onDelete }) => {
 
   const handleDownloadPDF = async (element) => {
     if (!element) return;
-    
+
     try {
       setDownloading(true);
-      
+
       await preloadAndConvertImages(element);
-      
+
       const html2pdf = await import('html2pdf.js');
       const html2pdfLib = html2pdf.default || html2pdf;
-      
+
       const opt = {
         margin: 0.5,
         filename: `${printType === 'application' ? 'Job_Application_Form' : 'Undertaking_Form'}_${selectedCandidate?.id || 'form'}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { 
-          scale: 2, 
-          useCORS: true, 
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
           logging: false,
           allowTaint: true,
           backgroundColor: '#ffffff',
@@ -238,22 +238,22 @@ const CandidatesTable = ({ onEdit, onDelete }) => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-[var(--color-bg-secondary)]">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)]  tracking-wider">
                     Name
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)]  tracking-wider">
                     Position
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)]  tracking-wider">
                     Phone
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)]  tracking-wider">
                     SPA Location
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)]  tracking-wider">
                     Submitted Date
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)]  tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -395,13 +395,13 @@ const CandidatesTable = ({ onEdit, onDelete }) => {
               {/* Modal Content */}
               <div className="overflow-y-auto flex-1 bg-[var(--color-bg-primary)]" ref={printContentRef}>
                 {printType === 'application' ? (
-                  <PrintApplicationDetails 
-                    data={{ candidate: selectedCandidate }} 
+                  <PrintApplicationDetails
+                    data={{ candidate: selectedCandidate }}
                     onDownload={handleDownloadPDF}
                   />
                 ) : (
-                  <PrintUdertakingDetails 
-                    data={{ candidate: selectedCandidate }} 
+                  <PrintUdertakingDetails
+                    data={{ candidate: selectedCandidate }}
                     onDownload={handleDownloadPDF}
                   />
                 )}

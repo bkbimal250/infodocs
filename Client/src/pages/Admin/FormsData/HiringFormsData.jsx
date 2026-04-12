@@ -48,15 +48,15 @@ const HiringFormsData = () => {
         form.for_role?.toLowerCase().includes(filter.search.toLowerCase()) ||
         form.description?.toLowerCase().includes(filter.search.toLowerCase()) ||
         form.required_skills?.toLowerCase().includes(filter.search.toLowerCase());
-      
+
       const matchesRole =
         filter.role === '' ||
         form.for_role?.toLowerCase().includes(filter.role.toLowerCase());
-      
+
       const matchesSpa =
         filter.spa === '' ||
         (form.spa?.name || form.spa_name_text || '').toLowerCase().includes(filter.spa.toLowerCase());
-      
+
       return matchesSearch && matchesRole && matchesSpa;
     });
 
@@ -72,15 +72,15 @@ const HiringFormsData = () => {
       form.for_role?.toLowerCase().includes(filter.search.toLowerCase()) ||
       form.description?.toLowerCase().includes(filter.search.toLowerCase()) ||
       form.required_skills?.toLowerCase().includes(filter.search.toLowerCase());
-    
+
     const matchesRole =
       filter.role === '' ||
       form.for_role?.toLowerCase().includes(filter.role.toLowerCase());
-    
+
     const matchesSpa =
       filter.spa === '' ||
       (form.spa?.name || form.spa_name_text || '').toLowerCase().includes(filter.spa.toLowerCase());
-    
+
     return matchesSearch && matchesRole && matchesSpa;
   });
 
@@ -213,7 +213,7 @@ const HiringFormsData = () => {
             {filteredForms.map((form) => (
               <div
                 key={form.id}
-                className="bg-[var(--color-bg-primary)] rounded-lg shadow-md hover:shadow-xl transition-all duration-200 p-6 border border-gray-100"
+                className="bg-[var(--color-bg-primary)] rounded-lg shadow-md hover:shadow-xl transition-all duration-200 p-6 border border-gray-500"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">

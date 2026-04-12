@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { 
-  HiOutlineClock, 
-  HiOutlineCheckCircle, 
+import {
+  HiOutlineClock,
+  HiOutlineCheckCircle,
   HiOutlineXCircle,
   HiOutlineGlobe
 } from 'react-icons/hi';
@@ -84,19 +84,19 @@ const LastLoginHistory = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">
                       IP Address
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">
                       User Agent
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">
                       Failure Reason
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">
                       Date & Time
                     </th>
                   </tr>
@@ -134,7 +134,7 @@ const LastLoginHistory = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {entry.created_at 
+                        {entry.created_at
                           ? new Date(entry.created_at).toLocaleString()
                           : 'N/A'}
                       </td>

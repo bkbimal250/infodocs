@@ -26,12 +26,12 @@ const HeroSection = ({ user = null }) => {
       <div className="relative z-10 max-w-5xl mx-auto px-6 md:px-12 py-10 md:py-14 
                       rounded-3xl bg-white/10 backdrop-blur-xl border border-white/15 
                       shadow-[0_18px_60px_rgba(15,23,42,0.85)] text-center">
-        
+
         {/* Badge */}
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full 
                         bg-emerald-500/10 border border-emerald-300/30 mb-5">
           <HiOutlineShieldCheck className="text-emerald-300 text-lg" />
-          <span className="text-xs md:text-sm font-medium uppercase tracking-[0.18em] text-emerald-100">
+          <span className="text-xs md:text-sm font-medium  tracking-[0.18em] text-emerald-100">
             SPA CERTIFICATE SUITE
           </span>
         </div>
@@ -43,7 +43,7 @@ const HeroSection = ({ user = null }) => {
 
         {/* Subheading */}
         <p className="mt-4 md:mt-6 text-sm md:text-lg text-gray-200/90 max-w-3xl mx-auto leading-relaxed">
-          The all-in-one solution for creating, managing, and tracking certificates and 
+          The all-in-one solution for creating, managing, and tracking certificates and
           documents for luxury SPA and wellness centers — secure, elegant, and effortless.
         </p>
 

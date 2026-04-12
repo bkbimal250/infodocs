@@ -53,6 +53,10 @@ const Queries = lazy(() => import('../pages/Admin').then(module => ({ default: m
 const AddQuerytype = lazy(() => import('../pages/Admin').then(module => ({ default: module.AddQuerytype })));
 const QueryTypeList = lazy(() => import('../pages/Admin').then(module => ({ default: module.QueryTypeList })));
 const AdminTutorials = lazy(() => import('../pages/Admin').then(module => ({ default: module.AdminTutorials })));
+const AdminStaffManage = lazy(() => import('../pages/Admin').then(module => ({ default: module.AdminStaffManage })));
+const AdminAddStaffPage = lazy(() => import('../pages/Admin').then(module => ({ default: module.AddStaffPage })));
+const AdminEditStaffPage = lazy(() => import('../pages/Admin').then(module => ({ default: module.EditStaffPage })));
+const AdminViewStaffPage = lazy(() => import('../pages/Admin').then(module => ({ default: module.ViewStaffPage })));
 
 // Manager Pages - Lazy Loaded
 const ManagerDashboard = lazy(() => import('../pages/Manager').then(module => ({ default: module.ManagerDashboard })));
@@ -65,6 +69,10 @@ const ViewCandidatesDetails = lazy(() => import('../pages/Manager/Candidates/Vie
 const ManagerViewHiringDetails = lazy(() => import('../pages/Manager/Hiring').then(module => ({ default: module.ViewHiringDetails })));
 const ManagerProfile = lazy(() => import('../pages/Manager/Profiles').then(module => ({ default: module.ManagerProfile })));
 const ManagerTutorials = lazy(() => import('../pages/Manager/tutorials/tutorials'));
+const ManagerStaffManage = lazy(() => import('../pages/Manager').then(module => ({ default: module.ManagerStaffManage })));
+const AddStaffPage = lazy(() => import('../pages/Manager').then(module => ({ default: module.AddStaffPage })));
+const EditStaffPage = lazy(() => import('../pages/Manager').then(module => ({ default: module.EditStaffPage })));
+const ViewStaffPage = lazy(() => import('../pages/Manager').then(module => ({ default: module.ViewStaffPage })));
 const ManagerQuery = lazy(() => import('../pages/Manager/Query/Query'));
 
 // HR Pages - Lazy Loaded
@@ -539,6 +547,46 @@ const AppRouter = () => {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/admin/staff"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                <AdminLayout>
+                  <AdminStaffManage />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/staff/add"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                <AdminLayout>
+                  <AdminAddStaffPage />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/staff/:id"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                <AdminLayout>
+                  <AdminViewStaffPage />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/staff/:id/edit"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                <AdminLayout>
+                  <AdminEditStaffPage />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
 
           {/* Protected Routes - HR */}
           <Route
@@ -580,6 +628,46 @@ const AppRouter = () => {
               <ProtectedRoute allowedRoles={['spa_manager', 'admin', 'super_admin']}>
                 <ManagerLayout>
                   <ManagerCertificates />
+                </ManagerLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/manager/staff"
+            element={
+              <ProtectedRoute allowedRoles={['spa_manager', 'admin', 'super_admin']}>
+                <ManagerLayout>
+                  <ManagerStaffManage />
+                </ManagerLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/manager/staff/add"
+            element={
+              <ProtectedRoute allowedRoles={['spa_manager', 'admin', 'super_admin']}>
+                <ManagerLayout>
+                  <AddStaffPage />
+                </ManagerLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/manager/staff/:id"
+            element={
+              <ProtectedRoute allowedRoles={['spa_manager', 'admin', 'super_admin']}>
+                <ManagerLayout>
+                  <ViewStaffPage />
+                </ManagerLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/manager/staff/:id/edit"
+            element={
+              <ProtectedRoute allowedRoles={['spa_manager', 'admin', 'super_admin']}>
+                <ManagerLayout>
+                  <EditStaffPage />
                 </ManagerLayout>
               </ProtectedRoute>
             }

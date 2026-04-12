@@ -1,6 +1,6 @@
 /**
  * Certificate Form Components
- * Fixed unified handleInputChange format 
+ * Premium Compact Design Integration
  */
 
 import React from "react";
@@ -14,8 +14,8 @@ const Input = ({
   required,
   placeholder,
 }) => (
-  <div>
-    <label className="block text-sm font-medium text-gray-700 mb-1">
+  <div className="space-y-1">
+    <label className="text-[10px] font-black text-gray-400  tracking-widest ml-1">
       {label} {required && <span className="text-red-500">*</span>}
     </label>
 
@@ -30,8 +30,7 @@ const Input = ({
           target: { name, value: e.target.value },
         })
       }
-      className="w-full px-4 py-2 border border-gray-300 rounded-lg 
-                 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+      className="input py-2 text-xs"
     />
   </div>
 );
@@ -44,8 +43,8 @@ const TextArea = ({
   rows = 3,
   placeholder,
 }) => (
-  <div className="md:col-span-2">
-    <label className="block text-sm font-medium text-gray-700 mb-1">
+  <div className="md:col-span-2 space-y-1">
+    <label className="text-[10px] font-black text-gray-400  tracking-widest ml-1">
       {label}
     </label>
 
@@ -59,18 +58,20 @@ const TextArea = ({
           target: { name, value: e.target.value },
         })
       }
-      className="w-full px-4 py-2 border border-gray-300 rounded-lg 
-                 focus:ring-2 focus:ring-blue-500 focus-border-transparent"
+      className="input min-h-[80px] py-2 text-xs resize-none"
     />
   </div>
 );
 
 /* ManagerSalaryCertificate */
 export const SalaryCertificateForm = ({ formData, handleInputChange }) => (
-  <div className="border-b border-gray-200 pb-6">
-    <h2 className="text-xl font-semibold text-gray-900 mb-4">
-      Manager Salary Certificate
-    </h2>
+  <div className="animate-in fade-in duration-500">
+    <div className="flex items-center gap-2 mb-4">
+      <div className="w-1 h-4 bg-primary rounded-full" />
+      <h2 className="text-xs font-black text-gray-900  tracking-widest">
+        Salary Certificate Details
+      </h2>
+    </div>
 
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <Input label="Manager Name" name="manager_name" formData={formData} handleInputChange={handleInputChange} required />
@@ -79,10 +80,11 @@ export const SalaryCertificateForm = ({ formData, handleInputChange }) => (
       <Input label="Monthly Salary" name="monthly_salary" formData={formData} handleInputChange={handleInputChange} />
       <Input label="Salary (in words)" name="monthly_salary_in_words" formData={formData} handleInputChange={handleInputChange} />
       <TextArea
-        label="Salary Breakdown (JSON)"
+        label="Salary Breakdown"
         name="month_salary_data"
         formData={formData}
         handleInputChange={handleInputChange}
+        placeholder="Enter structure or notes..."
       />
     </div>
   </div>
@@ -90,10 +92,13 @@ export const SalaryCertificateForm = ({ formData, handleInputChange }) => (
 
 /* ExperienceCertificateForm */
 export const ExperienceCertificateForm = ({ formData, handleInputChange }) => (
-  <div className="border-b border-gray-200 pb-6">
-    <h2 className="text-xl font-semibold text-gray-900 mb-4">
-      Experience Letter
-    </h2>
+  <div className="animate-in fade-in duration-500">
+    <div className="flex items-center gap-2 mb-4">
+      <div className="w-1 h-4 bg-primary rounded-full" />
+      <h2 className="text-xs font-black text-gray-900  tracking-widest">
+        Experience Letter Data
+      </h2>
+    </div>
 
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <Input label="Employee Name" name="candidate_name" formData={formData} handleInputChange={handleInputChange} required />
@@ -109,17 +114,20 @@ export const ExperienceCertificateForm = ({ formData, handleInputChange }) => (
 
 /* AppointmentCertificateForm */
 export const AppointmentCertificateForm = ({ formData, handleInputChange }) => (
-  <div className="border-b border-gray-200 pb-6">
-    <h2 className="text-xl font-semibold text-gray-900 mb-4">
-      Appointment Letter
-    </h2>
+  <div className="animate-in fade-in duration-500">
+    <div className="flex items-center gap-2 mb-4">
+      <div className="w-1 h-4 bg-primary rounded-full" />
+      <h2 className="text-xs font-black text-gray-900  tracking-widest">
+        Appointment Provisions
+      </h2>
+    </div>
 
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <Input label="Employee Name" name="employee_name" formData={formData} handleInputChange={handleInputChange} required />
       <Input label="Position" name="position" formData={formData} handleInputChange={handleInputChange} />
       <Input label="Start Date" name="start_date" formData={formData} handleInputChange={handleInputChange} />
       <Input label="Salary" name="salary" formData={formData} handleInputChange={handleInputChange} />
-      <Input label="Manager Signature (name/URL)" name="manager_signature" formData={formData} handleInputChange={handleInputChange} />
+      <Input label="Manager Signature Name" name="manager_signature" formData={formData} handleInputChange={handleInputChange} />
     </div>
   </div>
 );
@@ -132,23 +140,24 @@ export const SpatherapistCertificateForm = ({
   formData,
   handleInputChange,
 }) => (
-  <div className="border-b border-gray-200 pb-6">
-    <h2 className="text-xl font-semibold text-gray-900 mb-4">
-      Spa Therapist Certificate
-    </h2>
+  <div className="animate-in fade-in duration-500">
+    <div className="flex items-center gap-2 mb-4">
+      <div className="w-1 h-4 bg-primary rounded-full" />
+      <h2 className="text-xs font-black text-gray-900  tracking-widest">
+        Therapist Qualification
+      </h2>
+    </div>
 
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <Input label="Candidate Name" name="candidate_name" formData={formData} handleInputChange={handleInputChange} required />
       <Input label="Course Name" name="course_name" formData={formData} handleInputChange={handleInputChange} />
       <Input label="Start Date" type="date" name="start_date" formData={formData} handleInputChange={handleInputChange} />
       <Input label="End Date" type="date" name="end_date" formData={formData} handleInputChange={handleInputChange} />
-      <Input label="Passport Photo URL" name="passport_size_photo" formData={formData} handleInputChange={handleInputChange} />
-      <Input label="Candidate Signature URL" name="candidate_signature" formData={formData} handleInputChange={handleInputChange} />
+      <Input label="Photo Identity URL" name="passport_size_photo" formData={formData} handleInputChange={handleInputChange} />
+      <Input label="Digital Signature URL" name="candidate_signature" formData={formData} handleInputChange={handleInputChange} />
     </div>
   </div>
 );
-
-
 
 export default {
   SalaryCertificateForm,

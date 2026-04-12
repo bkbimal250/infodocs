@@ -30,7 +30,7 @@ const RecentActivity = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const params = {
         skip: (currentPage - 1) * itemsPerPage,
         limit: itemsPerPage,
@@ -53,7 +53,7 @@ const RecentActivity = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const params = {
         skip: (currentPage - 1) * itemsPerPage,
         limit: itemsPerPage,
@@ -142,11 +142,10 @@ const RecentActivity = () => {
                   setActiveTab('activities');
                   setCurrentPage(1);
                 }}
-                className={`px-6 py-4 text-sm font-medium border-b-2 ${
-                  activeTab === 'activities'
+                className={`px-6 py-4 text-sm font-medium border-b-2 ${activeTab === 'activities'
                     ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                  }`}
               >
                 Activities ({activities.length})
               </button>
@@ -155,11 +154,10 @@ const RecentActivity = () => {
                   setActiveTab('login');
                   setCurrentPage(1);
                 }}
-                className={`px-6 py-4 text-sm font-medium border-b-2 ${
-                  activeTab === 'login'
+                className={`px-6 py-4 text-sm font-medium border-b-2 ${activeTab === 'login'
                     ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                  }`}
               >
                 Login History ({loginHistory.length})
               </button>
@@ -286,19 +284,19 @@ const RecentActivity = () => {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-[var(--color-bg-secondary)]">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">
                           Date & Time
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">
                           IP Address
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">
                           User Agent
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">
                           Status
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">
                           Failure Reason
                         </th>
                       </tr>
@@ -322,11 +320,10 @@ const RecentActivity = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span
-                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                login.login_status === 'success'
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${login.login_status === 'success'
                                   ? 'bg-green-100 text-green-800'
                                   : 'bg-red-100 text-red-800'
-                              }`}
+                                }`}
                             >
                               {login.login_status === 'success' ? (
                                 <HiCheckCircle className="w-4 h-4 mr-1" />

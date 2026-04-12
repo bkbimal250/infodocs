@@ -63,7 +63,7 @@ const PrintApplicationDetails = ({ data = {}, onDownload }) => {
           className="a4-page text-[13px] leading-tight font-[Times_New_Roman]"
         >
           {/* HEADER */}
-          <h2 className="text-center uppercase font-bold text-lg mb-3 mt-0">
+          <h2 className="text-center  font-bold text-lg mb-3 mt-0">
             Job Application Form
           </h2>
 

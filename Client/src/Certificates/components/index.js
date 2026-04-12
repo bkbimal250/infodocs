@@ -10,6 +10,9 @@ import CertificateFormFields from './CertificateFormFields';
 import ImageUpload from './ImageUpload';
 import SignatureUpload from './SignatureUpload';
 import ImageCrop from './ImageCrop';
+import CertificateHeader from './CertificateHeader';
+import SpaSelectionField from './SpaSelectionField';
+import InvoiceItemsTable from './InvoiceItemsTable';
 import { CERTIFICATE_CATEGORIES } from '../../utils/certificateConstants';
 
 export {
@@ -25,6 +28,9 @@ export {
   ImageUpload,
   SignatureUpload,
   ImageCrop,
+  CertificateHeader,
+  SpaSelectionField,
+  InvoiceItemsTable,
 };
 
 /**

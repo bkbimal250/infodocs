@@ -5,7 +5,7 @@ const PrintApplicationDetails = ({ data = {}, onDownload }) => {
   // Map candidate data to print format
   const candidate = data.candidate || data;
   const printRef = useRef(null);
-  
+
   const spaName = candidate.spa?.name || candidate.spa_name_text || "";
   const firstName = candidate.first_name || "";
   const middleName = candidate.middle_name || "";
@@ -72,7 +72,7 @@ const PrintApplicationDetails = ({ data = {}, onDownload }) => {
       <div className="print-container">
         <div ref={printRef} className="a4-page text-[12px] leading-snug font-[Times_New_Roman]">
           <div className="form-content">
-            <h2 className="text-center uppercase font-bold text-base mb-2 mt-0" style={{ fontSize: '16px', marginBottom: '8px' }}>
+            <h2 className="text-center  font-bold text-base mb-2 mt-0" style={{ fontSize: '16px', marginBottom: '8px' }}>
               Job Application Form
             </h2>
             <div className="mb-1.5" style={{ marginBottom: '6px' }}>
@@ -154,9 +154,9 @@ const PrintApplicationDetails = ({ data = {}, onDownload }) => {
             </div>
             <div className="mb-1.5 flex-1" style={{ marginBottom: '6px', flex: '1 1 auto' }}>
               <p className="text-justify leading-tight text-[10px]" style={{ fontSize: '10px', lineHeight: '1.3' }}>
-                I certify that information contained in this application is true and complete. 
-                I understand that false information may be grounds for not hiring me or for immediate 
-                termination of employment at any point in the future if I am hired. I authorize the 
+                I certify that information contained in this application is true and complete.
+                I understand that false information may be grounds for not hiring me or for immediate
+                termination of employment at any point in the future if I am hired. I authorize the
                 verification of any or all information listed above.
               </p>
             </div>

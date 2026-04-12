@@ -1,12 +1,22 @@
 import { useState, useEffect } from 'react';
-import { HiOutlineUser, HiOutlineMail, HiOutlinePhone, HiOutlineCalendar, HiOutlineShieldCheck } from 'react-icons/hi';
+import {
+  HiOutlineUser, HiOutlineMail, HiOutlinePhone,
+  HiOutlineCalendar, HiOutlineShieldCheck, HiOutlineBadgeCheck,
+  HiOutlineOfficeBuilding
+} from 'react-icons/hi';
 import { authApi } from '../../../api/Auth/authApi';
 import { usersApi } from '../../../api/Users/usersApi';
+import { adminApi } from '../../../api/Admin/adminApi';
 import toast from 'react-hot-toast';
+
+// Modular Components
+import ProfileHeader from './components/ProfileHeader';
+import ProfileInfoField from './components/ProfileInfoField';
+import BranchAssignment from './components/BranchAssignment';
 
 /**
  * Manager Profile Page
- * View and edit Manager user profile
+ * Enhanced version with modular components and premium UI
  */
 const ManagerProfile = () => {
   const [user, setUser] = useState(null);
@@ -18,14 +28,24 @@ const ManagerProfile = () => {
     first_name: '',
     last_name: '',
     phone_number: '',
+    spa_id: null,
   });
+  const [spas, setSpas] = useState([]);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
 
   useEffect(() => {
     loadProfile();
+    loadSpas();
   }, []);
+
+  const loadSpas = async () => {
+    try {
+      const response = await adminApi.forms.getSpas();
+      setSpas(response.data || []);
+    } catch (error) {
+      console.error('Error loading SPAs:', error);
+    }
+  };
 
   const loadProfile = async () => {
     try {
@@ -39,11 +59,10 @@ const ManagerProfile = () => {
         first_name: userData.first_name || '',
         last_name: userData.last_name || '',
         phone_number: userData.phone_number || '',
+        spa_id: userData.spa_id || null,
       });
-      setError('');
     } catch (error) {
       console.error('Error loading profile:', error);
-      setError('Failed to load profile');
       toast.error('Failed to load profile');
     } finally {
       setLoading(false);
@@ -61,22 +80,12 @@ const ManagerProfile = () => {
   const handleSave = async () => {
     try {
       setSaving(true);
-      setError('');
-      setSuccess('');
-
-      // Update user profile using the auth endpoint for self-update
       await usersApi.updateProfile(user.id, formData);
-      
-      // Reload profile
       await loadProfile();
-      
       setEditing(false);
-      setSuccess('Profile updated successfully');
       toast.success('Profile updated successfully');
     } catch (error) {
-      console.error('Error updating profile:', error);
-      const errorMsg = error.response?.data?.detail || error.response?.data?.error || 'Failed to update profile';
-      setError(errorMsg);
+      const errorMsg = error.response?.data?.detail || 'Failed to update profile';
       toast.error(errorMsg);
     } finally {
       setSaving(false);
@@ -90,29 +99,17 @@ const ManagerProfile = () => {
       first_name: user.first_name || '',
       last_name: user.last_name || '',
       phone_number: user.phone_number || '',
+      spa_id: user.spa_id || null,
     });
     setEditing(false);
-    setError('');
-    setSuccess('');
-  };
-
-  const getRoleDisplay = (role) => {
-    const roleMap = {
-      'super_admin': 'Super Admin',
-      'admin': 'Admin',
-      'spa_manager': 'SPA Manager',
-      'hr': 'HR',
-      'user': 'User'
-    };
-    return roleMap[role] || role;
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[var(--color-bg-secondary)] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-[var(--color-text-secondary)]">Loading profile...</p>
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent shadow-xl"></div>
+          <p className="text-[10px] font-black text-gray-400  tracking-[0.3em]">Synchronizing Profile...</p>
         </div>
       </div>
     );
@@ -120,14 +117,14 @@ const ManagerProfile = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-[var(--color-bg-secondary)] flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-[var(--color-text-secondary)]">Failed to load profile</p>
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
+        <div className="text-center p-12 bg-white rounded-3xl shadow-2xl">
+          <p className="text-gray-900 font-black text-xl mb-4">PROFILE ACCESS FAILED</p>
           <button
             onClick={loadProfile}
-            className="mt-4 px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-blue-700"
+            className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all active:scale-95 shadow-xl"
           >
-            Retry
+            Retry Connection
           </button>
         </div>
       </div>
@@ -135,227 +132,158 @@ const ManagerProfile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg-secondary)] py-8">
+    <div className="min-h-screen bg-[#F8FAFC] py-8 md:py-16">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[var(--color-text-primary)]">My Profile</h1>
-          <p className="mt-2 text-[var(--color-text-secondary)]">
-            View and manage your account information
-          </p>
+
+        {/* Page Title */}
+        <div className="mb-10 text-center sm:text-left">
+          <h1 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tighter">
+            Manager <span className="text-blue-600">Identity</span>
+          </h1>
+          <div className="flex items-center justify-center sm:justify-start gap-4 mt-2">
+            <span className="w-12 h-1 bg-gray-900 rounded-full"></span>
+            <p className="text-[10px] font-black text-gray-400  tracking-[0.3em]">Credentials & Branch Governance</p>
+          </div>
         </div>
 
-        {/* Success/Error Messages */}
-        {success && (
-          <div className="mb-6 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
-            {success}
-          </div>
-        )}
-        {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
-            {error}
-          </div>
-        )}
+        {/* Profile Master Card */}
+        <div className="bg-white rounded-[2.5rem] shadow-[0_25px_60px_rgba(0,0,0,0.05)] overflow-hidden border border-gray-50">
 
-        {/* Profile Card */}
-        <div className="bg-[var(--color-bg-primary)] rounded-lg shadow overflow-hidden">
-          <div className="px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-700">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <div className="h-16 w-16 bg-[var(--color-bg-primary)] rounded-full flex items-center justify-center">
-                  <HiOutlineUser className="h-8 w-8 text-blue-600" />
-                </div>
-                <div className="ml-4">
-                  <h2 className="text-xl font-bold text-white">
-                    {user.first_name} {user.last_name}
-                  </h2>
-                  <p className="text-blue-100">{getRoleDisplay(user.role)}</p>
-                </div>
-              </div>
-              {!editing && (
-                <button
-                  onClick={() => setEditing(true)}
-                  className="px-4 py-2 bg-[var(--color-bg-primary)] text-blue-600 rounded-lg hover:bg-blue-50 font-medium transition-colors"
-                >
-                  Edit Profile
-                </button>
-              )}
-            </div>
-          </div>
+          <ProfileHeader
+            firstName={user.first_name}
+            lastName={user.last_name}
+            role={user.role}
+            editing={editing}
+            onEditStart={() => setEditing(true)}
+          />
 
-          <div className="px-6 py-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Username */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <HiOutlineUser className="inline h-4 w-4 mr-1" />
-                  Username
-                </label>
-                {editing ? (
-                  <input
-                    type="text"
+          <div className="p-8 md:p-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
+
+              {/* Personal Intelligence section */}
+              <div className="md:col-span-2">
+                <h3 className="text-xs font-black text-gray-900  tracking-[0.2em] mb-6 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
+                  Personal Intelligence
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <ProfileInfoField
+                    label="Username"
                     name="username"
                     value={formData.username}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    icon={<HiOutlineUser />}
+                    editing={editing}
                   />
-                ) : (
-                  <p className="text-[var(--color-text-primary)]">{user.username}</p>
-                )}
-              </div>
-
-              {/* Email */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <HiOutlineMail className="inline h-4 w-4 mr-1" />
-                  Email
-                </label>
-                {editing ? (
-                  <input
-                    type="email"
+                  <ProfileInfoField
+                    label="Email Authority"
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    icon={<HiOutlineMail />}
+                    editing={editing}
+                    type="email"
                   />
-                ) : (
-                  <p className="text-[var(--color-text-primary)]">{user.email}</p>
-                )}
-              </div>
-
-              {/* First Name */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  First Name
-                </label>
-                {editing ? (
-                  <input
-                    type="text"
+                  <ProfileInfoField
+                    label="Legal First Name"
                     name="first_name"
                     value={formData.first_name}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    editing={editing}
                   />
-                ) : (
-                  <p className="text-[var(--color-text-primary)]">{user.first_name}</p>
-                )}
-              </div>
-
-              {/* Last Name */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Last Name
-                </label>
-                {editing ? (
-                  <input
-                    type="text"
+                  <ProfileInfoField
+                    label="Legal Last Name"
                     name="last_name"
                     value={formData.last_name}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    editing={editing}
                   />
-                ) : (
-                  <p className="text-[var(--color-text-primary)]">{user.last_name}</p>
-                )}
-              </div>
-
-              {/* Phone Number */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <HiOutlinePhone className="inline h-4 w-4 mr-1" />
-                  Phone Number
-                </label>
-                {editing ? (
-                  <input
-                    type="tel"
+                  <ProfileInfoField
+                    label="Direct Line"
                     name="phone_number"
                     value={formData.phone_number}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    icon={<HiOutlinePhone />}
+                    editing={editing}
+                    type="tel"
                   />
-                ) : (
-                  <p className="text-[var(--color-text-primary)]">{user.phone_number || 'Not provided'}</p>
-                )}
-              </div>
-
-              {/* Role (Read-only) */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <HiOutlineShieldCheck className="inline h-4 w-4 mr-1" />
-                  Role
-                </label>
-                <p className="text-[var(--color-text-primary)]">
-                  <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                    {getRoleDisplay(user.role)}
-                  </span>
-                </p>
-              </div>
-
-              {/* Account Status */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Account Status
-                </label>
-                <div className="flex items-center space-x-2">
-                  <span className={`px-2 py-1 rounded-full text-sm font-medium ${
-                    user.is_active 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-red-100 text-red-800'
-                  }`}>
-                    {user.is_active ? 'Active' : 'Inactive'}
-                  </span>
-                  {user.is_verified && (
-                    <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                      Verified
-                    </span>
-                  )}
+                  <div className="space-y-1">
+                    <label className="flex items-center gap-2 text-[10px] font-black text-gray-400  tracking-widest ml-1 mb-1">
+                      <HiOutlineShieldCheck className="text-blue-500 text-xs" />
+                      Status & Verification
+                    </label>
+                    <div className="flex items-center gap-3 px-1">
+                      <span className={`px-3 py-1.5 rounded-lg text-[10px] font-black  tracking-widest border ${user.is_active ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
+                        {user.is_active ? 'ACTIVE STATUS' : 'INACTIVE'}
+                      </span>
+                      {user.is_verified && (
+                        <span className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 border border-blue-100 rounded-lg text-[10px] font-black  tracking-widest">
+                          <HiOutlineBadgeCheck /> VERIFIED
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Last Login */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <HiOutlineCalendar className="inline h-4 w-4 mr-1" />
-                  Last Login
-                </label>
-                <p className="text-[var(--color-text-primary)]">
-                  {user.last_login_at 
-                    ? new Date(user.last_login_at).toLocaleString()
-                    : 'Never'}
-                </p>
+              {/* Branch Assignment Section */}
+              <div className="md:col-span-2 pt-8 border-t border-gray-100">
+                <h3 className="text-xs font-black text-gray-900  tracking-[0.2em] mb-6 flex items-center gap-2 text-blue-600">
+                  <HiOutlineOfficeBuilding className="text-sm" />
+                  Infrastructure Mapping
+                </h3>
+                <BranchAssignment
+                  spaId={formData.spa_id}
+                  spas={spas}
+                  editing={editing}
+                  onChange={(id) => setFormData(prev => ({ ...prev, spa_id: id }))}
+                />
               </div>
 
-              {/* Created At */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <HiOutlineCalendar className="inline h-4 w-4 mr-1" />
-                  Member Since
-                </label>
-                <p className="text-[var(--color-text-primary)]">
-                  {new Date(user.created_at).toLocaleDateString()}
-                </p>
-              </div>
+              {/* Account History (Read-only) */}
+              {!editing && (
+                <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6 pt-8 border-t border-gray-50">
+                  <div className="flex items-center gap-4 bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
+                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-gray-400 shadow-sm">
+                      <HiOutlineCalendar />
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-black text-gray-400  tracking-widest leading-none mb-1">Last Protocol Entry</p>
+                      <p className="text-xs font-extrabold text-gray-900">{user.last_login_at ? new Date(user.last_login_at).toLocaleString() : 'NEVER'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4 bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
+                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-gray-400 shadow-sm">
+                      <HiOutlineCalendar />
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-black text-gray-400  tracking-widest leading-none mb-1">Registration Date</p>
+                      <p className="text-xs font-extrabold text-gray-900">{new Date(user.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              {editing && (
+                <div className="md:col-span-2 mt-8 pt-8 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-end gap-4">
+                  <button
+                    onClick={handleCancel}
+                    className="w-full sm:w-auto px-10 py-4 bg-gray-100 text-gray-500 rounded-2xl font-black text-xs  tracking-widest hover:bg-gray-200 transition-all active:scale-95"
+                    disabled={saving}
+                  >
+                    Discard Changes
+                  </button>
+                  <button
+                    onClick={handleSave}
+                    className="w-full sm:w-auto px-12 py-4 bg-gray-900 text-white rounded-2xl font-black text-xs  tracking-widest hover:bg-black transition-all active:scale-95 disabled:opacity-50 shadow-2xl shadow-gray-200"
+                    disabled={saving}
+                  >
+                    {saving ? 'Synchronizing...' : 'Finalize Profile'}
+                  </button>
+                </div>
+              )}
             </div>
-
-            {/* Action Buttons */}
-            {editing && (
-              <div className="mt-6 flex items-center justify-end space-x-4">
-                <button
-                  onClick={handleCancel}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-[var(--color-bg-secondary)] transition-colors"
-                  disabled={saving}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSave}
-                  className="px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-                  disabled={saving}
-                >
-                  {saving ? 'Saving...' : 'Save Changes'}
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -364,4 +292,5 @@ const ManagerProfile = () => {
 };
 
 export default ManagerProfile;
+
 

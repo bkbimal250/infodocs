@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import toast from 'react-hot-toast';
 import apiClient from '../utils/apiConfig';
 import PersonalInformation from './compoenents/PersonalInformation';
 import DocumentUpload from './compoenents/DocumentUpload';
 import { Input, Select, Button, Label } from '../ui';
 import { apiCache } from '../utils/apiCache';
-import { debounce } from '../utils/debounce';
+import SpaSelectionField from './compoenents/SpaSelectionField';
 
 /**
  * Candidate Form
@@ -15,7 +15,10 @@ const CandidateForm = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [spas, setSpas] = useState([]);
   const [spaSearch, setSpaSearch] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
   const [loading, setLoading] = useState(false);
+  const dropdownRef = useRef(null);
   const [formData, setFormData] = useState({
     spa_id: '',
     first_name: '',
@@ -67,16 +70,16 @@ const CandidateForm = () => {
       // Check cache first
       const cacheKey = '/forms/spas';
       const cached = apiCache.get(cacheKey);
-      
+
       if (cached) {
         setSpas(cached);
         return;
       }
-      
+
       const response = await apiClient.get('/forms/spas');
       const spasData = response.data || [];
       setSpas(spasData);
-      
+
       // Cache the response
       apiCache.set(cacheKey, {}, spasData);
     } catch (err) {
@@ -91,6 +94,28 @@ const CandidateForm = () => {
       [name]: value,
     }));
   }, []);
+
+  const handleSpaSelect = useCallback((spa) => {
+    if (!spa) {
+      setFormData(prev => ({ ...prev, spa_id: '' }));
+      setSpaSearch('');
+    } else {
+      setFormData(prev => ({ ...prev, spa_id: spa.id }));
+      setSpaSearch(spa.name);
+    }
+    setIsDropdownOpen(false);
+  }, []);
+
+  const onSpaSearchChange = useCallback((e) => {
+    setSpaSearch(e.target.value);
+  }, []);
+
+  // Reset selected index when filtered list changes
+  useEffect(() => {
+    setSelectedIndex(-1);
+  }, [filteredSpas]);
+
+
 
   const handleFileChange = (e) => {
     const { name, files: fileList } = e.target;
@@ -117,7 +142,7 @@ const CandidateForm = () => {
       }
       return true;
     }
-    
+
     if (step === 2) {
       // Validate required personal information fields
       const requiredFields = [
@@ -133,16 +158,16 @@ const CandidateForm = () => {
         'work_experience',
         'Therapist_experience'
       ];
-      
+
       const missingFields = requiredFields.filter(field => !formData[field]?.trim());
-      
+
       if (missingFields.length > 0) {
         toast.error(`Please fill in all required fields: ${missingFields.join(', ')}`);
         return false;
       }
       return true;
     }
-    
+
     return true;
   };
 
@@ -186,7 +211,7 @@ const CandidateForm = () => {
           }
         }
       });
-      
+
       // Don't send spa_name_text as it's not needed when spa_id is selected
 
       // Add files
@@ -221,7 +246,7 @@ const CandidateForm = () => {
       });
 
       toast.success('Form submitted successfully!');
-      
+
       // Reset form
       setFormData({
         spa_id: '',
@@ -262,192 +287,118 @@ const CandidateForm = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-4 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-4 px-3 sm:px-4">
       <div className="max-w-3xl mx-auto">
-        {/* Header Section */}
-        <div className="text-center mb-4">
-       
-        </div>
 
         {/* Step Indicator */}
-        <div className="bg-white rounded-lg shadow-md p-4 mb-4 border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 flex-1">
-              {/* Step 1 */}
-              <div className="flex items-center gap-2 flex-1">
-                <div className={`flex items-center justify-center w-8 h-8 rounded-full font-semibold text-sm ${
-                  currentStep >= 1 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-gray-200 text-gray-600'
-                }`}>
-                  {currentStep > 1 ? '✓' : '1'}
-                </div>
-                <div className="flex-1">
-                  <div className={`text-xs font-medium ${currentStep >= 1 ? 'text-blue-600' : 'text-gray-500'}`}>
-                    SPA Selection
+        <div className="bg-white rounded-xl shadow-sm p-4 mb-4 border border-gray-500">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+
+            {[1, 2, 3].map((step, index) => {
+              const labels = ['SPA Selection', 'Personal Info', 'Documents'];
+              return (
+                <div key={step} className="flex items-center gap-3 flex-1">
+
+                  {/* Circle */}
+                  <div
+                    className={`flex items-center justify-center w-9 h-9 rounded-full text-sm font-semibold shrink-0
+                  ${currentStep >= step ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'}`}
+                  >
+                    {currentStep > step ? '✓' : step}
                   </div>
-                </div>
-              </div>
-              
-              {/* Connector */}
-              <div className={`h-0.5 flex-1 mx-2 ${currentStep >= 2 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
-              
-              {/* Step 2 */}
-              <div className="flex items-center gap-2 flex-1">
-                <div className={`flex items-center justify-center w-8 h-8 rounded-full font-semibold text-sm ${
-                  currentStep >= 2 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-gray-200 text-gray-600'
-                }`}>
-                  {currentStep > 2 ? '✓' : '2'}
-                </div>
-                <div className="flex-1">
-                  <div className={`text-xs font-medium ${currentStep >= 2 ? 'text-blue-600' : 'text-gray-500'}`}>
-                    Personal Info
+
+                  {/* Label */}
+                  <div className="flex-1">
+                    <p
+                      className={`text-xs sm:text-sm font-medium
+                    ${currentStep >= step ? 'text-blue-600' : 'text-gray-500'}`}
+                    >
+                      {labels[index]}
+                    </p>
                   </div>
+
+                  {/* Line (hidden on mobile) */}
+                  {step !== 3 && (
+                    <div className={`hidden sm:block h-0.5 flex-1 mx-2
+                    ${currentStep > step ? 'bg-blue-600' : 'bg-gray-200'}`}
+                    />
+                  )}
                 </div>
-              </div>
-              
-              {/* Connector */}
-              <div className={`h-0.5 flex-1 mx-2 ${currentStep >= 3 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
-              
-              {/* Step 3 */}
-              <div className="flex items-center gap-2 flex-1">
-                <div className={`flex items-center justify-center w-8 h-8 rounded-full font-semibold text-sm ${
-                  currentStep >= 3 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-gray-200 text-gray-600'
-                }`}>
-                  3
-                </div>
-                <div className="flex-1">
-                  <div className={`text-xs font-medium ${currentStep >= 3 ? 'text-blue-600' : 'text-gray-500'}`}>
-                    Documents
-                  </div>
-                </div>
-              </div>
-            </div>
+              );
+            })}
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-4 space-y-4 border border-gray-100">
-          {/* Step 1: SPA Information */}
+        {/* Form */}
+        <form className="bg-white rounded-xl shadow-sm p-4 sm:p-6 space-y-5 border border-gray-500">
+
+          {/* Step 1 */}
           {currentStep === 1 && (
-            <div className="border-b border-gray-200 pb-3">
-              <h2 className="text-base font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
+            <div className="space-y-4">
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <span className="text-blue-600">📍</span>
                 SPA Information <span className="text-red-500">*</span>
               </h2>
-              <div className="space-y-2">
-                <div>
-                  <Label required>
-                    SPA Location
-                  </Label>
 
-                  {/* SPA Search */}
-                  <div className="relative mb-2">
-                    <Input
-                      type="text"
-                      value={spaSearch}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        setSpaSearch(value);
-                        // Clear selection if search changes and selected SPA is not in filtered results
-                        if (formData.spa_id) {
-                          const selectedSpa = filteredSpas.find(s => s.id === parseInt(formData.spa_id));
-                          if (!selectedSpa) {
-                            setFormData(prev => ({ ...prev, spa_id: '' }));
-                          }
-                        }
-                      }}
-                      placeholder="Search by name, code, area, or city"
-                    />
-                    {spaSearch && (
-                      <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs text-gray-500">
-                        {filteredSpas.length} {filteredSpas.length === 1 ? 'result' : 'results'}
-                      </span>
-                    )}
-                  </div>
+              <SpaSelectionField
+                spaSearch={spaSearch}
+                handleSpaSearchChange={onSpaSearchChange}
+                selectedSpaId={formData.spa_id}
+                selectedSpa={spas.find(s => s.id === formData.spa_id)}
+                handleSpaSelect={handleSpaSelect}
+                isDropdownOpen={isDropdownOpen}
+                setIsDropdownOpen={setIsDropdownOpen}
+                filteredSpas={filteredSpas}
+                spaLoading={loading && spas.length === 0}
+                required={true}
+              />
 
-                  <select
-                    name="spa_id"
-                    value={formData.spa_id}
-                    onChange={handleInputChange}
-                    required
-                    size={spaSearch ? Math.min(filteredSpas.length + 1, 8) : 1}
-                    className={`w-full px-2 py-1.5 text-sm border rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent ${
-                      !formData.spa_id 
-                        ? 'border-red-300' 
-                        : 'border-gray-300'
-                    } ${spaSearch ? 'overflow-y-auto' : ''}`}
-                  >
-                    <option value="">-- Select SPA {spaSearch && filteredSpas.length > 0 ? `(${filteredSpas.length} found)` : ''} --</option>
-                    {filteredSpas.length > 0 ? (
-                      filteredSpas.map((spa) => (
-                        <option key={spa.id} value={spa.id}>
-                          {spa.code ? `[${spa.code}] ` : ''}{spa.name}
-                          {spa.area ? ` - ${spa.area}` : ''}
-                          {spa.city ? `, ${spa.city}` : ''}
-                        </option>
-                      ))
-                    ) : spaSearch ? (
-                      <option value="" disabled>No SPAs found matching "{spaSearch}"</option>
-                    ) : (
-                      spas.map((spa) => (
-                        <option key={spa.id} value={spa.id}>
-                          {spa.code ? `[${spa.code}] ` : ''}{spa.name}
-                          {spa.area ? ` - ${spa.area}` : ''}
-                          {spa.city ? `, ${spa.city}` : ''}
-                        </option>
-                      ))
-                    )}
-                  </select>
-                  {!formData.spa_id && !spaSearch && (
-                    <p className="mt-1 text-xs text-red-600">Please select a SPA location from the list</p>
-                  )}
-                  {spaSearch && filteredSpas.length === 0 && (
-                    <p className="mt-1 text-xs text-amber-600">No SPAs found. Try a different search term.</p>
-                  )}
-                </div>
-              </div>
+
             </div>
           )}
 
-          {/* Step 2: Personal Information Component */}
+          {/* Step 2 */}
           {currentStep === 2 && (
-            <PersonalInformation formData={formData} handleInputChange={handleInputChange} />
+            <div className="space-y-4">
+              <PersonalInformation
+                formData={formData}
+                handleInputChange={handleInputChange}
+              />
+            </div>
           )}
 
-          {/* Step 3: Document Upload Component */}
+          {/* Step 3 */}
           {currentStep === 3 && (
-            <DocumentUpload 
-              files={files} 
-              handleFileChange={handleFileChange} 
-              setFiles={setFiles}
-            />
+            <div className="space-y-4">
+              <DocumentUpload
+                files={files}
+                handleFileChange={handleFileChange}
+                setFiles={setFiles}
+              />
+            </div>
           )}
 
-          {/* Navigation Buttons */}
-          <div className="flex gap-2 pt-3 border-t border-gray-200">
+          {/* Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
+
             {currentStep > 1 && (
               <Button
                 type="button"
                 onClick={handlePrevious}
                 variant="secondary"
+                className="w-full sm:w-auto"
               >
                 Previous
               </Button>
             )}
-            
+
             {currentStep < 3 ? (
               <Button
                 type="button"
                 onClick={handleNext}
                 variant="primary"
                 fullWidth
+                className="w-full"
               >
                 Next
               </Button>
@@ -458,19 +409,21 @@ const CandidateForm = () => {
                 variant="primary"
                 fullWidth
                 loading={loading}
+                className="w-full"
               >
                 {loading ? 'Submitting...' : 'Submit Application'}
               </Button>
             )}
           </div>
         </form>
-        
-        {/* Proprietor Information */}
-        <div className="mt-4 p-2 bg-gray-100 rounded text-center">
-          <p className="text-xs text-gray-600">
+
+        {/* Footer */}
+        <div className="mt-4 p-3 bg-gray-100 rounded-lg text-center">
+          <p className="text-xs sm:text-sm text-gray-600">
             <span className="font-semibold">Proprietor:</span> Diisha Online Solution
           </p>
         </div>
+
       </div>
     </div>
   );

@@ -26,10 +26,10 @@ const ViewQuery = ({ query, onClose }) => {
       resolved: { color: 'bg-green-100 text-green-800', icon: HiCheckCircle, text: 'Resolved' },
       closed: { color: 'bg-gray-100 text-gray-800', icon: HiXCircle, text: 'Closed' },
     };
-    
+
     const config = statusConfig[status] || statusConfig.pending;
     const Icon = config.icon;
-    
+
     return (
       <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold ${config.color}`}>
         <Icon className="w-4 h-4" />
@@ -66,7 +66,7 @@ const ViewQuery = ({ query, onClose }) => {
           {/* Info Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">SPA</label>
+              <label className="block text-xs font-semibold text-gray-500  tracking-wide mb-2">SPA</label>
               <p className="text-base font-semibold text-gray-900">{query.spa_name || 'N/A'}</p>
               {query.spa_address && (
                 <p className="text-sm text-gray-600 mt-2">{query.spa_address}</p>
@@ -79,23 +79,23 @@ const ViewQuery = ({ query, onClose }) => {
             </div>
 
             <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Query Type</label>
+              <label className="block text-xs font-semibold text-gray-500  tracking-wide mb-2">Query Type</label>
               <p className="text-base font-semibold text-gray-900">{query.query_type_name || 'N/A'}</p>
             </div>
 
             <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Contact Number</label>
+              <label className="block text-xs font-semibold text-gray-500  tracking-wide mb-2">Contact Number</label>
               <p className="text-base font-semibold text-gray-900">{query.contact_number || 'N/A'}</p>
             </div>
 
             <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Created At</label>
+              <label className="block text-xs font-semibold text-gray-500  tracking-wide mb-2">Created At</label>
               <p className="text-sm text-gray-900">{formatDateFull(query.created_at)}</p>
             </div>
 
             {query.updated_at && (
               <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Updated At</label>
+                <label className="block text-xs font-semibold text-gray-500  tracking-wide mb-2">Updated At</label>
                 <p className="text-sm text-gray-900">{formatDateFull(query.updated_at)}</p>
               </div>
             )}
@@ -103,14 +103,14 @@ const ViewQuery = ({ query, onClose }) => {
 
           {/* Query Content */}
           <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Query</label>
+            <label className="block text-xs font-semibold text-gray-500  tracking-wide mb-3">Query</label>
             <p className="text-sm text-gray-900 whitespace-pre-wrap leading-relaxed">{query.query}</p>
           </div>
 
           {/* Admin Remark */}
           {query.admin_remark && (
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200 p-5 shadow-sm">
-              <label className="block text-xs font-semibold text-blue-700 uppercase tracking-wide mb-3 flex items-center gap-2">
+              <label className="block text-xs font-semibold text-blue-700  tracking-wide mb-3 flex items-center gap-2">
                 <HiCheckCircle className="w-4 h-4" />
                 Admin Remark
               </label>

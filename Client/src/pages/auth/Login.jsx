@@ -2,11 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { authApi } from '../../api/Auth/authApi';
 
-/**
- * Login Page
- * Simple, clean Facebook-style login page
- */
-const backgroundImage = '/bgimages/background.jpg';
+
 const Login = () => {
   const navigate = useNavigate();
   const [loginMethod, setLoginMethod] = useState('password');
@@ -101,14 +97,14 @@ const Login = () => {
         if (response.data.user) {
           localStorage.setItem('user', JSON.stringify(response.data.user));
         }
-        
+
         const user = response.data.user;
         const dashboardPath = getDashboardPath(user.role);
         navigate(dashboardPath, { replace: true });
       }
     } catch (err) {
       let errorMessage = 'Login failed. Please try again.';
-      
+
       if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
         errorMessage = 'Request timed out. Please ensure the backend server is running.';
       } else if (err.code === 'ERR_NETWORK' || err.message === 'Network Error') {
@@ -120,7 +116,7 @@ const Login = () => {
       } else if (err.message) {
         errorMessage = err.message;
       }
-      
+
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -128,26 +124,24 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg-secondary)] flex items-center justify-center py-8 px-4"
-    
-    style={{
-      backgroundImage: `url(${backgroundImage})`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-    }}>
-      <div className="w-full max-w-md">
-
-
+    <div className="min-h-screen bg-background flex flex-col sm:items-center sm:justify-center">
+      <div className="w-full sm:max-w-[440px]">
         {/* Login Card */}
-        <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-sm border border-[var(--color-border-primary)] p-6">
+        <div className="bg-card min-h-[100dvh] sm:min-h-0 sm:rounded-[2rem] sm:shadow-card sm:border border-border/50 p-8 sm:p-10 flex flex-col justify-center transition-all duration-300">
+
+          <div className="mb-8 text-center sm:text-left">
+            <h1 className="text-3xl font-black text-text-primary tracking-tight mb-2">Welcome Back</h1>
+            <p className="text-sm font-medium text-text-secondary tracking-tight">Login to your workspace to continue.</p>
+          </div>
+
           {error && (
-            <div className="mb-4 p-3 bg-[var(--color-error-light)] border border-[var(--color-error-light)] rounded text-sm text-[var(--color-error-dark)]">
+            <div className="alert alert-danger mb-6 animate-in fade-in slide-in-from-top-2 duration-300">
               {error}
             </div>
           )}
 
           {/* Login Method Toggle */}
-          <div className="flex gap-2 mb-4 border-b border-[var(--color-border-primary)] pb-4">
+          <div className="flex gap-4 mb-8 border-b border-border/50 pb-2">
             <button
               onClick={() => {
                 setLoginMethod('password');
@@ -155,11 +149,10 @@ const Login = () => {
                 setError(null);
                 setFormData({ ...formData, otp: '' });
               }}
-              className={`flex-1 py-2 text-sm font-medium ${
-                loginMethod === 'password'
-                  ? 'text-[var(--color-primary)] border-b-2 border-[var(--color-primary)]'
-                  : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
-              }`}
+              className={`pb-2 text-sm font-black uppercase tracking-widest transition-all ${loginMethod === 'password'
+                ? 'text-primary border-b-2 border-primary'
+                : 'text-text-muted hover:text-text-secondary'
+                }`}
             >
               Password
             </button>
@@ -170,43 +163,44 @@ const Login = () => {
                 setError(null);
                 setFormData({ ...formData, otp: '' });
               }}
-              className={`flex-1 py-2 text-sm font-medium ${
-                loginMethod === 'otp'
-                  ? 'text-[var(--color-primary)] border-b-2 border-[var(--color-primary)]'
-                  : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
-              }`}
+              className={`pb-2 text-sm font-black uppercase tracking-widest transition-all ${loginMethod === 'otp'
+                ? 'text-primary border-b-2 border-primary'
+                : 'text-text-muted hover:text-text-secondary'
+                }`}
             >
-              OTP
+              OTP Login
             </button>
           </div>
 
           {loginMethod === 'password' ? (
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div>
+            <form onSubmit={handleLogin} className="space-y-5">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-text-muted uppercase tracking-widest ml-1">Identity</label>
                 <input
                   type="text"
                   name="username"
                   value={formData.username}
                   onChange={handleInputChange}
-                  placeholder="Username or email"
+                  placeholder="Username or Email"
                   required
-                  className="w-full px-4 py-2.5 border border-[var(--color-border-primary)] rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
+                  className="input"
                 />
               </div>
-              <div className="relative">
+              <div className="space-y-1 relative">
+                <label className="text-[10px] font-black text-text-muted uppercase tracking-widest ml-1">Pass-key</label>
                 <input
                   type={showPassword ? 'text' : 'password'}
                   name="password"
                   value={formData.password}
                   onChange={handleInputChange}
-                  placeholder="Password"
+                  placeholder="••••••••"
                   required
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 pr-10"
+                  className="input pr-12"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[var(--color-text-secondary)] text-sm"
+                  className="absolute right-4 top-[34px] text-text-muted hover:text-primary transition-colors text-[10px] font-black uppercase"
                 >
                   {showPassword ? 'Hide' : 'Show'}
                 </button>
@@ -214,48 +208,50 @@ const Login = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-[var(--color-primary)] text-[var(--color-text-inverse)] py-2.5 px-4 rounded-md font-semibold hover:bg-[var(--color-primary-dark)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="btn btn-primary w-full py-4 text-[11px] shadow-xl shadow-primary/20"
               >
-                {loading ? 'Signing in...' : 'Log In'}
+                {loading ? 'Authenticating...' : 'Sign In Now'}
               </button>
             </form>
           ) : (
-            <form onSubmit={otpSent ? handleLogin : handleRequestOTP} className="space-y-4">
-              <div>
+            <form onSubmit={otpSent ? handleLogin : handleRequestOTP} className="space-y-5">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-text-muted uppercase tracking-widest ml-1">Email Address</label>
                 <input
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  placeholder="Email address"
+                  placeholder="Enter your email"
                   required
                   disabled={otpSent}
-                  className="w-full px-4 py-2.5 border border-[var(--color-border-primary)] rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] disabled:bg-[var(--color-gray-50)]"
+                  className="input disabled:opacity-60"
                 />
               </div>
               {otpSent && (
-                <div>
+                <div className="space-y-1 animate-in zoom-in-95 duration-300">
+                  <label className="text-[10px] font-black text-text-muted uppercase tracking-widest ml-1 text-center block w-full">Verification Code</label>
                   <input
                     type="text"
                     name="otp"
                     value={formData.otp}
                     onChange={handleInputChange}
-                    placeholder="Enter OTP"
+                    placeholder="000000"
                     required
                     maxLength={6}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-center text-lg tracking-widest"
+                    className="input text-center text-xl tracking-[0.5em] font-black py-4"
                   />
-                  <p className="mt-1 text-xs text-[var(--color-text-secondary)] text-center">
-                    OTP sent to {formData.email}
+                  <p className="mt-2 text-[10px] font-bold text-text-secondary text-center">
+                    Code sent to <span className="text-primary">{formData.email}</span>
                   </p>
                 </div>
               )}
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-[var(--color-primary)] text-[var(--color-text-inverse)] py-2.5 px-4 rounded-md font-semibold hover:bg-[var(--color-primary-dark)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="btn btn-primary w-full py-4 text-[11px] shadow-xl shadow-primary/20"
               >
-                {loading ? 'Processing...' : otpSent ? 'Verify & Sign In' : 'Send OTP'}
+                {loading ? 'Processing...' : otpSent ? 'Verify & Access' : 'Request Secure OTP'}
               </button>
               {otpSent && (
                 <button
@@ -264,25 +260,23 @@ const Login = () => {
                     setOtpSent(false);
                     setFormData({ ...formData, otp: '' });
                   }}
-                  className="w-full text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] py-2"
+                  className="w-full text-[10px] font-black text-text-muted hover:text-primary uppercase tracking-widest transition-colors py-2"
                 >
-                  Use different email
+                  Change Email Alias
                 </button>
               )}
             </form>
           )}
 
           {/* Links */}
-          <div className="mt-6 pt-6 border-t border-[var(--color-border-primary)] text-center space-y-2">
-            <p className="text-sm text-[var(--color-text-secondary)]">
-              <Link to="/forgot-password" className="text-[var(--color-primary)] hover:underline font-medium">
-                Forgot password?
-              </Link>
-            </p>
-            <p className="text-sm text-[var(--color-text-secondary)]">
-              Don't have an account?{' '}
-              <Link to="/register" className="text-[var(--color-primary)] hover:underline font-medium">
-                Sign up
+          <div className="mt-10 pt-8 border-t border-border/50 flex flex-col gap-4 text-center">
+            <Link to="/forgot-password" className="text-[10px] font-black text-primary uppercase tracking-widest hover:underline">
+              Reset Pass-key
+            </Link>
+            <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">
+              No account?{' '}
+              <Link to="/register" className="text-primary hover:underline">
+                Register Platform
               </Link>
             </p>
           </div>

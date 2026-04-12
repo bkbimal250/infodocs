@@ -14,7 +14,7 @@ const CandidatesTable = ({ candidates, loading, onEdit, onDelete }) => {
 
   const preloadAndConvertImages = async (element) => {
     const images = element.querySelectorAll('img');
-    
+
     // First, ensure all images are loaded (including data URLs)
     const loadPromises = Array.from(images).map((img) => {
       return new Promise((resolve) => {
@@ -22,13 +22,13 @@ const CandidatesTable = ({ candidates, loading, onEdit, onDelete }) => {
           resolve();
           return;
         }
-        
+
         // If already a data URL, it's ready
         if (img.src.startsWith('data:')) {
           resolve();
           return;
         }
-        
+
         // If image is already loaded
         if (img.complete && img.naturalHeight !== 0) {
           resolve();
@@ -55,7 +55,7 @@ const CandidatesTable = ({ candidates, loading, onEdit, onDelete }) => {
 
         const newImg = new Image();
         newImg.crossOrigin = 'anonymous';
-        
+
         newImg.onload = () => {
           try {
             const canvas = document.createElement('canvas');
@@ -72,12 +72,12 @@ const CandidatesTable = ({ candidates, loading, onEdit, onDelete }) => {
             resolve(); // Continue - html2canvas will try to handle it
           }
         };
-        
+
         newImg.onerror = () => {
           console.warn('Failed to load image for conversion:', img.src);
           resolve(); // Continue even if image fails
         };
-        
+
         newImg.src = img.src;
       });
     });
@@ -89,11 +89,11 @@ const CandidatesTable = ({ candidates, loading, onEdit, onDelete }) => {
 
   const handleDownloadPDF = async (candidate, type) => {
     if (!candidate) return;
-    
+
     try {
       setDownloading(true);
       setDownloadingId(candidate.id);
-      
+
       // Create a temporary container for the form
       const tempContainer = document.createElement('div');
       tempContainer.style.position = 'absolute';
@@ -101,42 +101,42 @@ const CandidatesTable = ({ candidates, loading, onEdit, onDelete }) => {
       tempContainer.style.top = '-9999px';
       tempContainer.style.width = '210mm';
       document.body.appendChild(tempContainer);
-      
+
       // Render the form component in the temp container
       const root = createRoot(tempContainer);
-      
+
       const FormComponent = type === 'application' ? PrintApplicationDetails : PrintUdertakingDetails;
       root.render(
-        <FormComponent 
-          data={{ candidate }} 
+        <FormComponent
+          data={{ candidate }}
           onDownload={null}
         />
       );
-      
+
       // Wait for component to render and images to load
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       // Get the form element
       const formElement = tempContainer.querySelector('.print-container') || tempContainer.querySelector('.a4-page') || tempContainer;
-      
+
       if (!formElement) {
         throw new Error('Form element not found');
       }
-      
+
       // Preload and convert all images to base64
       await preloadAndConvertImages(formElement);
-      
+
       // Dynamically import html2pdf.js
       const html2pdf = await import('html2pdf.js');
       const html2pdfLib = html2pdf.default || html2pdf;
-      
+
       const opt = {
         margin: 0.5,
         filename: `${type === 'application' ? 'Job_Application_Form' : 'Undertaking_Form'}_${candidate.id || 'form'}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { 
-          scale: 2, 
-          useCORS: true, 
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
           logging: false,
           allowTaint: true,
           backgroundColor: '#ffffff',
@@ -147,7 +147,7 @@ const CandidatesTable = ({ candidates, loading, onEdit, onDelete }) => {
       };
 
       await html2pdfLib().set(opt).from(formElement).save();
-      
+
       // Cleanup
       root.unmount();
       document.body.removeChild(tempContainer);
@@ -199,25 +199,25 @@ const CandidatesTable = ({ candidates, loading, onEdit, onDelete }) => {
         <table className="min-w-full divide-y divide-[var(--color-border-primary)]">
           <thead className="bg-[var(--color-gray-50)]">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)]  tracking-wider">
                 Name
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">
                 Contact
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">
                 Position
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">
                 SPA Location
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">
                 Experience
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">
                 Submitted
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">
                 Actions
               </th>
             </tr>

@@ -29,7 +29,7 @@ const AddSpaPage = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
+
     if (type === "checkbox") {
       setFormData({
         ...formData,
@@ -42,7 +42,7 @@ const AddSpaPage = () => {
         [name]: file || "",
       });
     } else {
-      // Auto uppercase + remove only leading spaces for text inputs
+      // Auto  + remove only leading spaces for text inputs
       const processedValue = value.toUpperCase().trimStart();
       setFormData({
         ...formData,
@@ -97,8 +97,8 @@ const AddSpaPage = () => {
       const detailMsg = err.response?.data?.detail;
       setError(
         (typeof detailMsg === "string" ? detailMsg : JSON.stringify(detailMsg)) ||
-          err.response?.data?.error ||
-          "Failed to add SPA"
+        err.response?.data?.error ||
+        "Failed to add SPA"
       );
     } finally {
       setLoading(false);
@@ -108,8 +108,8 @@ const AddSpaPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[var(--color-bg-secondary)] to-[var(--color-gray-100)] py-8 px-4">
       <div className="max-w-4xl mx-auto bg-[var(--color-bg-primary)] rounded-xl shadow-lg p-8">
-        <button 
-          onClick={() => navigate('/admin/spas')} 
+        <button
+          onClick={() => navigate('/admin/spas')}
           className="text-[var(--color-primary)] hover:text-[var(--color-primary-dark)] mb-6 flex items-center gap-2 font-medium transition-colors"
         >
           <FaArrowLeft className="mr-1" /> Back to SPAs

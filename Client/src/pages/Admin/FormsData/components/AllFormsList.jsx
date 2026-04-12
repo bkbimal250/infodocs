@@ -108,13 +108,13 @@ const AllFormsList = ({ candidateForms, hiringForms, loading, onRefresh }) => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Candidate Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Position</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">SPA</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created By</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 ">ID</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 ">Candidate Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 ">Position</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 ">SPA</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 ">Created By</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 ">Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 ">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -170,12 +170,12 @@ const AllFormsList = ({ candidateForms, hiringForms, loading, onRefresh }) => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">SPA</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created By</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 ">ID</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 ">Role</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 ">SPA</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 ">Created By</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 ">Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 ">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">

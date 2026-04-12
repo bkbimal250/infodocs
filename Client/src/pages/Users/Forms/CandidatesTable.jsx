@@ -56,10 +56,10 @@ const CandidatesTable = ({ onEdit, onDelete, filter = {} }) => {
         const fullName = `${candidate.first_name} ${candidate.middle_name || ''} ${candidate.last_name}`.toLowerCase();
         const phone = candidate.phone_number?.toLowerCase() || '';
         const position = candidate.position_applied_for?.toLowerCase() || '';
-        
-        if (!fullName.includes(searchLower) && 
-            !phone.includes(searchLower) && 
-            !position.includes(searchLower)) {
+
+        if (!fullName.includes(searchLower) &&
+          !phone.includes(searchLower) &&
+          !position.includes(searchLower)) {
           return false;
         }
       }
@@ -73,7 +73,7 @@ const CandidatesTable = ({ onEdit, onDelete, filter = {} }) => {
     });
 
     setFilteredCandidates(filtered);
-    
+
     // Reset to first page when filter changes
     setCurrentPage(1);
   }, [allCandidates, filter]);
@@ -103,7 +103,7 @@ const CandidatesTable = ({ onEdit, onDelete, filter = {} }) => {
 
   const preloadAndConvertImages = async (element) => {
     const images = element.querySelectorAll('img');
-    
+
     // First, ensure all images are loaded (including data URLs)
     const loadPromises = Array.from(images).map((img) => {
       return new Promise((resolve) => {
@@ -111,13 +111,13 @@ const CandidatesTable = ({ onEdit, onDelete, filter = {} }) => {
           resolve();
           return;
         }
-        
+
         // If already a data URL, it's ready
         if (img.src.startsWith('data:')) {
           resolve();
           return;
         }
-        
+
         // If image is already loaded
         if (img.complete && img.naturalHeight !== 0) {
           resolve();
@@ -144,7 +144,7 @@ const CandidatesTable = ({ onEdit, onDelete, filter = {} }) => {
 
         const newImg = new Image();
         newImg.crossOrigin = 'anonymous';
-        
+
         newImg.onload = () => {
           try {
             const canvas = document.createElement('canvas');
@@ -161,12 +161,12 @@ const CandidatesTable = ({ onEdit, onDelete, filter = {} }) => {
             resolve(); // Continue - html2canvas will try to handle it
           }
         };
-        
+
         newImg.onerror = () => {
           console.warn('Failed to load image for conversion:', img.src);
           resolve(); // Continue even if image fails
         };
-        
+
         newImg.src = img.src;
       });
     });
@@ -178,24 +178,24 @@ const CandidatesTable = ({ onEdit, onDelete, filter = {} }) => {
 
   const handleDownloadPDF = async (element) => {
     if (!element) return;
-    
+
     try {
       setDownloading(true);
-      
+
       // Preload and convert all images to base64
       await preloadAndConvertImages(element);
-      
+
       // Dynamically import html2pdf.js
       const html2pdf = await import('html2pdf.js');
       const html2pdfLib = html2pdf.default || html2pdf;
-      
+
       const opt = {
         margin: 0.5,
         filename: `${printType === 'application' ? 'Job_Application_Form' : 'Undertaking_Form'}_${selectedCandidate?.id || 'form'}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { 
-          scale: 2, 
-          useCORS: true, 
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
           logging: false,
           allowTaint: true, // Allow taint if base64 conversion fails
           backgroundColor: '#ffffff',
@@ -269,25 +269,25 @@ const CandidatesTable = ({ onEdit, onDelete, filter = {} }) => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-[var(--color-bg-secondary)]">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)]  tracking-wider">
                       Name
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)]  tracking-wider">
                       Position
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)]  tracking-wider">
                       Phone
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)]  tracking-wider">
                       SPA Location
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)]  tracking-wider">
                       Submitted Date
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)]  tracking-wider">
                       Created By
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)]  tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -442,13 +442,13 @@ const CandidatesTable = ({ onEdit, onDelete, filter = {} }) => {
                 {/* Modal Content */}
                 <div className="overflow-y-auto flex-1 bg-[var(--color-bg-primary)]" ref={printContentRef}>
                   {printType === 'application' ? (
-                    <PrintApplicationDetails 
-                      data={{ candidate: selectedCandidate }} 
+                    <PrintApplicationDetails
+                      data={{ candidate: selectedCandidate }}
                       onDownload={handleDownloadPDF}
                     />
                   ) : (
-                    <PrintUdertakingDetails 
-                      data={{ candidate: selectedCandidate }} 
+                    <PrintUdertakingDetails
+                      data={{ candidate: selectedCandidate }}
                       onDownload={handleDownloadPDF}
                     />
                   )}

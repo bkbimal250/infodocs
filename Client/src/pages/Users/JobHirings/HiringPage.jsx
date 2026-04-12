@@ -265,10 +265,10 @@ const HiringPage = () => {
         {/* Stats Cards */}
         {!error && hiringForms.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-            <div className="bg-[var(--color-bg-primary)] rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow p-5">
+            <div className="bg-[var(--color-bg-primary)] rounded-xl border border-gray-500 shadow-sm hover:shadow-md transition-shadow p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-secondary)]">
+                  <p className="text-xs font-medium  tracking-wide text-[var(--color-text-secondary)]">
                     Total Submissions
                   </p>
                   <p className="mt-2 text-2xl font-bold text-[var(--color-text-primary)]">
@@ -281,10 +281,10 @@ const HiringPage = () => {
               </div>
             </div>
 
-            <div className="bg-[var(--color-bg-primary)] rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow p-5">
+            <div className="bg-[var(--color-bg-primary)] rounded-xl border border-gray-500 shadow-sm hover:shadow-md transition-shadow p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-secondary)]">
+                  <p className="text-xs font-medium  tracking-wide text-[var(--color-text-secondary)]">
                     Different Roles
                   </p>
                   <p className="mt-2 text-2xl font-bold text-[var(--color-text-primary)]">
@@ -303,10 +303,10 @@ const HiringPage = () => {
               </div>
             </div>
 
-            <div className="bg-[var(--color-bg-primary)] rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow p-5">
+            <div className="bg-[var(--color-bg-primary)] rounded-xl border border-gray-500 shadow-sm hover:shadow-md transition-shadow p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-secondary)]">
+                  <p className="text-xs font-medium  tracking-wide text-[var(--color-text-secondary)]">
                     SPA Locations
                   </p>
                   <p className="mt-2 text-2xl font-bold text-[var(--color-text-primary)]">
@@ -328,7 +328,7 @@ const HiringPage = () => {
         )}
 
         {/* Filters */}
-        <div className="bg-[var(--color-bg-primary)] rounded-xl border border-gray-100 shadow-sm p-4 md:p-5">
+        <div className="bg-[var(--color-bg-primary)] rounded-xl border border-gray-500 shadow-sm p-4 md:p-5">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-base md:text-lg font-semibold text-[var(--color-text-primary)]">
               Filter & Search
@@ -345,8 +345,8 @@ const HiringPage = () => {
         </div>
 
         {/* Hiring Table */}
-        <div className="bg-[var(--color-bg-primary)] rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="border-b border-gray-100 px-4 md:px-5 py-3 flex items-center justify-between">
+        <div className="bg-[var(--color-bg-primary)] rounded-xl border border-gray-500 shadow-sm overflow-hidden">
+          <div className="border-b border-gray-500 px-4 md:px-5 py-3 flex items-center justify-between">
             <h2 className="text-sm md:text-base font-semibold text-[var(--color-text-primary)]">
               Hiring Forms ({filteredForms.length})
             </h2>
@@ -379,7 +379,7 @@ const HiringPage = () => {
           )}
 
           {filteredForms.length > itemsPerPage && (
-            <div className="border-t border-gray-100 px-4 md:px-5 py-3 bg-[var(--color-bg-secondary)]/60">
+            <div className="border-t border-gray-500 px-4 md:px-5 py-3 bg-[var(--color-bg-secondary)]/60">
               <Pagination
                 currentPage={currentPage}
                 totalPages={Math.ceil(filteredForms.length / itemsPerPage)}

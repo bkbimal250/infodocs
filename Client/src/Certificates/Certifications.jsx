@@ -12,28 +12,27 @@ import { apiCache } from '../utils/apiCache';
  * Memoized Template Card Component
  * Prevents unnecessary re-renders
  */
-const TemplateImage='/bgimages/templateImage.jpg';
+const TemplateImage = '/bgimages/templateImage.jpg';
 
 const TemplateCard = memo(({ template, onClick }) => {
   const [imageError, setImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   return (
-    <Card
-      className="overflow-hidden hover:shadow-lg transition-shadow duration-200 cursor-pointer"
-      padding="p-0"
+    <div
+      className="card card-compact overflow-hidden border-none shadow-soft hover:shadow-lg transition-all duration-300 cursor-pointer group"
       onClick={onClick}
     >
       {/* Template Image or Placeholder */}
-      <div className="h-48 flex items-center justify-center relative bg-gradient-to-br from-blue-100 to-purple-100">
+      <div className="h-44 flex items-center justify-center relative bg-gray-50/50 overflow-hidden">
         {(template.banner_image || template.template_image) && !imageError ? (
           <>
             {!imageLoaded && (
-              <div className="absolute inset-0 bg-gray-200 animate-pulse"></div>
+              <div className="absolute inset-0 bg-gray-100 animate-pulse"></div>
             )}
             <img
               src={template.banner_image || template.template_image}
               alt={template.name || 'Certificate Template'}
-              className={`w-full h-full object-cover ${imageLoaded ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300`}
+              className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
               loading="lazy"
               onError={() => setImageError(true)}
               onLoad={() => setImageLoaded(true)}
@@ -43,57 +42,55 @@ const TemplateCard = memo(({ template, onClick }) => {
           <img
             src={TemplateImage}
             alt={template.name || 'Certificate Template'}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
             loading="lazy"
           />
         )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
       </div>
 
       {/* Template Info */}
-      <div className="p-6">
-        <div className="flex items-start justify-between mb-3">
-          <h3 className="text-lg font-semibold flex-1 text-gray-900">
-            {template.name || 'Untitled Template'}
-          </h3>
-        </div>
+      <div className="p-4">
+        <h3 className="text-sm font-black text-gray-900 mb-2 truncate">
+          {template.name || 'Untitled Template'}
+        </h3>
 
-        <div className="flex flex-wrap gap-2 mb-3">
+        <div className="flex flex-wrap gap-1.5 mb-3">
           {template.category && (
-            <span className="inline-block px-3 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+            <span className="badge badge-info">
               {getCategoryDisplayName(template.category)}
             </span>
           )}
           {template.template_variant && (
-            <span className="inline-block px-3 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">
+            <span className="badge badge-success bg-secondary/10 text-secondary border-secondary/10">
               {template.template_variant}
             </span>
           )}
           {template.template_type && (
-            <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded bg-gray-100 text-gray-700">
-              <HiTemplate className="w-3 h-3 mr-1" />
-              {template.template_type.toUpperCase()}
+            <span className="badge bg-gray-100 text-gray-500 border-gray-200">
+              {template.template_type}
             </span>
           )}
         </div>
 
         {template.description && (
-          <p className="text-sm mb-4 line-clamp-2 text-gray-600">
+          <p className="text-[10px] font-bold text-gray-400 mb-4 line-clamp-2 leading-relaxed">
             {template.description}
           </p>
         )}
 
-        <Button
-          variant="primary"
-          fullWidth
-          className="flex items-center justify-center gap-2"
+        <button
+          className="btn btn-primary w-full"
         >
           <span>Use Template</span>
-          <HiArrowRight className="w-4 h-4" />
-        </Button>
+          <HiArrowRight size={12} />
+        </button>
       </div>
-    </Card>
+    </div>
   );
 });
+
+
 
 TemplateCard.displayName = 'TemplateCard';
 
@@ -119,21 +116,21 @@ const Certifications = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       // Check cache first
       const cacheKey = '/certificates/templates';
       const cached = apiCache.get(cacheKey);
-      
+
       if (cached) {
         setTemplates(cached);
         setLoading(false);
         return;
       }
-      
+
       const response = await certificateApi.getPublicTemplates();
       const templates = response.data || [];
       setTemplates(templates);
-      
+
       // Cache the response
       apiCache.set(cacheKey, {}, templates);
     } catch (err) {
@@ -170,17 +167,17 @@ const Certifications = () => {
   // Filter templates based on selected category and variant
   const filteredTemplates = useMemo(() => {
     if (!selectedCategory) return templates;
-    
+
     const categoryVariants = templatesByCategory[selectedCategory];
     if (!categoryVariants) {
       // Fallback to filtering from all templates
       return templates.filter(t => t.category === selectedCategory);
     }
-    
+
     if (selectedVariant && categoryVariants[selectedVariant]) {
       return categoryVariants[selectedVariant];
     }
-    
+
     // Return all templates for selected category (all variants)
     // Use a Map to ensure unique templates by ID (in case same template appears in multiple variants)
     const uniqueTemplatesMap = new Map();
@@ -215,32 +212,31 @@ const Certifications = () => {
   }
 
   return (
-    <div className="min-h-screen py-8 px-4 bg-gray-50">
+    <div className="min-h-screen py-8 px-4 bg-background">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold mb-2 text-gray-900">Certificate Templates</h1>
-          <p className="text-gray-600">Choose a category and template variant to create your certificate</p>
+        <div className="mb-8 text-center animate-in fade-in slide-in-from-top-4 duration-700">
+          <h1 className="text-4xl font-black mb-2 text-gray-900 tracking-tighter">Certificate Templates</h1>
+          <p className="text-sm font-bold text-gray-400  tracking-widest">Choose a premium template to initialize your creation</p>
         </div>
 
         {/* Filters */}
-        <div className="mb-6 bg-white rounded-lg shadow-sm p-4">
+        <div className="mb-6 card card-compact bg-white/70 backdrop-blur-md">
           <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-2">
-              <HiFilter className="w-5 h-5 text-gray-500" />
-              <span className="text-sm font-medium text-gray-700">Filters:</span>
+            <div className="flex items-center gap-2 pl-2">
+              <HiFilter className="w-5 h-5 text-gray-300" />
+              <span className="text-[10px] font-black text-gray-400  tracking-widest">Filters</span>
             </div>
-            
+
             {/* Category Filter */}
             <div className="flex-1 min-w-[200px]">
-              <label className="block text-xs font-medium text-gray-700 mb-1">Category</label>
               <select
                 value={selectedCategory || ''}
                 onChange={(e) => {
                   setSelectedCategory(e.target.value || null);
                   setSelectedVariant(null);
                 }}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="input"
               >
                 <option value="">All Categories</option>
                 {Object.values(CERTIFICATE_CATEGORIES).map((category) => (
@@ -254,11 +250,10 @@ const Certifications = () => {
             {/* Variant Filter */}
             {selectedCategory && availableVariants.length > 0 && (
               <div className="flex-1 min-w-[200px]">
-                <label className="block text-xs font-medium text-gray-700 mb-1">Template Variant</label>
                 <select
                   value={selectedVariant || ''}
                   onChange={(e) => setSelectedVariant(e.target.value || null)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="input"
                 >
                   <option value="">All Variants</option>
                   {availableVariants.map((variant) => (
@@ -277,10 +272,10 @@ const Certifications = () => {
                   setSelectedCategory(null);
                   setSelectedVariant(null);
                 }}
-                className="flex items-center gap-1 px-3 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50"
+                className="btn btn-ghost text-red-500 hover:bg-red-50"
               >
-                <HiX className="w-4 h-4" />
-                Clear
+                <HiX size={14} />
+                <span>Reset</span>
               </button>
             )}
           </div>
@@ -322,7 +317,7 @@ const Certifications = () => {
             <HiDocumentText className="w-16 h-16 mx-auto mb-4 text-gray-400" />
             <h3 className="text-lg font-semibold mb-2 text-gray-900">No Templates Available</h3>
             <p className="text-gray-600">
-              {selectedCategory 
+              {selectedCategory
                 ? `No templates found for ${CERTIFICATE_CATEGORY_METADATA[selectedCategory]?.title || selectedCategory}.`
                 : 'No certificate templates found. Please check back later.'}
             </p>

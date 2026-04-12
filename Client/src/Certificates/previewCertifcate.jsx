@@ -14,13 +14,13 @@ const PreviewCertificate = ({ html, onClose }) => {
     if (iframeRef.current && html) {
       const iframe = iframeRef.current;
       const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-      
+
       if (iframeDoc) {
         setIsLoading(true);
         // Get API base URL (without /api suffix)
         const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://infodocs.api.d0s369.co.in/api';
         const baseUrl = apiBaseUrl.replace('/api', '');
-        
+
         // Replace file:// URLs with HTTP URLs for browser compatibility
         const processedHtml = html.replace(
           /file:\/\/\/[^"'\s)]+/g,
@@ -38,7 +38,7 @@ const PreviewCertificate = ({ html, onClose }) => {
         iframeDoc.open();
         iframeDoc.write(processedHtml);
         iframeDoc.close();
-        
+
         // Wait for images to load
         setTimeout(() => {
           setIsLoading(false);
@@ -68,7 +68,7 @@ const PreviewCertificate = ({ html, onClose }) => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-xl border border-gray-100">
+    <div className="bg-white rounded-lg shadow-xl border border-gray-500">
       {/* Header with Controls */}
       <div className="flex justify-between items-center p-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
         <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
@@ -78,7 +78,7 @@ const PreviewCertificate = ({ html, onClose }) => {
           </svg>
           Certificate Preview
         </h3>
-        
+
         <div className="flex items-center gap-3">
           {/* Zoom Controls */}
           <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-2 py-1">
@@ -93,11 +93,11 @@ const PreviewCertificate = ({ html, onClose }) => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
               </svg>
             </button>
-            
+
             <span className="text-sm font-medium text-gray-700 min-w-[3rem] text-center">
               {zoom}%
             </span>
-            
+
             <button
               onClick={handleZoomIn}
               disabled={zoom >= 200}
@@ -109,7 +109,7 @@ const PreviewCertificate = ({ html, onClose }) => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" />
               </svg>
             </button>
-            
+
             <button
               onClick={handleResetZoom}
               className="p-1.5 rounded hover:bg-gray-200 transition-colors ml-1"
@@ -158,10 +158,10 @@ const PreviewCertificate = ({ html, onClose }) => {
             </div>
           </div>
         )}
-        
-        <div 
+
+        <div
           className="bg-white shadow-lg mx-auto transition-transform duration-200"
-          style={{ 
+          style={{
             transform: `scale(${zoom / 100})`,
             transformOrigin: 'top center',
             maxWidth: '100%',

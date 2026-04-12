@@ -60,26 +60,26 @@ const SpaTable = ({
       <table className="min-w-full divide-y divide-[var(--color-border-primary)]">
         <thead className="bg-gradient-to-r from-[var(--color-gray-50)] to-[var(--color-gray-100)]">
           <tr>
-            <th className="px-6 py-4 text-left text-xs font-semibold text-[var(--color-text-primary)] uppercase tracking-wider">
+            <th className="px-6 py-4 text-left text-xs font-semibold text-[var(--color-text-primary)]  tracking-wider">
               Name
             </th>
-            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700  tracking-wider">
               Location
             </th>
 
-            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700  tracking-wider">
               State
             </th>
-            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700  tracking-wider">
               Status
             </th>
-            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700  tracking-wider">
               Created
             </th>
-            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700  tracking-wider">
               Created By
             </th>
-            <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
+            <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700  tracking-wider">
               Actions
             </th>
           </tr>
@@ -89,15 +89,15 @@ const SpaTable = ({
             // Construct logo URL - logo path is relative, need to add base URL
             const fileBase = (import.meta.env.VITE_API_BASE_URL || 'https://infodocs.api.d0s369.co.in/api') + '/forms/files/';
             const logoUrl = spa.logo ? (spa.logo.startsWith('http') ? spa.logo : fileBase + spa.logo) : null;
-            
+
             return (
               <tr key={spa.id} className="hover:bg-[var(--color-primary-light)] transition-colors duration-150">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
                     {logoUrl ? (
-                      <img 
-                        src={logoUrl} 
-                        alt={spa.name} 
+                      <img
+                        src={logoUrl}
+                        alt={spa.name}
                         className="w-10 h-10  mr-3 object-cover border-2 border-[var(--color-border-primary)]"
                         onError={(e) => {
                           // Fallback to placeholder if image fails to load
@@ -108,7 +108,7 @@ const SpaTable = ({
                         }}
                       />
                     ) : null}
-                    <div 
+                    <div
                       className={`w-10 h-10 rounded-full mr-3 flex items-center justify-center bg-[var(--color-primary-light)] text-[var(--color-primary)] font-semibold text-sm border-2 border-[var(--color-border-primary)] ${logoUrl ? 'hidden' : ''}`}
                     >
                       {spa.name ? spa.name.charAt(0).toUpperCase() : 'S'}
@@ -123,82 +123,82 @@ const SpaTable = ({
                     </div>
                   </div>
                 </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-[var(--color-text-secondary)]">{spa.area || '-'}</div>
-                <div className="text-sm text-[var(--color-text-secondary)]">{spa.city || '-'}</div>
-              </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-[var(--color-text-secondary)]">{spa.area || '-'}</div>
+                  <div className="text-sm text-[var(--color-text-secondary)]">{spa.city || '-'}</div>
+                </td>
 
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-[var(--color-text-secondary)]">{spa.state || '-'}</div>
-              </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-[var(--color-text-secondary)]">{spa.state || '-'}</div>
+                </td>
 
-              <td className="px-6 py-4 whitespace-nowrap">
-                <span
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${spa.is_active
-                    ? 'bg-[var(--color-success-light)] text-[var(--color-success-dark)]'
-                    : 'bg-[var(--color-gray-100)] text-[var(--color-gray-800)]'
-                    }`}
-                >
-                  <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${spa.is_active ? 'bg-[var(--color-success)]' : 'bg-[var(--color-gray-400)]'}`}></span>
-                  {spa.is_active ? 'Active' : 'Inactive'}
-                </span>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--color-text-secondary)]">
-                {spa.created_at
-                  ? new Date(spa.created_at).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric'
-                  })
-                  : '-'}
-                <br />
-
-                {spa.updated_at
-                  ? new Date(spa.updated_at).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric'
-                  })
-                  : '-'}
-
-
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--color-text-secondary)]">
-                {spa.created_by ? `User #${spa.created_by}` : '-'}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <div className="flex items-center justify-end gap-2">
-                  <Link
-                    to={`/admin/spas/${spa.id}?page=${currentPage}`}
-                    className="p-2 text-[var(--color-info)] hover:text-[var(--color-info-dark)] hover:bg-[var(--color-info-light)] rounded-lg transition-colors"
-                    title="View Details"
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${spa.is_active
+                      ? 'bg-[var(--color-success-light)] text-[var(--color-success-dark)]'
+                      : 'bg-[var(--color-gray-100)] text-[var(--color-gray-800)]'
+                      }`}
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                  </Link>
-                  <Link
-                    to={`/admin/spas/${spa.id}/edit?page=${currentPage}`}
-                    className="p-2 text-[var(--color-primary)] hover:text-[var(--color-primary-dark)] hover:bg-[var(--color-primary-light)] rounded-lg transition-colors"
-                    title="Edit"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                  </Link>
-                  <button
-                    onClick={() => onDelete(spa.id)}
-                    className="p-2 text-[var(--color-error)] hover:text-[var(--color-error-dark)] hover:bg-[var(--color-error-light)] rounded-lg transition-colors"
-                    title="Delete"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                </div>
-              </td>
-            </tr>
+                    <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${spa.is_active ? 'bg-[var(--color-success)]' : 'bg-[var(--color-gray-400)]'}`}></span>
+                    {spa.is_active ? 'Active' : 'Inactive'}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--color-text-secondary)]">
+                  {spa.created_at
+                    ? new Date(spa.created_at).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric'
+                    })
+                    : '-'}
+                  <br />
+
+                  {spa.updated_at
+                    ? new Date(spa.updated_at).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric'
+                    })
+                    : '-'}
+
+
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--color-text-secondary)]">
+                  {spa.created_by ? `User #${spa.created_by}` : '-'}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <div className="flex items-center justify-end gap-2">
+                    <Link
+                      to={`/admin/spas/${spa.id}?page=${currentPage}`}
+                      className="p-2 text-[var(--color-info)] hover:text-[var(--color-info-dark)] hover:bg-[var(--color-info-light)] rounded-lg transition-colors"
+                      title="View Details"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    </Link>
+                    <Link
+                      to={`/admin/spas/${spa.id}/edit?page=${currentPage}`}
+                      className="p-2 text-[var(--color-primary)] hover:text-[var(--color-primary-dark)] hover:bg-[var(--color-primary-light)] rounded-lg transition-colors"
+                      title="Edit"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </Link>
+                    <button
+                      onClick={() => onDelete(spa.id)}
+                      className="p-2 text-[var(--color-error)] hover:text-[var(--color-error-dark)] hover:bg-[var(--color-error-light)] rounded-lg transition-colors"
+                      title="Delete"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
             );
           })}
         </tbody>

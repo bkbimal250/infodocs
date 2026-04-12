@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { 
-  HiArrowLeft, 
-  HiOutlineUser, 
-  HiOutlineMail, 
+import {
+  HiArrowLeft,
+  HiOutlineUser,
+  HiOutlineMail,
   HiOutlinePhone,
   HiOutlineCalendar,
   HiOutlineShieldCheck,
@@ -348,9 +348,9 @@ const UsersDetails = () => {
                   </select>
                 ) : (
                   <p className="text-gray-900">
-                      <span className="px-2 py-1 bg-[var(--color-primary-light)] text-[var(--color-primary-dark)] rounded-full text-sm font-medium">
-                        {getRoleDisplay(user.role)}
-                      </span>
+                    <span className="px-2 py-1 bg-[var(--color-primary-light)] text-[var(--color-primary-dark)] rounded-full text-sm font-medium">
+                      {getRoleDisplay(user.role)}
+                    </span>
                   </p>
                 )}
               </div>
@@ -401,11 +401,10 @@ const UsersDetails = () => {
                   </div>
                 ) : (
                   <div className="flex items-center space-x-2">
-                    <span className={`px-2 py-1 rounded-full text-sm font-medium ${
-                      user.is_active 
-                        ? 'bg-[var(--color-success-light)] text-[var(--color-success-dark)]' 
+                    <span className={`px-2 py-1 rounded-full text-sm font-medium ${user.is_active
+                        ? 'bg-[var(--color-success-light)] text-[var(--color-success-dark)]'
                         : 'bg-[var(--color-error-light)] text-[var(--color-error-dark)]'
-                    }`}>
+                      }`}>
                       {user.is_active ? 'Active' : 'Inactive'}
                     </span>
                     {user.is_verified && (
@@ -424,7 +423,7 @@ const UsersDetails = () => {
                   Last Login
                 </label>
                 <p className="text-[var(--color-text-primary)]">
-                  {user.last_login_at 
+                  {user.last_login_at
                     ? new Date(user.last_login_at).toLocaleString()
                     : 'Never'}
                 </p>
@@ -503,19 +502,19 @@ const UsersDetails = () => {
                 <table className="min-w-full divide-y divide-[var(--color-border-primary)]">
                   <thead className="bg-[var(--color-gray-50)]">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)]  tracking-wider">
                         Status
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">
                         IP Address
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">
                         User Agent
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">
                         Failure Reason
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">
                         Date & Time
                       </th>
                     </tr>
@@ -553,7 +552,7 @@ const UsersDetails = () => {
                           </div>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-[var(--color-text-secondary)]">
-                          {entry.created_at 
+                          {entry.created_at
                             ? new Date(entry.created_at).toLocaleString()
                             : 'N/A'}
                         </td>

@@ -12,7 +12,7 @@ const positions = [
   'Manager',
   'House Keeping',
   'Beautician'
- 
+
 ];
 
 
@@ -20,7 +20,7 @@ const countries = [
   'India',
   'Nepal',
   'Pakistan',
-  
+
 ];
 
 const work_experience_options = [
@@ -87,7 +87,7 @@ const PersonalInformation = ({ formData, handleInputChange }) => {
   const handleSameAddressChange = (e) => {
     const checked = e.target.checked;
     setSameAsCurrentAddress(checked);
-    
+
     if (checked) {
       // Copy current address to aadhar address
       handleInputChange({
@@ -121,287 +121,183 @@ const PersonalInformation = ({ formData, handleInputChange }) => {
   });
 
   return (
-    <>
-      {/* Personal Information */}
-      <div className="border-b border-gray-200 pb-3">
-        <h2 className="text-base font-semibold text-gray-900 mb-2 flex items-center gap-2">
-          <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-          </svg>
-          Personal Information
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+    <div className="space-y-6">
+
+      {/* Personal Info */}
+      <div className="bg-gray-50 border rounded-xl p-4 sm:p-5">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">👤 Personal Information</h2>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
-            <Label required className="mb-1">
-              First Name
-            </Label>
-            <Input
-              type="text"
-              name="first_name"
-              value={formData.first_name}
-              onChange={handleInputChange}
-              required
-            />
+            <Label required>First Name</Label>
+            <Input name="first_name" value={formData.first_name} onChange={handleInputChange} />
           </div>
+
           <div>
-            <Label className="mb-1">Middle Name</Label>
-            <Input
-              type="text"
-              name="middle_name"
-              value={formData.middle_name}
-              onChange={handleInputChange}
-            />
+            <Label>Middle Name</Label>
+            <Input name="middle_name" value={formData.middle_name} onChange={handleInputChange} />
           </div>
+
           <div>
-            <Label required className="mb-1">Last Name</Label>
-            <Input
-              type="text"
-              name="last_name"
-              value={formData.last_name}
-              onChange={handleInputChange}
-              required
-            />
+            <Label required>Last Name</Label>
+            <Input name="last_name" value={formData.last_name} onChange={handleInputChange} />
           </div>
         </div>
       </div>
 
-      {/* Address Information */}
-      <div className="border-b border-gray-200 pb-3">
-        <h2 className="text-base font-semibold text-gray-900 mb-2 flex items-center gap-2">
-          <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-          </svg>
-          Address Information
-        </h2>
-        <div className="space-y-2">
-          <div>
-            <Label required className="mb-1">
-              Current Address
-            </Label>
-            <Textarea
-              name="current_address"
-              value={formData.current_address}
-              onChange={handleInputChange}
-              required
-              rows={2}
-            />
-          </div>
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <Label>
-                Aadhar Address
-              </Label>
+      {/* Address */}
+      <div className="bg-gray-50 border rounded-xl p-4 sm:p-5 space-y-4">
+        <h2 className="text-lg font-semibold text-gray-900">🏠 Address Information</h2>
+
+        <div>
+          <Label required>Current Address</Label>
+          <Textarea
+            name="current_address"
+            value={formData.current_address}
+            onChange={handleInputChange}
+            rows={3}
+          />
+        </div>
+
+        <div>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <Label>Aadhar Address</Label>
+
+            <div className="flex items-center gap-2">
               <Checkbox
-                name="same_as_current_address"
                 checked={sameAsCurrentAddress}
                 onChange={handleSameAddressChange}
-                label="✓ Same as Current Address"
               />
+              <span className="text-xs text-gray-600">Same as current</span>
             </div>
-            <Textarea
-              name="aadhar_address"
-              value={formData.aadhar_address}
-              onChange={handleInputChange}
-              disabled={sameAsCurrentAddress}
-              rows={2}
-              placeholder={sameAsCurrentAddress ? "Same as current address" : "Enter Aadhar address"}
-            />
-            {sameAsCurrentAddress && (
-              <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Aadhar address is automatically synced with current address
-              </p>
-            )}
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-            <div>
-              <Label required className="mb-1">City</Label>
-              <Input
-                type="text"
-                name="city"
-                value={formData.city}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            <div>
-              <Label required className="mb-1">Zip Code</Label>
-              <Input
-                type="text"
-                name="zip_code"
-                value={formData.zip_code}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            <div>
-              <Label required className="mb-1">
-                State
-                {filteredStates.length !== state_options.length && (
-                  <span className="ml-2 text-xs text-gray-500 font-normal">
-                    ({filteredStates.length} results)
-                  </span>
-                )}
-              </Label>
-              <Input
-                type="text"
-                value={stateSearch}
-                onChange={(e) => {
-                  const searchValue = e.target.value;
-                  setStateSearch(searchValue);
-                  // Clear selected state if it no longer matches the filter
-                  if (formData.state && searchValue) {
-                    const searchLower = searchValue.toLowerCase();
-                    if (!formData.state.toLowerCase().includes(searchLower)) {
-                      handleInputChange({ target: { name: 'state', value: '' } });
-                    }
-                  }
-                }}
-                placeholder="Search state..."
-                className="mb-2"
-              />
-              <select 
-                className={`w-full px-2 py-1.5 text-sm border rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent ${
-                  !formData.state ? 'border-red-300' : 'border-gray-300'
-                }`}
-                onChange={(e) => {
-                  handleInputChange({ target: { name: 'state', value: e.target.value } });
-                  setStateSearch(''); // Clear search after selection
-                }}
-                name="state"
-                value={formData.state}
-                required
-                size={Math.min(filteredStates.length + 1, 8)} // Auto-expand dropdown
-              >
-                <option value="">-- Select State ({filteredStates.length} available) --</option>
-                {filteredStates.length > 0 ? (
-                  filteredStates.map((state) => (
-                    <option key={state} value={state}>{state}</option>
-                  ))
-                ) : (
-                  <option value="" disabled>No states found matching "{stateSearch}"</option>
-                )}
-              </select>
-              {!formData.state && (
-                <p className="mt-1 text-xs text-red-600">Please select a state from the list</p>
-              )}
-            </div>
+
+          <Textarea
+            name="aadhar_address"
+            value={formData.aadhar_address}
+            onChange={handleInputChange}
+            disabled={sameAsCurrentAddress}
+            rows={3}
+            className="mt-2"
+          />
+
+          {sameAsCurrentAddress && (
+            <p className="text-xs text-blue-600 mt-1">
+              Auto-filled from current address
+            </p>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div>
+            <Label required>City</Label>
+            <Input name="city" value={formData.city} onChange={handleInputChange} />
+          </div>
+
+          <div>
+            <Label required>Zip Code</Label>
+            <Input name="zip_code" value={formData.zip_code} onChange={handleInputChange} />
+          </div>
+
+          <div>
+            <Label required>State</Label>
+
+            <Input
+              placeholder="Search state..."
+              value={stateSearch}
+              onChange={(e) => setStateSearch(e.target.value)}
+              className="mb-2"
+            />
+
+            <select
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500"
+              value={formData.state}
+              onChange={(e) =>
+                handleInputChange({ target: { name: 'state', value: e.target.value } })
+              }
+            >
+              <option value="">Select State</option>
+              {filteredStates.map((state) => (
+                <option key={state}>{state}</option>
+              ))}
+            </select>
           </div>
         </div>
       </div>
 
-      {/* Contact & Experience Information */}
-      <div className="border-b border-gray-200 pb-3">
-        <h2 className="text-base font-semibold text-gray-900 mb-2 flex items-center gap-2">
-          <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-          </svg>
-          Contact & Experience
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+      {/* Contact + Experience */}
+      <div className="bg-gray-50 border rounded-xl p-4 sm:p-5">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">📞 Contact & Experience</h2>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
           <div>
-            <Label required className="mb-1">
-              Phone Number
-            </Label>
-            <Input
-              type="tel"
-              name="phone_number"
-              value={formData.phone_number}
-              onChange={handleInputChange}
-              required
-            />
+            <Label required>Phone Number</Label>
+            <Input name="phone_number" value={formData.phone_number} onChange={handleInputChange} />
           </div>
+
           <div>
-            <Label className="mb-1">
-              Alternate Number
-            </Label>
-            <Input
-              type="tel"
-              name="alternate_number"
-              value={formData.alternate_number}
-              onChange={handleInputChange}
-            />
+            <Label>Alternate Number</Label>
+            <Input name="alternate_number" value={formData.alternate_number} onChange={handleInputChange} />
           </div>
+
           <div>
-            <Label required className="mb-1">Age</Label>
-            <Input
-              type="number"
-              name="age"
-              value={formData.age}
-              onChange={handleInputChange}
-              required
-            />
+            <Label required>Age</Label>
+            <Input type="number" name="age" value={formData.age} onChange={handleInputChange} />
           </div>
+
           <div>
-            <Label required className="mb-1">
-              Position Applied For
-            </Label>
+            <Label required>Position</Label>
             <Select
-              onChange={(e) => handleInputChange({ target: { name: 'position_applied_for', value: e.target.value } })}
               name="position_applied_for"
               value={formData.position_applied_for}
-              required
-              options={positions.map((position) => ({
-                value: position,
-                label: position
-              }))}
-              placeholder="Select Position"
+              onChange={(e) =>
+                handleInputChange({ target: { name: 'position_applied_for', value: e.target.value } })
+              }
+              options={positions.map((p) => ({ value: p, label: p }))}
+              placeholder="Select position"
             />
-            <p className="text-xs text-gray-500 mt-1">
-              Please select the position you are applying for.
-            </p>
           </div>
+
           <div>
-            <Label required className="mb-1">
-              Work Experience
-            </Label>
+            <Label required>Work Experience</Label>
             <Select
-              onChange={(e) => handleInputChange({ target: { name: 'work_experience', value: e.target.value } })}
               name="work_experience"
               value={formData.work_experience}
-              required
-              options={work_experience_options.map((work_experience) => ({
-                value: work_experience,
-                label: work_experience
-              }))}
-              placeholder="Select Work Experience"
+              onChange={(e) =>
+                handleInputChange({ target: { name: 'work_experience', value: e.target.value } })
+              }
+              options={work_experience_options.map((p) => ({ value: p, label: p }))}
+              placeholder="Select experience"
             />
-            <p className="text-xs text-gray-500 mt-1">
-              Please select the work experience you have.
-            </p>
           </div>
+
           <div>
-            <Label required className="mb-1">
-              Therapist Experience
-            </Label>
+            <Label required>Therapist Experience</Label>
             <Select
-              onChange={(e) => handleInputChange({ target: { name: 'Therapist_experience', value: e.target.value } })}
               name="Therapist_experience"
               value={formData.Therapist_experience}
-              required
-              options={therapist_experience_options.map((therapist_experience) => ({
-                value: therapist_experience,
-                label: therapist_experience
-              }))}
-              placeholder="Select Therapist Experience"
+              onChange={(e) =>
+                handleInputChange({ target: { name: 'Therapist_experience', value: e.target.value } })
+              }
+              options={therapist_experience_options.map((p) => ({ value: p, label: p }))}
+              placeholder="Select therapist experience"
             />
           </div>
-          <div className="md:col-span-2">
-            <Label className="mb-1">
-              Education & Certificate Courses
-            </Label>
+
+          <div className="sm:col-span-2">
+            <Label>Education & Courses</Label>
             <Textarea
               name="education_certificate_courses"
               value={formData.education_certificate_courses}
               onChange={handleInputChange}
-              rows={2}
+              rows={3}
             />
           </div>
         </div>
       </div>
-    </>
+
+    </div>
   );
 };
 

@@ -83,7 +83,7 @@ const PrintUdertakingDetails = ({ data = {}, onDownload }) => {
             <div className="print-container">
                 <div ref={printRef} className="a4-page text-[11px] leading-snug font-[Times_New_Roman]">
                     <div className="form-content">
-                        <h2 className="text-center uppercase font-bold text-sm mb-2 mt-0" style={{ fontSize: '14px', marginBottom: '6px' }}>
+                        <h2 className="text-center  font-bold text-sm mb-2 mt-0" style={{ fontSize: '14px', marginBottom: '6px' }}>
                             Undertaking Form
                         </h2>
                         <div className="mb-1.5" style={{ marginBottom: '4px' }}>
@@ -223,7 +223,7 @@ const PrintUdertakingDetails = ({ data = {}, onDownload }) => {
                             </div>
                         </div>
                         <div className="mt-1.5 flex-1" style={{ marginTop: '4px', flex: '1 1 auto' }}>
-                            <h3 className="uppercase font-semibold mb-1 text-[11px]" style={{ marginBottom: '3px', fontSize: '11px' }}>Rules & Regulations:</h3>
+                            <h3 className=" font-semibold mb-1 text-[11px]" style={{ marginBottom: '3px', fontSize: '11px' }}>Rules & Regulations:</h3>
                             <div className="mb-0.5" style={{ marginBottom: '1px' }}>
                                 <span className="inline-block w-5 text-[9px]">1.</span>
                                 <span className="ml-1 text-[9px]">Employees must be at least 18 years old.</span>

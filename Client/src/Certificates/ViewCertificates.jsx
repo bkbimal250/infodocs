@@ -38,7 +38,7 @@ const ViewCertificates = () => {
 
     try {
       setDownloading(true);
-      const response = format === 'pdf' 
+      const response = format === 'pdf'
         ? await certificateApi.downloadPDF(certificate.id)
         : await certificateApi.downloadImage(certificate.id);
 
@@ -91,115 +91,93 @@ const ViewCertificates = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-lg shadow-xl p-8 border border-gray-100">
-          <div className="flex justify-between items-center mb-6">
+    <div className="min-h-screen bg-background py-8 px-4 flex items-center justify-center">
+      <div className="max-w-xl w-full">
+        <div className="card shadow-soft p-0 overflow-hidden animate-in zoom-in-95 duration-500">
+          <div className="bg-primary/5 px-8 py-5 border-b border-primary/10 flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Certificate Details</h1>
-              <p className="text-gray-600 mt-1">View and download your generated certificate</p>
+              <h1 className="text-xl font-black text-gray-900 leading-tight tracking-tighter">Document Details</h1>
+              <p className="text-[10px] font-bold text-gray-400  tracking-widest mt-0.5">Verified Digital Export</p>
             </div>
             <button
-              onClick={() => navigate('/certificate-creation')}
-              className="text-blue-600 hover:text-blue-700 font-semibold flex items-center gap-2"
+              onClick={() => navigate('/certificates')}
+              className="btn btn-ghost p-2 text-primary hover:bg-primary/5"
+              title="Create New"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              Create New
+              <HiPlus size={20} />
             </button>
           </div>
 
-          <div className="space-y-6 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <label className="text-sm font-medium text-gray-500 block mb-1">Recipient Name</label>
-                <p className="text-lg font-semibold text-gray-900">{certificate.candidate_name || 'N/A'}</p>
+          <div className="p-8 space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-gray-50/50 p-3 rounded-xl border border-gray-500">
+                <p className="text-[8px] font-black text-gray-400  tracking-widest mb-1 leading-none">Recipient</p>
+                <p className="text-sm font-black text-gray-900 leading-none">{certificate.candidate_name || 'Anonymous'}</p>
               </div>
-              {certificate.candidate_email && (
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <label className="text-sm font-medium text-gray-500 block mb-1">Email</label>
-                  <p className="text-gray-900">{certificate.candidate_email}</p>
-                </div>
-              )}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <label className="text-sm font-medium text-gray-500 block mb-1">Certificate ID</label>
-                <p className="text-lg font-semibold text-gray-900">#{certificate.id}</p>
-              </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <label className="text-sm font-medium text-gray-500 block mb-1">Generated On</label>
-                <p className="text-gray-900">
-                  {new Date(certificate.generated_at).toLocaleString()}
-                </p>
+              <div className="bg-gray-50/50 p-3 rounded-xl border border-gray-500">
+                <p className="text-[8px] font-black text-gray-400  tracking-widest mb-1 leading-none">Internal ID</p>
+                <p className="text-sm font-black text-primary leading-none">#{certificate.id}</p>
               </div>
             </div>
+
             {certificate.qr_code && (
-              <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
-                <label className="text-sm font-medium text-gray-700 block mb-3 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                  </svg>
-                  QR Code for Verification
-                </label>
-                <div className="flex justify-center">
-                  <img
-                    src={certificate.qr_code}
-                    alt="QR Code"
-                    className="w-40 h-40 border-2 border-blue-300 rounded-lg shadow-md"
-                  />
+              <div className="relative group p-4 bg-white border border-gray-500 rounded-2xl shadow-soft flex flex-col items-center">
+                <div className="absolute top-3 left-3 flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+                  <span className="text-[8px] font-black text-gray-400  tracking-widest">Verifiable</span>
                 </div>
-                <p className="text-xs text-gray-600 text-center mt-3">Scan this QR code to verify the certificate</p>
+                <img
+                  src={certificate.qr_code}
+                  alt="QR Code"
+                  className="w-32 h-32 opacity-90 group-hover:opacity-100 transition-opacity"
+                />
+                <p className="text-[9px] font-bold text-gray-400  tracking-widest mt-3 text-center leading-none">Scan to authenticate document</p>
               </div>
             )}
-          </div>
 
-          <div className="border-t pt-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Download Certificate</h2>
-            <div className="flex gap-4">
-              <button
-                onClick={() => handleDownload('pdf')}
-                disabled={downloading}
-                className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {downloading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                    <span>Downloading...</span>
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
-                    <span>Download PDF</span>
-                  </>
-                )}
-              </button>
-              <button
-                onClick={() => handleDownload('image')}
-                disabled={downloading}
-                className="flex-1 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {downloading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                    <span>Downloading...</span>
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <span>Download Image</span>
-                  </>
-                )}
-              </button>
+            <div className="pt-4 border-t border-gray-500">
+              <p className="text-[10px] font-black text-gray-900  tracking-widest mb-4 text-center leading-none">Official Export Options</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => handleDownload('pdf')}
+                  disabled={downloading}
+                  className="btn btn-primary flex-1 py-3"
+                >
+                  {downloading ? (
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-b-transparent mx-auto" />
+                  ) : (
+                    <>
+                      <HiTemplate size={16} />
+                      <span>Export PDF</span>
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={() => handleDownload('image')}
+                  disabled={downloading}
+                  className="btn btn-secondary flex-1 py-3"
+                >
+                  {downloading ? (
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-b-transparent mx-auto" />
+                  ) : (
+                    <>
+                      <HiCloudDownload size={16} />
+                      <span>Export Image</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="text-center">
+              <p className="text-[9px] font-medium text-gray-400 italic">Generated on {new Date(certificate.generated_at).toLocaleString()}</p>
             </div>
           </div>
         </div>
       </div>
     </div>
   );
+
 };
 
 export default ViewCertificates;

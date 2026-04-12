@@ -29,10 +29,11 @@ export const certificateApi = {
 
   /**
    * Get all active SPA locations (public)
+   * @param {Object} params - Optional query params (e.g. { minimal: false })
    * @returns {Promise}
    */
-  getSpas: () => {
-    return apiClient.get('/forms/spas');
+  getSpas: (params = {}) => {
+    return apiClient.get('/forms/spas', { params });
   },
 
   /**

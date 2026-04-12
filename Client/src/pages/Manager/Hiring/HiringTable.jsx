@@ -38,26 +38,26 @@ const HiringTable = ({ hiringForms, loading, onView, onEdit, onDelete }) => {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-[var(--color-bg-secondary)]">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)]  tracking-wider">
                 SPA Location
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)]  tracking-wider">
                 Role
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)]  tracking-wider">
                 Staff Required
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)]  tracking-wider">
                 Experience Required
               </th>
-           
-              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+
+              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)]  tracking-wider">
                 Skills Required
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)]  tracking-wider">
                 Submitted Date
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)]  tracking-wider">
                 Actions
               </th>
             </tr>
@@ -89,8 +89,8 @@ const HiringTable = ({ hiringForms, loading, onView, onEdit, onDelete }) => {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-[var(--color-text-secondary)]">{form.required_education || 'N/A'}</div>
                 </td>
-             
-                
+
+
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-[var(--color-text-secondary)]">
                     {form.created_at ? new Date(form.created_at).toLocaleDateString() : 'N/A'}

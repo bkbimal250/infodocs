@@ -88,24 +88,24 @@ const DocumentUpload = ({ files, handleFileChange, setFiles }) => {
   const handleCropComplete = async (fieldName) => {
     const imgRef = imgRefs.current[fieldName];
     const completedCrop = completedCrops[fieldName];
-    
+
     if (!imgRef || !completedCrop) {
       return;
     }
 
     try {
       const croppedImageBlob = await getCroppedImg(imgRef, completedCrop, fieldName);
-      const fileName = fieldName === 'passport_size_photo' 
-        ? 'passport_photo.jpg' 
+      const fileName = fieldName === 'passport_size_photo'
+        ? 'passport_photo.jpg'
         : `${fieldName}.jpg`;
       const croppedFile = new File([croppedImageBlob], fileName, { type: 'image/jpeg' });
-      
+
       // Update files state directly
       setFiles((prev) => ({
         ...prev,
         [fieldName]: croppedFile
       }));
-      
+
       setShowCrop(prev => ({ ...prev, [fieldName]: false }));
       setImageSrcs(prev => {
         const newSrcs = { ...prev };
@@ -141,291 +141,166 @@ const DocumentUpload = ({ files, handleFileChange, setFiles }) => {
   };
 
   return (
-    <div className="border-b border-gray-200 pb-3">
-      <h2 className="text-base font-semibold text-gray-900 mb-2 flex items-center gap-2">
-        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-        Documents
-      </h2>
-      <div className="space-y-2">
-        {/* Passport Size Photo with Crop */}
-        <div>
-          <Label className="mb-1">
-            Passport Size Photo
-          </Label>
+    <div className="space-y-6">
+
+      {/* Header */}
+      <div>
+        <h2 className="text-lg sm:text-xl font-semibold text-gray-900 flex items-center gap-2">
+          📄 Documents Upload
+        </h2>
+        <p className="text-xs sm:text-sm text-gray-500">
+          Upload and crop required documents clearly
+        </p>
+      </div>
+
+      <div className="space-y-5">
+
+        {/* Passport Photo */}
+        <div className="bg-gray-50 border rounded-xl p-4">
+          <Label>Passport Size Photo</Label>
+
           <input
             ref={el => fileInputRefs.current.passport_size_photo = el}
             type="file"
             name="passport_size_photo"
             accept="image/*"
             onChange={(e) => handleImageChange(e, 'passport_size_photo')}
-            className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+            className="mt-2 w-full text-sm file:mr-3 file:py-2 file:px-4 
+                     file:rounded-lg file:border-0 file:bg-blue-600 file:text-white 
+                     hover:file:bg-blue-700 cursor-pointer"
           />
+
+          {files.passport_size_photo && !showCrop.passport_size_photo && (
+            <p className="mt-2 text-xs text-green-600">✓ Photo selected</p>
+          )}
+
+          {/* Crop UI */}
           {showCrop.passport_size_photo && imageSrcs.passport_size_photo && (
-            <div className="mt-3 p-3 border border-gray-300 rounded bg-gray-50">
-              <div className="mb-2">
-                <p className="text-xs text-gray-600 mb-2">Crop your {imageFields.passport_size_photo.label}:</p>
-                <div className="flex justify-center">
-                  <ReactCrop
-                    crop={cropStates.passport_size_photo}
-                    onChange={(c) => setCropStates(prev => ({ ...prev, passport_size_photo: c }))}
-                    onComplete={(c) => setCompletedCrops(prev => ({ ...prev, passport_size_photo: c }))}
-                    aspect={45 / 55}
-                    minWidth={100}
-                  >
-                    <img
-                      ref={el => imgRefs.current.passport_size_photo = el}
-                      alt="Crop passport photo"
-                      src={imageSrcs.passport_size_photo}
-                      style={{ maxHeight: '400px' }}
-                      onLoad={() => {
-                        if (imgRefs.current.passport_size_photo) {
-                          setCropStates(prev => ({
-                            ...prev,
-                            passport_size_photo: initializeCrop('passport_size_photo')
-                          }));
-                        }
-                      }}
-                    />
-                  </ReactCrop>
-                </div>
-              </div>
-              <div className="flex gap-2 justify-end">
-                <Button
-                  type="button"
-                  onClick={() => handleCancelCrop('passport_size_photo')}
-                  variant="secondary"
-                  size="sm"
+            <div className="mt-4 bg-white border rounded-lg p-3 shadow-sm">
+              <p className="text-xs text-gray-600 mb-2">
+                Crop Passport Photo
+              </p>
+
+              <div className="flex justify-center overflow-auto">
+                <ReactCrop
+                  crop={cropStates.passport_size_photo}
+                  onChange={(c) => setCropStates(prev => ({ ...prev, passport_size_photo: c }))}
+                  onComplete={(c) => setCompletedCrops(prev => ({ ...prev, passport_size_photo: c }))}
+                  aspect={45 / 55}
                 >
+                  <img
+                    ref={el => imgRefs.current.passport_size_photo = el}
+                    src={imageSrcs.passport_size_photo}
+                    className="max-h-[300px] sm:max-h-[400px] rounded"
+                  />
+                </ReactCrop>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-2 justify-end mt-3">
+                <Button onClick={() => handleCancelCrop('passport_size_photo')} variant="secondary">
                   Cancel
                 </Button>
-                <Button
-                  type="button"
-                  onClick={() => handleCropComplete('passport_size_photo')}
-                  variant="primary"
-                  size="sm"
-                >
+                <Button onClick={() => handleCropComplete('passport_size_photo')} variant="primary">
                   Apply Crop
                 </Button>
               </div>
             </div>
           )}
-          {files.passport_size_photo && !showCrop.passport_size_photo && (
-            <p className="mt-1 text-xs text-green-600">✓ Photo selected</p>
-          )}
         </div>
 
-        {/* Age Proof Document (PDF or Image) */}
-        <div>
-          <Label required className="mb-1">
-            Age Proof Document
-          </Label>
+        {/* Age Proof */}
+        <div className="bg-gray-50 border rounded-xl p-4">
+          <Label required>Age Proof Document</Label>
+
           <input
             type="file"
             name="age_proof_document"
             accept="image/*,.pdf"
             onChange={handleFileChange}
             required
-            className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+            className="mt-2 w-full text-sm file:mr-3 file:py-2 file:px-4 
+                     file:rounded-lg file:border-0 file:bg-blue-600 file:text-white 
+                     hover:file:bg-blue-700 cursor-pointer"
           />
         </div>
 
-        {/* Aadhar Card Front with Crop */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-          <div>
-            <Label className="mb-1">
-              Aadhar Card Front
-            </Label>
-            <input
-              ref={el => fileInputRefs.current.aadhar_card_front = el}
-              type="file"
-              name="aadhar_card_front"
-              accept="image/*"
-              onChange={(e) => handleImageChange(e, 'aadhar_card_front')}
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
-            />
-            {showCrop.aadhar_card_front && imageSrcs.aadhar_card_front && (
-              <div className="mt-3 p-3 border border-gray-300 rounded bg-gray-50">
-                <div className="mb-2">
-                  <p className="text-xs text-gray-600 mb-2">Crop your {imageFields.aadhar_card_front.label}:</p>
-                  <div className="flex justify-center">
-                    <ReactCrop
-                      crop={cropStates.aadhar_card_front}
-                      onChange={(c) => setCropStates(prev => ({ ...prev, aadhar_card_front: c }))}
-                      onComplete={(c) => setCompletedCrops(prev => ({ ...prev, aadhar_card_front: c }))}
-                      minWidth={100}
-                    >
-                      <img
-                        ref={el => imgRefs.current.aadhar_card_front = el}
-                        alt="Crop aadhar front"
-                        src={imageSrcs.aadhar_card_front}
-                        style={{ maxHeight: '400px' }}
-                        onLoad={() => {
-                          if (imgRefs.current.aadhar_card_front) {
-                            setCropStates(prev => ({
-                              ...prev,
-                              aadhar_card_front: initializeCrop('aadhar_card_front')
-                            }));
-                          }
-                        }}
-                      />
-                    </ReactCrop>
+        {/* Aadhar Section */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+          {['aadhar_card_front', 'aadhar_card_back'].map((field) => (
+            <div key={field} className="bg-gray-50 border rounded-xl p-4">
+              <Label>
+                {field === 'aadhar_card_front' ? 'Aadhar Front' : 'Aadhar Back'}
+              </Label>
+
+              <input
+                ref={el => fileInputRefs.current[field] = el}
+                type="file"
+                name={field}
+                accept="image/*"
+                onChange={(e) => handleImageChange(e, field)}
+                className="mt-2 w-full text-sm file:mr-3 file:py-2 file:px-4 
+                         file:rounded-lg file:border-0 file:bg-blue-600 file:text-white 
+                         hover:file:bg-blue-700 cursor-pointer"
+              />
+
+              {files[field] && !showCrop[field] && (
+                <p className="mt-2 text-xs text-green-600">✓ Image selected</p>
+              )}
+
+              {showCrop[field] && imageSrcs[field] && (
+                <div className="mt-3 bg-white border rounded-lg p-3">
+                  <ReactCrop
+                    crop={cropStates[field]}
+                    onChange={(c) => setCropStates(prev => ({ ...prev, [field]: c }))}
+                    onComplete={(c) => setCompletedCrops(prev => ({ ...prev, [field]: c }))}
+                  >
+                    <img
+                      ref={el => imgRefs.current[field] = el}
+                      src={imageSrcs[field]}
+                      className="max-h-[250px] rounded"
+                    />
+                  </ReactCrop>
+
+                  <div className="flex flex-col sm:flex-row gap-2 justify-end mt-3">
+                    <Button onClick={() => handleCancelCrop(field)} variant="secondary">
+                      Cancel
+                    </Button>
+                    <Button onClick={() => handleCropComplete(field)} variant="primary">
+                      Apply
+                    </Button>
                   </div>
                 </div>
-                <div className="flex gap-2 justify-end">
-                  <button
-                    type="button"
-                    onClick={() => handleCancelCrop('aadhar_card_front')}
-                    className="px-3 py-1.5 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleCropComplete('aadhar_card_front')}
-                    className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
-                  >
-                    Apply Crop
-                  </button>
-                </div>
-              </div>
-            )}
-            {files.aadhar_card_front && !showCrop.aadhar_card_front && (
-              <p className="mt-1 text-xs text-green-600">✓ Image selected</p>
-            )}
-          </div>
-          
-          {/* Aadhar Card Back with Crop */}
-          <div>
-            <Label className="mb-1">
-              Aadhar Card Back
-            </Label>
-            <input
-              ref={el => fileInputRefs.current.aadhar_card_back = el}
-              type="file"
-              name="aadhar_card_back"
-              accept="image/*"
-              onChange={(e) => handleImageChange(e, 'aadhar_card_back')}
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
-            />
-            {showCrop.aadhar_card_back && imageSrcs.aadhar_card_back && (
-              <div className="mt-3 p-3 border border-gray-300 rounded bg-gray-50">
-                <div className="mb-2">
-                  <p className="text-xs text-gray-600 mb-2">Crop your {imageFields.aadhar_card_back.label}:</p>
-                  <div className="flex justify-center">
-                    <ReactCrop
-                      crop={cropStates.aadhar_card_back}
-                      onChange={(c) => setCropStates(prev => ({ ...prev, aadhar_card_back: c }))}
-                      onComplete={(c) => setCompletedCrops(prev => ({ ...prev, aadhar_card_back: c }))}
-                      minWidth={100}
-                    >
-                      <img
-                        ref={el => imgRefs.current.aadhar_card_back = el}
-                        alt="Crop aadhar back"
-                        src={imageSrcs.aadhar_card_back}
-                        style={{ maxHeight: '400px' }}
-                        onLoad={() => {
-                          if (imgRefs.current.aadhar_card_back) {
-                            setCropStates(prev => ({
-                              ...prev,
-                              aadhar_card_back: initializeCrop('aadhar_card_back')
-                            }));
-                          }
-                        }}
-                      />
-                    </ReactCrop>
-                  </div>
-                </div>
-                <div className="flex gap-2 justify-end">
-                  <button
-                    type="button"
-                    onClick={() => handleCancelCrop('aadhar_card_back')}
-                    className="px-3 py-1.5 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleCropComplete('aadhar_card_back')}
-                    className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
-                  >
-                    Apply Crop
-                  </button>
-                </div>
-              </div>
-            )}
-            {files.aadhar_card_back && !showCrop.aadhar_card_back && (
-              <p className="mt-1 text-xs text-green-600">✓ Image selected</p>
-            )}
-          </div>
+              )}
+            </div>
+          ))}
+
         </div>
 
-        {/* PAN Card with Crop */}
-        <div>
-          <Label className="mb-1">PAN Card</Label>
+        {/* PAN Card */}
+        <div className="bg-gray-50 border rounded-xl p-4">
+          <Label>PAN Card</Label>
+
           <input
             ref={el => fileInputRefs.current.pan_card = el}
             type="file"
             name="pan_card"
             accept="image/*"
             onChange={(e) => handleImageChange(e, 'pan_card')}
-            className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+            className="mt-2 w-full text-sm file:mr-3 file:py-2 file:px-4 
+                     file:rounded-lg file:border-0 file:bg-blue-600 file:text-white 
+                     hover:file:bg-blue-700 cursor-pointer"
           />
-          {showCrop.pan_card && imageSrcs.pan_card && (
-            <div className="mt-3 p-3 border border-gray-300 rounded bg-gray-50">
-              <div className="mb-2">
-                <p className="text-xs text-gray-600 mb-2">Crop your {imageFields.pan_card.label}:</p>
-                <div className="flex justify-center">
-                  <ReactCrop
-                    crop={cropStates.pan_card}
-                    onChange={(c) => setCropStates(prev => ({ ...prev, pan_card: c }))}
-                    onComplete={(c) => setCompletedCrops(prev => ({ ...prev, pan_card: c }))}
-                    minWidth={100}
-                  >
-                    <img
-                      ref={el => imgRefs.current.pan_card = el}
-                      alt="Crop pan card"
-                      src={imageSrcs.pan_card}
-                      style={{ maxHeight: '400px' }}
-                      onLoad={() => {
-                        if (imgRefs.current.pan_card) {
-                          setCropStates(prev => ({
-                            ...prev,
-                            pan_card: initializeCrop('pan_card')
-                          }));
-                        }
-                      }}
-                    />
-                  </ReactCrop>
-                </div>
-              </div>
-              <div className="flex gap-2 justify-end">
-                <button
-                  type="button"
-                  onClick={() => handleCancelCrop('pan_card')}
-                  className="px-3 py-1.5 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleCropComplete('pan_card')}
-                  className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
-                >
-                  Apply Crop
-                </button>
-              </div>
-            </div>
-          )}
+
           {files.pan_card && !showCrop.pan_card && (
-            <p className="mt-1 text-xs text-green-600">✓ Image selected</p>
+            <p className="mt-2 text-xs text-green-600">✓ Selected</p>
           )}
         </div>
 
-        {/* Signature with Crop */}
-        <div>
-          <Label required className="mb-1">Signature</Label>
+        {/* Signature */}
+        <div className="bg-gray-50 border rounded-xl p-4">
+          <Label required>Signature</Label>
+
           <input
             ref={el => fileInputRefs.current.signature = el}
             type="file"
@@ -433,73 +308,32 @@ const DocumentUpload = ({ files, handleFileChange, setFiles }) => {
             accept="image/*"
             onChange={(e) => handleImageChange(e, 'signature')}
             required
-            className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+            className="mt-2 w-full text-sm file:mr-3 file:py-2 file:px-4 
+                     file:rounded-lg file:border-0 file:bg-blue-600 file:text-white 
+                     hover:file:bg-blue-700 cursor-pointer"
           />
-          {showCrop.signature && imageSrcs.signature && (
-            <div className="mt-3 p-3 border border-gray-300 rounded bg-gray-50">
-              <div className="mb-2">
-                <p className="text-xs text-gray-600 mb-2">Crop your {imageFields.signature.label}:</p>
-                <div className="flex justify-center">
-                  <ReactCrop
-                    crop={cropStates.signature}
-                    onChange={(c) => setCropStates(prev => ({ ...prev, signature: c }))}
-                    onComplete={(c) => setCompletedCrops(prev => ({ ...prev, signature: c }))}
-                    minWidth={100}
-                  >
-                    <img
-                      ref={el => imgRefs.current.signature = el}
-                      alt="Crop signature"
-                      src={imageSrcs.signature}
-                      style={{ maxHeight: '400px' }}
-                      onLoad={() => {
-                        if (imgRefs.current.signature) {
-                          setCropStates(prev => ({
-                            ...prev,
-                            signature: initializeCrop('signature')
-                          }));
-                        }
-                      }}
-                    />
-                  </ReactCrop>
-                </div>
-              </div>
-              <div className="flex gap-2 justify-end">
-                <button
-                  type="button"
-                  onClick={() => handleCancelCrop('signature')}
-                  className="px-3 py-1.5 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleCropComplete('signature')}
-                  className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
-                >
-                  Apply Crop
-                </button>
-              </div>
-            </div>
-          )}
+
           {files.signature && !showCrop.signature && (
-            <p className="mt-1 text-xs text-green-600">✓ Signature selected</p>
+            <p className="mt-2 text-xs text-green-600">✓ Signature uploaded</p>
           )}
         </div>
 
-        {/* Additional Documents */}
-        <div>
-          <Label className="mb-1">
-            Additional Documents
-          </Label>
+        {/* Additional Docs */}
+        <div className="bg-gray-50 border rounded-xl p-4">
+          <Label>Additional Documents</Label>
+
           <input
             type="file"
             name="documents"
             multiple
             accept="image/*,.pdf"
             onChange={handleFileChange}
-            className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+            className="mt-2 w-full text-sm file:mr-3 file:py-2 file:px-4 
+                     file:rounded-lg file:border-0 file:bg-blue-600 file:text-white 
+                     hover:file:bg-blue-700 cursor-pointer"
           />
         </div>
+
       </div>
     </div>
   );
