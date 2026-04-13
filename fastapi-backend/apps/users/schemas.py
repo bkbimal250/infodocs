@@ -1,6 +1,7 @@
 """
 User Pydantic Schemas for Request/Response
 """
+from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, EmailStr, field_validator
 from apps.users.models import UserRole
@@ -120,12 +121,11 @@ class UserUpdateSchema(BaseModel):
         return v
 
 
-# Response Schemas
 class UserResponseSchema(BaseModel):
-    """User response schema"""
+    """User response schema for sessions and profile overview"""
     id: int
     username: str
-    email: str
+    email: EmailStr
     first_name: str
     last_name: str
     role: UserRole
@@ -133,8 +133,8 @@ class UserResponseSchema(BaseModel):
     is_active: bool
     is_verified: bool
     spa_id: Optional[int] = None
-    created_at: str
-    updated_at: str
+    last_login_at: Optional[datetime] = None
+    created_at: datetime
     
     @property
     def full_name(self) -> str:
@@ -145,10 +145,8 @@ class UserResponseSchema(BaseModel):
 
 
 class TokenResponseSchema(BaseModel):
-    """Token response schema"""
-    access_token: str
-    token_type: str = "bearer"
-    user: UserResponseSchema
+    """Token response schema for minimal login success message"""
+    message: str = "Login successful"
 
 
 class MessageResponseSchema(BaseModel):

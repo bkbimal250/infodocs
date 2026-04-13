@@ -156,11 +156,6 @@ export const adminApi = {
      * @param {number} id - Certificate ID
      * @returns {Promise}
      */
-    downloadCertificateImage: (id) => {
-      return apiClient.get(`/certificates/generated/${id}/download/image`, {
-        responseType: 'blob'
-      });
-    },
 
     /**
      * Download a certificate
@@ -261,13 +256,7 @@ export const adminApi = {
       return apiClient.get('/analytics');
     },
 
-    /**
-     * Get candidate analytics
-     * @returns {Promise}
-     */
-    getCandidateAnalytics: () => {
-      return apiClient.get('/analytics/candidates');
-    },
+
 
     /**
      * Get certificate analytics
@@ -339,24 +328,7 @@ export const adminApi = {
 
     
 
-    /**
-     * Get all candidate forms
-     * @param {number} skip - Skip records
-     * @param {number} limit - Limit records
-     * @returns {Promise}
-     */
-    getCandidateForms: (skip = 0, limit = 100) => {
-      return apiClient.get(`/forms/candidate-forms?skip=${skip}&limit=${limit}`);
-    },
 
-    /**
-     * Get a single candidate form
-     * @param {number} id - Candidate form ID
-     * @returns {Promise}
-     */
-    getCandidateForm: (id) => {
-      return apiClient.get(`/forms/candidate-forms/${id}`);
-    },
 
     /**
      * Get all hiring forms
@@ -386,15 +358,6 @@ export const adminApi = {
     },
 
     /**
-     * Get all candidate forms with user info (admin only)
-     * @param {Object} params - Query parameters (skip, limit)
-     * @returns {Promise}
-     */
-    getAllCandidateForms: (params = {}) => {
-      return apiClient.get('/forms/admin/candidate-forms', { params });
-    },
-
-    /**
      * Get all hiring forms with user info (admin only)
      * @param {Object} params - Query parameters (skip, limit)
      * @returns {Promise}
@@ -403,24 +366,9 @@ export const adminApi = {
       return apiClient.get('/forms/admin/hiring-forms', { params });
     },
 
-    /**
-     * Update a candidate form
-     * @param {number} id - Candidate form ID
-     * @param {Object} data - Updated form data
-     * @returns {Promise}
-     */
-    updateCandidateForm: (id, data) => {
-      return apiClient.put(`/forms/candidate-forms/${id}`, data);
-    },
 
-    /**
-     * Delete a candidate form
-     * @param {number} id - Candidate form ID
-     * @returns {Promise}
-     */
-    deleteCandidateForm: (id) => {
-      return apiClient.delete(`/forms/candidate-forms/${id}`);
-    },
+
+
 
     /**
      * Update a hiring form

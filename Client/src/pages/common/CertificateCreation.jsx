@@ -4,7 +4,7 @@ import { usersApi } from '../../api/Users/usersApi';
 
 /**
  * Common Certificate Creation Page
- * For regular users/candidates to create certificates
+ * For regular users to create certificates
  */
 const CertificateCreation = () => {
   const [templates, setTemplates] = useState([]);

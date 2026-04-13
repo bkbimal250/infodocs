@@ -33,11 +33,7 @@ const HrSidebar = ({ onLinkClick }) => {
       path: '/hr/certificates',
       icon: HiOutlineDocumentText,
     },
-    {
-      name: 'Candidates',
-      path: '/hr/candidates',
-      icon: HiOutlineUser,
-    },
+
     {
       name: 'Hiring Data',
       path: '/hr/hiring-data',

@@ -56,11 +56,7 @@ const AdminSidebar = ({ onLinkClick }) => {
       path: '/admin/hiring',
       icon: HiOutlineBriefcase,
     },
-    {
-      name: 'Undertaking-jobform',
-      path: '/admin/forms-data/candidates',
-      icon: HiOutlineUser,
-    },
+
     {
       name: 'SPAs',
       path: '/admin/spas',

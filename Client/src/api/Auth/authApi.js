@@ -74,5 +74,13 @@ export const authApi = {
   getCurrentUser: () => {
     return apiClient.get('/users/auth/user');
   },
+
+  /**
+   * Logout user and clear session cookie
+   * @returns {Promise}
+   */
+  logout: () => {
+    return apiClient.post('/users/auth/logout');
+  },
 };
 

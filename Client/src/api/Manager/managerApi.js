@@ -5,43 +5,7 @@ import apiClient from '../../utils/apiConfig';
  * Manager can see ONLY their own forms and certificates (what they created)
  */
 export const managerApi = {
-  /**
-   * Get manager's own candidate forms
-   * @param {Object} params - Query parameters (skip, limit)
-   * @returns {Promise}
-   */
-  getMyCandidateForms: (params = {}) => {
-    // Backend will automatically filter by current_user.id for managers
-    return apiClient.get('/forms/candidate-forms', { params });
-  },
 
-  /**
-   * Get a single candidate form (only if created by manager)
-   * @param {number} id - Form ID
-   * @returns {Promise}
-   */
-  getCandidateForm: (id) => {
-    return apiClient.get(`/forms/candidate-forms/${id}`);
-  },
-
-  /**
-   * Update a candidate form (only if created by manager)
-   * @param {number} id - Form ID
-   * @param {Object} data - Updated form data
-   * @returns {Promise}
-   */
-  updateCandidateForm: (id, data) => {
-    return apiClient.put(`/forms/candidate-forms/${id}`, data);
-  },
-
-  /**
-   * Delete a candidate form (only if created by manager)
-   * @param {number} id - Form ID
-   * @returns {Promise}
-   */
-  deleteCandidateForm: (id) => {
-    return apiClient.delete(`/forms/candidate-forms/${id}`);
-  },
 
   /**
    * Get manager's own hiring forms

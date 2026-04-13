@@ -20,12 +20,12 @@ export const API_ENDPOINTS = {
   },
   
   FORMS: {
-    CANDIDATE_FORMS: '/forms/candidate-forms/',
+
     SPAS: '/forms/spas/',
   },
   ANALYTICS: {
     MAIN: '/analytics/',
-    CANDIDATES: '/analytics/candidates/',
+
     CERTIFICATES: '/analytics/certificates/',
   },
 };
@@ -35,7 +35,7 @@ export const USER_ROLES = {
   ADMIN: 'admin',
   HR: 'hr',
   MANAGER: 'manager',
-  CANDIDATE: 'candidate',
+
 };
 
 // Route Paths
@@ -56,7 +56,7 @@ export const ROUTES = {
   MANAGER: {
     DASHBOARD: '/manager/dashboard',
     CERTIFICATES: '/manager/certificates',
-    CANDIDATES: '/manager/candidates',
+
     CERTIFICATE_CREATION: '/manager/certificate-creation',
   },
 };

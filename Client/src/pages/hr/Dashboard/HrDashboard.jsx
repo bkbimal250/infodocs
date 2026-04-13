@@ -16,7 +16,6 @@ import { usersApi } from '../../../api/Users/usersApi';
  */
 const HrDashboard = () => {
   const [recentCertificates, setRecentCertificates] = useState([]);
-  const [recentCandidateForms, setRecentCandidateForms] = useState([]);
   const [recentHiringForms, setRecentHiringForms] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [activities, setActivities] = useState([]);
@@ -29,9 +28,8 @@ const HrDashboard = () => {
 
   const loadDashboardData = async () => {
     try {
-      const [certificatesRes, candidateFormsRes, hiringFormsRes, notificationsRes, activitiesRes, unreadRes] = await Promise.allSettled([
+      const [certificatesRes, hiringFormsRes, notificationsRes, activitiesRes, unreadRes] = await Promise.allSettled([
         hrApi.getCertificates({ skip: 0, limit: 5 }),
-        hrApi.getCandidateForms({ skip: 0, limit: 5 }),
         hrApi.getHiringForms({ skip: 0, limit: 5 }),
         usersApi.getNotifications({ limit: 5 }),
         usersApi.getActivities({ limit: 5 }),
@@ -43,10 +41,7 @@ const HrDashboard = () => {
         setRecentCertificates(Array.isArray(certificates) ? certificates : []);
       }
 
-      if (candidateFormsRes.status === 'fulfilled') {
-        const forms = candidateFormsRes.value.data || [];
-        setRecentCandidateForms(Array.isArray(forms) ? forms : []);
-      }
+
 
       if (hiringFormsRes.status === 'fulfilled') {
         const forms = hiringFormsRes.value.data || [];
@@ -79,7 +74,7 @@ const HrDashboard = () => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-[var(--color-text-primary)]">HR Dashboard</h1>
-          <p className="mt-2 text-[var(--color-text-secondary)]">Overview of candidates, hiring, and certificates</p>
+          <p className="mt-2 text-[var(--color-text-secondary)]">Overview of hiring requirements and certificates</p>
         </div>
 
         {/* Statistics Cards */}
@@ -204,7 +199,7 @@ const HrDashboard = () => {
         </div>
 
         {/* Recent Activity */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Recent Certificates */}
           <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
             <div className="flex justify-between items-center mb-4">
@@ -263,61 +258,7 @@ const HrDashboard = () => {
             )}
           </div>
 
-          {/* Recent Candidate Forms */}
-          <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">Recent Candidates</h2>
-              <Link
-                to="/hr/candidates"
-                className="text-sm text-[var(--color-primary)] hover:text-blue-800 font-medium"
-              >
-                View All <HiArrowRight className="inline ml-1" />
-              </Link>
-            </div>
-            {loading ? (
-              <div className="space-y-3">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="animate-pulse">
-                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                  </div>
-                ))}
-              </div>
-            ) : recentCandidateForms.length > 0 ? (
-              <div className="space-y-3">
-                {recentCandidateForms.map((form) => (
-                  <Link
-                    key={form.id}
-                    to={`/hr/candidates/${form.id}`}
-                    className="block border-b border-[var(--color-border-primary)] pb-3 last:border-0 hover:bg-[var(--color-bg-secondary)] -mx-2 px-2 rounded transition-colors"
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <p className="font-medium text-[var(--color-text-primary)]">
-                          {form.first_name} {form.middle_name || ''} {form.last_name}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          {form.position_applied_for || 'Position'}
-                        </p>
-                        {(form.spa?.name || form.spa_name_text) && (
-                          <p className="text-xs text-gray-400 mt-1">
-                            <HiLocationMarker className="inline mr-1" /> {form.spa?.name || form.spa_name_text}
-                          </p>
-                        )}
-                        <p className="text-xs text-gray-400 mt-1">
-                          {form.created_at
-                            ? new Date(form.created_at).toLocaleDateString()
-                            : 'Unknown date'}
-                        </p>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500 text-center py-4">No forms submitted yet</p>
-            )}
-          </div>
+
 
           {/* Recent Hiring Requirements */}
           <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
@@ -376,14 +317,7 @@ const HrDashboard = () => {
         <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-md p-6">
           <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-4">Quick Actions</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Link
-              to="/hr/candidates"
-              className="p-5 border-2 border-[var(--color-border-primary)] rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all group"
-            >
-              <HiOutlineDocument className="text-3xl mb-3 group-hover:scale-110 transition-transform" />
-              <div className="font-semibold text-[var(--color-text-primary)] mb-1">View Candidates</div>
-              <div className="text-sm text-[var(--color-text-secondary)]">Review candidate applications</div>
-            </Link>
+
             <Link
               to="/hr/hiring-data"
               className="p-5 border-2 border-[var(--color-border-primary)] rounded-lg hover:border-green-500 hover:bg-green-50 transition-all group"

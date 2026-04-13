@@ -2,7 +2,7 @@
 User Routers
 API endpoints for user management and authentication
 """
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Response, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from config.database import get_db
 from apps.users.schemas import (
@@ -26,7 +26,8 @@ from apps.users.services.user_service import (
     update_user,
     get_all_users,
 )
-from apps.users.services.auth_service import create_token_response
+from apps.users.services.auth_service import create_token_response, create_access_token
+from apps.notifications.services.notification_service import handle_login_tracking_task
 from apps.users.services.otp_service import generate_otp, verify_otp
 from core.dependencies import get_current_user, get_current_active_user, require_role
 from apps.users.models import User
@@ -80,6 +81,8 @@ async def register(user_data: UserRegistrationSchema, db: AsyncSession = Depends
 async def login(
     credentials: UserLoginSchema, 
     request: Request,
+    response: Response,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db)
 ):
     """Login with username/email and password"""
@@ -99,19 +102,19 @@ async def login(
         if not user:
             # Track failed login attempt (non-blocking)
             try:
-                from apps.notifications.services.activity_service import log_login_activity
                 ip_address = request.client.host if request.client else None
                 user_agent = request.headers.get("user-agent")
-                await log_login_activity(
-                    db=db,
-                    user_id=None,  # User not found
+                background_tasks.add_task(
+                    handle_login_tracking_task,
+                    user_id=None,
+                    user_email=username_or_email,
                     ip_address=ip_address,
                     user_agent=user_agent,
                     status="failed",
                     failure_reason="Invalid credentials"
                 )
             except Exception as e:
-                logger.warning(f"Error tracking failed login (non-critical): {e}")
+                logger.warning(f"Error scheduling failed login tracking (non-critical): {e}")
             
             raise AuthenticationError("Invalid credentials")
         
@@ -125,59 +128,40 @@ async def login(
             logger.error(f"Error updating last login time: {e}", exc_info=True)
             # Don't fail login if this fails, but log it
         
-        # Track successful login (non-blocking - don't fail login if this fails)
+        # Track successful login (background - don't block response)
         try:
-            from apps.notifications.services.activity_service import log_login_activity, log_activity
-            from apps.notifications.services.notification_service import create_login_notification
-            
             ip_address = request.client.host if request.client else None
             user_agent = request.headers.get("user-agent")
-            
-            # Log login activity (fire and forget - don't wait if it fails)
-            try:
-                await log_login_activity(
-                    db=db,
-                    user_id=user.id,
-                    ip_address=ip_address,
-                    user_agent=user_agent,
-                    status="success"
-                )
-            except Exception as e:
-                logger.warning(f"Error logging login activity (non-critical): {e}")
-            
-            # Log password login activity (fire and forget)
-            try:
-                await log_activity(
-                    db=db,
-                    user_id=user.id,
-                    activity_type="password_login_success",
-                    activity_description=f"Password login successful for {user.email}",
-                    entity_type="login",
-                    ip_address=ip_address,
-                    user_agent=user_agent
-                )
-            except Exception as e:
-                logger.warning(f"Error logging password login activity (non-critical): {e}")
-            
-            # Create login notification (fire and forget)
-            try:
-                await create_login_notification(
-                    db=db,
-                    user_id=user.id,
-                    ip_address=ip_address,
-                    user_agent=user_agent,
-                    send_admin_email=True
-                )
-            except Exception as e:
-                logger.warning(f"Error creating login notification (non-critical): {e}")
+            background_tasks.add_task(
+                handle_login_tracking_task,
+                user_id=user.id,
+                user_email=user.email,
+                ip_address=ip_address,
+                user_agent=user_agent,
+                status="success"
+            )
         except Exception as e:
-            logger.warning(f"Error in login tracking (non-critical): {e}")
+            logger.warning(f"Error scheduling login tracking tasks: {e}")
         
         # Ensure user is refreshed before creating token response
         try:
             await db.refresh(user)
         except Exception as e:
             logger.warning(f"Error refreshing user (non-critical): {e}")
+        
+        # Create access token and set cookie
+        user_id = str(user.id)
+        access_token = create_access_token(data={"sub": user_id})
+        
+        # Set HTTP-only cookie
+        response.set_cookie(
+            key="access_token",
+            value=access_token,
+            httponly=True,
+            secure=True,  # Set to True in production (HTTPS)
+            samesite="lax",
+            max_age=30 * 24 * 60 * 60,  # 30 days
+        )
         
         # Create and return token response (this is the critical operation)
         return create_token_response(user)
@@ -204,6 +188,8 @@ async def login(
 async def login_with_email(
     credentials: EmailLoginSchema, 
     request: Request,
+    response: Response,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db)
 ):
     """Login with email and password"""
@@ -241,60 +227,39 @@ async def login_with_email(
         except Exception as e:
             logger.error(f"Error updating last login time: {e}", exc_info=True)
         
-        # Track successful login (non-blocking)
+        # Track successful login (background)
         try:
-            from apps.notifications.services.activity_service import log_login_activity, log_activity
-            from apps.notifications.services.notification_service import create_login_notification
-            from datetime import datetime, timezone
-            
             ip_address = request.client.host if request.client else None
             user_agent = request.headers.get("user-agent")
-            
-            # Log login activity (fire and forget)
-            try:
-                await log_login_activity(
-                    db=db,
-                    user_id=user.id,
-                    ip_address=ip_address,
-                    user_agent=user_agent,
-                    status="success"
-                )
-            except Exception as e:
-                logger.warning(f"Error logging login activity (non-critical): {e}")
-            
-            # Log password login activity (fire and forget)
-            try:
-                await log_activity(
-                    db=db,
-                    user_id=user.id,
-                    activity_type="password_login_success",
-                    activity_description=f"Password login successful for {user.email}",
-                    entity_type="login",
-                    ip_address=ip_address,
-                    user_agent=user_agent
-                )
-            except Exception as e:
-                logger.warning(f"Error logging password login activity (non-critical): {e}")
-            
-            # Create login notification (fire and forget)
-            try:
-                await create_login_notification(
-                    db=db,
-                    user_id=user.id,
-                    ip_address=ip_address,
-                    user_agent=user_agent,
-                    send_admin_email=True
-                )
-            except Exception as e:
-                logger.warning(f"Error creating login notification (non-critical): {e}")
+            background_tasks.add_task(
+                handle_login_tracking_task,
+                user_id=user.id,
+                user_email=user.email,
+                ip_address=ip_address,
+                user_agent=user_agent,
+                status="success"
+            )
         except Exception as e:
-            logger.warning(f"Error in login tracking (non-critical): {e}")
+            logger.warning(f"Error scheduling login tracking tasks: {e}")
         
         # Ensure user is refreshed before creating token response
         try:
             await db.refresh(user)
         except Exception as e:
             logger.warning(f"Error refreshing user (non-critical): {e}")
+        
+        # Create access token and set cookie
+        user_id = str(user.id)
+        access_token = create_access_token(data={"sub": user_id})
+        
+        response.set_cookie(
+            key="access_token",
+            value=access_token,
+            httponly=True,
+            secure=True,
+            samesite="lax",
+            max_age=30 * 24 * 60 * 60,
+        )
         
         # Create and return token response (critical operation)
         return create_token_response(user)
@@ -362,6 +327,8 @@ async def request_login_otp(
 async def login_with_otp(
     otp_data: OTPLoginSchema, 
     request: Request,
+    response: Response,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db)
 ):
     """Login with email and OTP"""
@@ -401,8 +368,6 @@ async def login_with_otp(
     
     # Track successful login
     try:
-        from apps.notifications.services.activity_service import log_login_activity
-        from apps.notifications.services.notification_service import create_login_notification
         from datetime import datetime, timezone
         
         ip_address = request.client.host if request.client else None
@@ -413,21 +378,14 @@ async def login_with_otp(
         await db.commit()
         await db.refresh(user)  # Refresh to ensure updated_at is loaded
         
-        # Log login activity
-        await log_login_activity(
-            db=db,
+        # Track successful login (background)
+        background_tasks.add_task(
+            handle_login_tracking_task,
             user_id=user.id,
+            user_email=user.email,
             ip_address=ip_address,
             user_agent=user_agent,
             status="success"
-        )
-        
-        # Create login notification
-        await create_login_notification(
-            db=db,
-            user_id=user.id,
-            ip_address=ip_address,
-            user_agent=user_agent
         )
     except Exception:
         pass
@@ -437,6 +395,19 @@ async def login_with_otp(
         await db.refresh(user)
     except Exception:
         pass
+    
+    # Create access token and set cookie
+    user_id = str(user.id)
+    access_token = create_access_token(data={"sub": user_id})
+    
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        max_age=30 * 24 * 60 * 60,
+    )
     
     return create_token_response(user)
 
@@ -611,29 +582,22 @@ async def reset_password(
         raise HTTPException(status_code=500, detail="An error occurred while resetting password.")
 
 
+@auth_router.post("/logout", response_model=MessageResponseSchema)
+async def logout(response: Response):
+    """Logout by clearing the access_token cookie"""
+    response.delete_cookie(
+        key="access_token",
+        httponly=True,
+        secure=True,
+        samesite="lax"
+    )
+    return MessageResponseSchema(message="Successfully logged out")
+
+
 @auth_router.get("/user", response_model=UserResponseSchema)
 async def get_current_user_info(current_user: User = Depends(get_current_active_user)):
-    """Get current authenticated user"""
-    try:
-        return UserResponseSchema(
-            id=current_user.id,
-            username=current_user.username,
-            email=current_user.email,
-            first_name=current_user.first_name,
-            last_name=current_user.last_name,
-            role=current_user.role,
-            phone_number=current_user.phone_number,
-            is_active=current_user.is_active,
-            is_verified=current_user.is_verified,
-            spa_id=current_user.spa_id,
-            created_at=current_user.created_at.isoformat(),
-            updated_at=current_user.updated_at.isoformat(),
-        )
-    except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"Error getting current user info: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve user info: {str(e)}")
+    """Get current authenticated user info for session management"""
+    return current_user
 
 
 @auth_router.put("/user", response_model=UserResponseSchema)
@@ -652,20 +616,7 @@ async def update_current_user_profile(
             raise HTTPException(status_code=400, detail="No valid fields to update")
         
         user = await update_user(db, current_user.id, update_dict)
-        return UserResponseSchema(
-            id=user.id,
-            username=user.username,
-            email=user.email,
-            first_name=user.first_name,
-            last_name=user.last_name,
-            role=user.role,
-            phone_number=user.phone_number,
-            is_active=user.is_active,
-            is_verified=user.is_verified,
-            spa_id=user.spa_id,
-            created_at=user.created_at.isoformat(),
-            updated_at=user.updated_at.isoformat(),
-        )
+        return user
     except HTTPException:
         raise
     except ValidationError as e:
@@ -687,24 +638,7 @@ async def list_users(
 ):
     """List all users (Admin/Super Admin only)"""
     try:
-        users = await get_all_users(db, skip=skip, limit=limit)
-        return [
-            UserResponseSchema(
-                id=user.id,
-                username=user.username,
-                email=user.email,
-                first_name=user.first_name,
-                last_name=user.last_name,
-                role=user.role,
-                phone_number=user.phone_number,
-                is_active=user.is_active,
-                is_verified=user.is_verified,
-                spa_id=user.spa_id,
-                created_at=user.created_at.isoformat(),
-                updated_at=user.updated_at.isoformat(),
-            )
-            for user in users
-        ]
+        return await get_all_users(db, skip=skip, limit=limit)
     except Exception as e:
         import logging
         logger = logging.getLogger(__name__)
@@ -720,7 +654,7 @@ async def create_user_by_admin(
 ):
     """Create a new user (Admin/Super Admin only)"""
     try:
-        user = await create_user(
+        return await create_user(
             db=db,
             username=user_data.username,
             email=user_data.email,
@@ -730,20 +664,6 @@ async def create_user_by_admin(
             role=user_data.role,
             phone_number=user_data.phone_number,
             spa_id=user_data.spa_id,
-        )
-        return UserResponseSchema(
-            id=user.id,
-            username=user.username,
-            email=user.email,
-            first_name=user.first_name,
-            last_name=user.last_name,
-            role=user.role,
-            phone_number=user.phone_number,
-            is_active=user.is_active,
-            is_verified=user.is_verified,
-            spa_id=user.spa_id,
-            created_at=user.created_at.isoformat(),
-            updated_at=user.updated_at.isoformat(),
         )
     except ValidationError as e:
         error_detail = getattr(e, 'message', str(e))
@@ -760,20 +680,7 @@ async def get_user(
     user = await get_user_by_id(db, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return UserResponseSchema(
-        id=user.id,
-        username=user.username,
-        email=user.email,
-        first_name=user.first_name,
-        last_name=user.last_name,
-        role=user.role,
-        phone_number=user.phone_number,
-        is_active=user.is_active,
-        is_verified=user.is_verified,
-        spa_id=user.spa_id,
-        created_at=user.created_at.isoformat(),
-        updated_at=user.updated_at.isoformat(),
-    )
+    return user
 
 
 @users_router.put("/{user_id}", response_model=UserResponseSchema)
@@ -785,21 +692,7 @@ async def update_user_info(
 ):
     """Update user (Admin/Super Admin only)"""
     update_dict = user_data.model_dump(exclude_unset=True)
-    user = await update_user(db, user_id, update_dict)
-    return UserResponseSchema(
-        id=user.id,
-        username=user.username,
-        email=user.email,
-        first_name=user.first_name,
-        last_name=user.last_name,
-        role=user.role,
-        phone_number=user.phone_number,
-        is_active=user.is_active,
-        is_verified=user.is_verified,
-        spa_id=user.spa_id,
-        created_at=user.created_at.isoformat(),
-        updated_at=user.updated_at.isoformat(),
-    )
+    return await update_user(db, user_id, update_dict)
 
 
 @users_router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)

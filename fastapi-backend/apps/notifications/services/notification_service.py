@@ -8,6 +8,7 @@ from sqlalchemy import select, and_, or_, desc
 from datetime import datetime, timezone
 
 from apps.users.models import Notification, LoginHistory, UserActivity, User
+from config.database import async_session_maker
 import logging
 
 logger = logging.getLogger(__name__)
@@ -149,6 +150,74 @@ This is an automated notification from SPADocs system.
             # Don't fail the login if email fails
     
     return notification
+
+
+async def handle_login_tracking_task(
+    user_id: int,
+    user_email: str,
+    ip_address: Optional[str] = None,
+    user_agent: Optional[str] = None,
+    status: str = "success",
+    failure_reason: Optional[str] = None
+):
+    """
+    Background task to handle all login-related tracking and notifications.
+    This runs after the user has received their login response.
+    """
+    if async_session_maker is None:
+        logger.error("async_session_maker not initialized for background task")
+        return
+
+    async with async_session_maker() as db:
+        try:
+            from apps.notifications.services.activity_service import log_login_activity, log_activity
+            
+            # 1. Log login activity (history)
+            try:
+                await log_login_activity(
+                    db=db,
+                    user_id=user_id,
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                    status=status,
+                    failure_reason=failure_reason
+                )
+            except Exception as e:
+                logger.warning(f"Background Task: Error logging login activity: {e}")
+
+            if status == "success":
+                # 2. Log general activity
+                try:
+                    await log_activity(
+                        db=db,
+                        user_id=user_id,
+                        activity_type="password_login_success",
+                        activity_description=f"Password login successful for {user_email}",
+                        entity_type="login",
+                        ip_address=ip_address,
+                        user_agent=user_agent
+                    )
+                except Exception as e:
+                    logger.warning(f"Background Task: Error logging general activity: {e}")
+
+                # 3. Create login notification (includes admin email)
+                try:
+                    await create_login_notification(
+                        db=db,
+                        user_id=user_id,
+                        ip_address=ip_address,
+                        user_agent=user_agent,
+                        send_admin_email=True
+                    )
+                except Exception as e:
+                    logger.warning(f"Background Task: Error creating login notification: {e}")
+            
+            # No need to manually commit here as the service functions do it,
+            # but we ensured they use the same background session.
+        except Exception as e:
+            logger.error(f"Critical error in handle_login_tracking_task: {e}", exc_info=True)
+        finally:
+            await db.close()
 
 
 async def create_certificate_notification(

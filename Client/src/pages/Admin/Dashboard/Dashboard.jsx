@@ -21,7 +21,6 @@ import { usersApi } from '../../../api/Users/usersApi';
  */
 const AdminDashboard = () => {
   const [recentCertificates, setRecentCertificates] = useState([]);
-  const [recentCandidateForms, setRecentCandidateForms] = useState([]);
   const [recentHiringForms, setRecentHiringForms] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [activities, setActivities] = useState([]);
@@ -34,9 +33,8 @@ const AdminDashboard = () => {
 
   const loadDashboardData = async () => {
     try {
-      const [certificatesRes, candidateFormsRes, hiringFormsRes, notificationsRes, activitiesRes, unreadRes] = await Promise.allSettled([
+      const [certificatesRes, hiringFormsRes, notificationsRes, activitiesRes, unreadRes] = await Promise.allSettled([
         adminApi.certificates.getAllCertificates({ skip: 0, limit: 5 }),
-        adminApi.forms.getCandidateForms(0, 5),
         adminApi.forms.getHiringForms(0, 5),
         usersApi.getNotifications({ limit: 5 }),
         usersApi.getActivities({ limit: 5 }),
@@ -49,10 +47,7 @@ const AdminDashboard = () => {
         setRecentCertificates(Array.isArray(certificates) ? certificates.slice(0, 5) : []);
       }
 
-      if (candidateFormsRes.status === 'fulfilled') {
-        const forms = candidateFormsRes.value.data || [];
-        setRecentCandidateForms(Array.isArray(forms) ? forms.slice(0, 5) : []);
-      }
+
 
       if (hiringFormsRes.status === 'fulfilled') {
         const forms = hiringFormsRes.value.data || [];
@@ -210,7 +205,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Recent Activity */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Recent Certificates */}
           <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
             <div className="flex justify-between items-center mb-4">
@@ -282,66 +277,14 @@ const AdminDashboard = () => {
             )}
           </div>
 
-          {/* Recent Candidate Forms */}
-          <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">Recent Candidates</h2>
-              <Link
-                to="/admin/forms-data/candidates"
-                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-              >
-                View All <HiArrowRight className="inline ml-1" />
-              </Link>
-            </div>
-            {loading ? (
-              <div className="space-y-3">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="animate-pulse">
-                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                  </div>
-                ))}
-              </div>
-            ) : recentCandidateForms.length > 0 ? (
-              <div className="space-y-3">
-                {recentCandidateForms.map((form) => (
-                  <Link
-                    key={form.id}
-                    to={`/admin/forms-data/candidates/${form.id}`}
-                    className="block border-b border-gray-200 pb-3 last:border-0 hover:bg-gray-50 -mx-2 px-2 rounded transition-colors"
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900">
-                          {form.first_name} {form.middle_name || ''} {form.last_name}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          {form.position_applied_for || 'Position'}
-                        </p>
-                        {(form.spa?.name || form.spa_name_text) && (
-                          <p className="text-xs text-gray-400 mt-1">
-                            <HiLocationMarker className="inline mr-1" /> {form.spa?.name || form.spa_name_text}
-                          </p>
-                        )}
-                        <p className="text-xs text-gray-400 mt-1">
-                          {new Date(form.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500 text-center py-4">No forms submitted yet</p>
-            )}
-          </div>
+
 
           {/* Recent Hiring Forms */}
           <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold text-gray-900">Recent Hiring Forms</h2>
               <Link
-                to="/admin/forms-data/hiring-forms"
+                to="/admin/hiring"
                 className="text-sm text-blue-600 hover:text-blue-800 font-medium"
               >
                 View All <HiArrowRight className="inline ml-1" />
@@ -423,17 +366,10 @@ const AdminDashboard = () => {
               <div className="font-semibold text-gray-900 mb-1">Manage SPAs</div>
               <div className="text-sm text-gray-600">Add and manage SPA locations</div>
             </Link>
+
             <Link
-              to="/admin/forms-data/candidates"
-              className="p-5 border-2 border-gray-200 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition-all group"
-            >
-              <HiOutlineDocument className="text-3xl mb-3 group-hover:scale-110 transition-transform" />
-              <div className="font-semibold text-gray-900 mb-1">Candidate Forms</div>
-              <div className="text-sm text-gray-600">View candidate applications</div>
-            </Link>
-            <Link
-              to="/admin/forms-data/hiring-forms"
-              className="p-5 border-2 border-gray-200 rounded-lg hover:border-pink-500 hover:bg-pink-50 transition-all group"
+              to="/admin/hiring"
+              className="p-5 border-2 border-gray-200 rounded-lg hover:border-teal-500 hover:bg-teal-50 transition-all group"
             >
               <HiOutlineBriefcase className="text-3xl mb-3 group-hover:scale-110 transition-transform" />
               <div className="font-semibold text-gray-900 mb-1">Hiring Forms</div>

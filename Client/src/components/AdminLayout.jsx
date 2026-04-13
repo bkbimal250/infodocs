@@ -21,17 +21,10 @@ const AdminLayout = ({ children }) => {
   }, []);
 
   const loadUser = async () => {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-
     try {
       const response = await authApi.getCurrentUser();
       setUser(response.data);
     } catch (err) {
-      localStorage.removeItem('authToken');
       localStorage.removeItem('user');
     } finally {
       setLoading(false);
@@ -39,7 +32,6 @@ const AdminLayout = ({ children }) => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('authToken');
     localStorage.removeItem('user');
     setUser(null);
     navigate('/login');

@@ -248,17 +248,13 @@ async def get_query_types(
     active_only: bool = True
 ) -> List[QueryType]:
     """Get all query types"""
-    conditions = []
-    if active_only:
-        conditions.append(QueryType.is_active == True)
-    
     stmt = select(QueryType)
-    if conditions:
-        stmt = stmt.where(and_(*conditions))
-    stmt = stmt.order_by(QueryType.name)
+    if active_only:
+        stmt = stmt.where(QueryType.is_active == True)
     
+    stmt = stmt.order_by(QueryType.name)
     result = await db.execute(stmt)
-    return list(result.scalars().all())
+    return result.scalars().all()
 
 
 async def get_query_type_by_id(

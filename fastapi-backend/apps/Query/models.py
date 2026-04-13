@@ -44,9 +44,10 @@ class QueryType(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    # Index for faster lookup
+    # Indexes for faster lookup
     __table_args__ = (
         Index("idx_query_types_name", "name"),
+        Index("idx_query_types_active", "is_active"),
     )
 
     def __repr__(self):

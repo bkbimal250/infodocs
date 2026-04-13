@@ -9,15 +9,14 @@ if (import.meta.env.DEV) {
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 60000,
+  withCredentials: true, // Required for sending cookies across origins
 });
 
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      config.headers = config.headers || {};
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    // No longer need to manually set Authorization header as the browser
+    // will automatically include the 'access_token' cookie.
+    
     if (config.data instanceof FormData) {
       if (config.headers && 'Content-Type' in config.headers) {
         delete config.headers['Content-Type'];
@@ -68,9 +67,9 @@ apiClient.interceptors.response.use(
     }
 
     if (error.response?.status === 401) {
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('user');
-      if (window.location.pathname !== '/login') {
+      // Session has expired or cookie is invalid
+      localStorage.removeItem('user'); // Only keep preference-related items
+      if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
         window.location.href = '/login';
       }
     }

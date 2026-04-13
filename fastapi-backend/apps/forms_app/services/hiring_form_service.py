@@ -164,3 +164,63 @@ async def get_all_hiring_forms_with_users(db: AsyncSession, skip: int = 0, limit
                 form.creator = users[form.created_by]
     
     return forms
+
+async def get_forms_statistics(db: AsyncSession):
+    """Get forms statistics: total, by SPA, by user"""
+    from sqlalchemy import func
+    from apps.users.models import User
+    from apps.forms_app.models import SPA, Hiring_Form
+    
+    # Hiring forms statistics
+    hiring_total_stmt = select(func.count(Hiring_Form.id))
+    hiring_result = await db.execute(hiring_total_stmt)
+    hiring_total = hiring_result.scalar() or 0
+    
+    # By SPA - Hiring forms
+    spa_hiring_stmt = select(Hiring_Form.spa_id, func.count(Hiring_Form.id)).group_by(Hiring_Form.spa_id)
+    spa_hiring_result = await db.execute(spa_hiring_stmt)
+    spa_hiring_counts = {spa_id: count for spa_id, count in spa_hiring_result.all() if spa_id}
+    
+    # Get SPA details
+    spa_ids = set(spa_hiring_counts.keys())
+    spa_details = {}
+    if spa_ids:
+        spa_stmt = select(SPA).where(SPA.id.in_(spa_ids))
+        spa_result = await db.execute(spa_stmt)
+        for spa in spa_result.scalars().all():
+            spa_details[spa.id] = {
+                "id": spa.id,
+                "name": spa.name,
+                "city": spa.city,
+                "hiring_count": spa_hiring_counts.get(spa.id, 0),
+                "total_count": spa_hiring_counts.get(spa.id, 0)
+            }
+    
+    # By User - Hiring forms
+    user_hiring_stmt = select(Hiring_Form.created_by, func.count(Hiring_Form.id)).group_by(Hiring_Form.created_by)
+    user_hiring_result = await db.execute(user_hiring_stmt)
+    user_hiring_counts = {user_id: count for user_id, count in user_hiring_result.all() if user_id}
+    
+    # Get user details
+    user_ids = set(user_hiring_counts.keys())
+    user_details = {}
+    if user_ids:
+        user_stmt = select(User).where(User.id.in_(user_ids))
+        user_result = await db.execute(user_stmt)
+        for user in user_result.scalars().all():
+            user_details[user.id] = {
+                "id": user.id,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "email": user.email,
+                "hiring_count": user_hiring_counts.get(user.id, 0),
+                "total_count": user_hiring_counts.get(user.id, 0)
+            }
+    
+    return {
+        "total_candidate_forms": 0,  # Keeping for frontend compatibility
+        "total_hiring_forms": hiring_total,
+        "total_forms": hiring_total,
+        "by_spa": list(spa_details.values()),
+        "by_user": list(user_details.values())
+    }

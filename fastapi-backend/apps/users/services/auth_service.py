@@ -29,28 +29,6 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 
 
 def create_token_response(user: User) -> TokenResponseSchema:
-    """Create token response with user data"""
-    user_id = str(user.id)
-    access_token = create_access_token(data={"sub": user_id})
-    
-    # Safely get datetime strings - handle if they're None or not loaded
-    created_at_str = user.created_at.isoformat() if user.created_at else datetime.now(timezone.utc).isoformat()
-    updated_at_str = user.updated_at.isoformat() if user.updated_at else datetime.now(timezone.utc).isoformat()
-    
-    return TokenResponseSchema(
-        access_token=access_token,
-        user=UserResponseSchema(
-            id=user.id,
-            username=user.username,
-            email=user.email,
-            first_name=user.first_name,
-            last_name=user.last_name,
-            role=user.role,
-            phone_number=user.phone_number,
-            is_active=user.is_active,
-            is_verified=user.is_verified,
-            created_at=created_at_str,
-            updated_at=updated_at_str,
-        )
-    )
+    """Create token response with success message (token set via cookie)"""
+    return TokenResponseSchema(message="Login successful")
 

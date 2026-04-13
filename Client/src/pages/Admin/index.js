@@ -5,8 +5,8 @@ export { AdminDashboard, DashboardStats } from './Dashboard';
 export { AdminUsers, CreateUser, UsersDetails, LastLoginHistory, AddUserPage, EditUserPage } from './Users';
 
 // Admin Certificates
-export { 
-  AdminCertificates, 
+export {
+  AdminCertificates,
   AdminTemplates,
   TemplatesList,
   AddTemplatePage,
@@ -24,20 +24,6 @@ export { AdminSpas, AddSpa, EditSpa, SpaTable, ViewSpaDetails, EditSpaPage, AddS
 
 // Admin Layouts
 export { AdminSidebar } from './Layouts';
-
-// Admin Forms Data
-export {
-  FormsData,
-  FormsStatistics,
-  FormsBySpa,
-  FormsByUser,
-  AllFormsList,
-  // Legacy exports
-  CandidatesData,
-  CandidatesTable,
-  CandidateViewDetails,
-  HiringFormsData,
-} from './FormsData';
 
 // Admin Notifications & Activities
 export { RecentNotification } from './RecentNotification';

@@ -33,11 +33,10 @@ const DashboardStats = () => {
   const loadStats = async () => {
     try {
       // Load all data in parallel
-      const [usersRes, certificatesStatsRes, templatesRes, formsRes, spasRes, hiringFormsRes, analyticsRes] = await Promise.allSettled([
+      const [usersRes, certificatesStatsRes, templatesRes, spasRes, hiringFormsRes, analyticsRes] = await Promise.allSettled([
         adminApi.users.getUsers(),
         adminApi.certificates.getStatistics(), // Use statistics endpoint for accurate count
         adminApi.certificates.getTemplates(),
-        adminApi.forms.getCandidateForms(0, 1),
         adminApi.forms.getAllSpas(),
         adminApi.forms.getHiringForms(0, 1),
         adminApi.analytics.getAnalytics(),
@@ -89,22 +88,6 @@ const DashboardStats = () => {
         newStats.totalTemplates = Array.isArray(templates) ? templates.length : 0;
       }
 
-      // Process forms (get total count - need to fetch all)
-      if (formsRes.status === 'fulfilled') {
-        const forms = formsRes.value.data || [];
-        newStats.totalForms = Array.isArray(forms) ? forms.length : 0;
-        // If we got limited results, try to get a better count
-        if (forms.length === 1) {
-          // Likely got only 1 result, try fetching more
-          try {
-            const allFormsRes = await adminApi.forms.getCandidateForms(0, 1000);
-            const allForms = allFormsRes.data || [];
-            newStats.totalForms = Array.isArray(allForms) ? allForms.length : 0;
-          } catch (e) {
-            // Use the count we have
-          }
-        }
-      }
 
       // Process SPAs
       if (spasRes.status === 'fulfilled') {
@@ -170,14 +153,6 @@ const DashboardStats = () => {
       color: 'purple',
     },
     {
-      title: 'Candidate Forms',
-      value: stats.totalForms,
-      subtitle: 'Submitted',
-      icon: HiOutlineDocument,
-      color: 'orange',
-      link: '/admin/forms-data/candidates',
-    },
-    {
       title: 'SPA Locations',
       value: stats.totalSpas,
       subtitle: 'Registered',
@@ -191,7 +166,7 @@ const DashboardStats = () => {
       subtitle: 'Submitted',
       icon: HiOutlineBriefcase,
       color: 'pink',
-      link: '/admin/forms-data/hiring-forms',
+      link: '/admin/hiring',
     },
   ];
 

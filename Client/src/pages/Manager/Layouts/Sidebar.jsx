@@ -39,11 +39,7 @@ const ManagerSidebar = ({ onLinkClick }) => {
       path: '/manager/staff',
       icon: HiOutlineSparkles,
     },
-    {
-      name: 'Undertaking-jobform',
-      path: '/manager/candidates',
-      icon: HiOutlineUser,
-    },
+
     {
       name: 'Hiring',
       path: '/manager/hiring',

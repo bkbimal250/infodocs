@@ -40,10 +40,6 @@ const ViewSpaDetails = lazy(() => import('../pages/Admin').then(module => ({ def
 const EditSpaPage = lazy(() => import('../pages/Admin').then(module => ({ default: module.EditSpaPage })));
 const AddSpaPage = lazy(() => import('../pages/Admin').then(module => ({ default: module.AddSpaPage })));
 const AdminSpas = lazy(() => import('../pages/Admin').then(module => ({ default: module.AdminSpas })));
-const FormsData = lazy(() => import('../pages/Admin').then(module => ({ default: module.FormsData })));
-const CandidatesData = lazy(() => import('../pages/Admin').then(module => ({ default: module.CandidatesData })));
-const CandidateViewDetails = lazy(() => import('../pages/Admin').then(module => ({ default: module.CandidateViewDetails })));
-const HiringFormsData = lazy(() => import('../pages/Admin').then(module => ({ default: module.HiringFormsData })));
 const CreateUser = lazy(() => import('../pages/Admin').then(module => ({ default: module.CreateUser })));
 const UsersDetails = lazy(() => import('../pages/Admin').then(module => ({ default: module.UsersDetails })));
 const LastLoginHistory = lazy(() => import('../pages/Admin').then(module => ({ default: module.LastLoginHistory })));
@@ -61,11 +57,10 @@ const AdminViewStaffPage = lazy(() => import('../pages/Admin').then(module => ({
 // Manager Pages - Lazy Loaded
 const ManagerDashboard = lazy(() => import('../pages/Manager').then(module => ({ default: module.ManagerDashboard })));
 const ManagerCertificates = lazy(() => import('../pages/Manager').then(module => ({ default: module.ManagerCertificates })));
-const ManagerCandidates = lazy(() => import('../pages/Manager').then(module => ({ default: module.ManagerCandidates })));
 const ManagerCertificateCreation = lazy(() => import('../pages/Manager').then(module => ({ default: module.ManagerCertificateCreation })));
 const ManagerHiring = lazy(() => import('../pages/Manager').then(module => ({ default: module.ManagerHiring })));
 
-const ViewCandidatesDetails = lazy(() => import('../pages/Manager/Candidates/ViewCandidatesDetails'));
+
 const ManagerViewHiringDetails = lazy(() => import('../pages/Manager/Hiring').then(module => ({ default: module.ViewHiringDetails })));
 const ManagerProfile = lazy(() => import('../pages/Manager/Profiles').then(module => ({ default: module.ManagerProfile })));
 const ManagerTutorials = lazy(() => import('../pages/Manager/tutorials/tutorials'));
@@ -77,8 +72,6 @@ const ManagerQuery = lazy(() => import('../pages/Manager/Query/Query'));
 
 // HR Pages - Lazy Loaded
 const HrDashboard = lazy(() => import('../pages/hr/Dashboard').then(module => ({ default: module.HrDashboard })));
-const Candidatespage = lazy(() => import('../pages/hr/Candidates').then(module => ({ default: module.Candidatespage })));
-const CandidateView = lazy(() => import('../pages/hr/Candidates').then(module => ({ default: module.CandidateView })));
 const Hiringpages = lazy(() => import('../pages/hr/HiringData').then(module => ({ default: module.Hiringpages })));
 const ViewData = lazy(() => import('../pages/hr/HiringData').then(module => ({ default: module.ViewData })));
 const HrProfile = lazy(() => import('../pages/hr/Profiles').then(module => ({ default: module.HrProfile })));
@@ -103,12 +96,10 @@ const UserRecentActivity = lazy(() => import('../pages/Users').then(module => ({
 
 const UserQuery = lazy(() => import('../pages/Users/Query/Query'));
 const UserTutorials = lazy(() => import('../pages/Users/tutorials/tutorials'));
-const UserViewCandidatesDetails = lazy(() => import('../pages/Users/Forms').then(module => ({ default: module.ViewCandidatesDetails })));
 const UserViewHiringDetails = lazy(() => import('../pages/Users/JobHirings').then(module => ({ default: module.ViewHiringDetails })));
 
 // Public Forms
 // Public Forms - Lazy Loaded
-const CandidateForm = lazy(() => import('../publicforms').then(module => ({ default: module.CandidateForm })));
 const HiringForms = lazy(() => import('../publicforms').then(module => ({ default: module.HiringForms })));
 
 // Home Pages
@@ -205,30 +196,12 @@ const AppRouter = () => {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/forms"
-            element={
-              <ProtectedRoute allowedRoles={['user', 'admin', 'super_admin', 'spa_manager', 'hr']}>
-                <Layout>
-                  <CandidateForm />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/candidate-form"
-            element={
-              <ProtectedRoute allowedRoles={['user', 'admin', 'super_admin', 'spa_manager', 'hr']}>
-                <Layout>
-                  <CandidateForm />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
+
+
           <Route
             path="/hiring-forms"
             element={
-              <ProtectedRoute allowedRoles={['user', 'admin', 'super_admin', 'spa_manager', 'hr']}>
+              <ProtectedRoute allowedRoles={['admin', 'super_admin', 'spa_manager', 'hr']}>
                 <Layout>
                   <HiringForms />
                 </Layout>
@@ -448,46 +421,6 @@ const AppRouter = () => {
             }
           />
           <Route
-            path="/admin/forms-data"
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'super_admin', 'spa_manager']}>
-                <AdminLayout>
-                  <FormsData />
-                </AdminLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/forms-data/candidates"
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'super_admin', 'spa_manager']}>
-                <AdminLayout>
-                  <CandidatesData />
-                </AdminLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/forms-data/candidates/:id"
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'super_admin', 'spa_manager']}>
-                <AdminLayout>
-                  <CandidateViewDetails />
-                </AdminLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/forms-data/hiring"
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'super_admin', 'spa_manager']}>
-                <AdminLayout>
-                  <HiringFormsData />
-                </AdminLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
             path="/admin/notifications"
             element={
               <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
@@ -598,8 +531,7 @@ const AppRouter = () => {
             }
           >
             <Route path="dashboard" element={<HrDashboard />} />
-            <Route path="candidates" element={<Candidatespage />} />
-            <Route path="candidates/:id" element={<CandidateView />} />
+
             <Route path="certificates" element={<HrCertificates />} />
             <Route path="certificate-creation" element={<HrCertificateCreation />} />
             <Route path="hiring-data" element={<Hiringpages />} />
@@ -683,26 +615,6 @@ const AppRouter = () => {
             }
           />
           <Route
-            path="/manager/candidates"
-            element={
-              <ProtectedRoute allowedRoles={['spa_manager', 'admin', 'super_admin']}>
-                <ManagerLayout>
-                  <ManagerCandidates />
-                </ManagerLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/manager/candidates/:id"
-            element={
-              <ProtectedRoute allowedRoles={['spa_manager', 'admin', 'super_admin']}>
-                <ManagerLayout>
-                  <ViewCandidatesDetails />
-                </ManagerLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
             path="/manager/hiring"
             element={
               <ProtectedRoute allowedRoles={['spa_manager', 'admin', 'super_admin']}>
@@ -712,6 +624,7 @@ const AppRouter = () => {
               </ProtectedRoute>
             }
           />
+
           <Route
             path="/manager/hiring/:id"
             element={
@@ -814,16 +727,7 @@ const AppRouter = () => {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/user/forms/candidates/:id"
-            element={
-              <ProtectedRoute allowedRoles={['user', 'admin', 'super_admin', 'spa_manager', 'hr']}>
-                <UserLayout>
-                  <UserViewCandidatesDetails />
-                </UserLayout>
-              </ProtectedRoute>
-            }
-          />
+
           <Route
             path="/user/job-hirings"
             element={

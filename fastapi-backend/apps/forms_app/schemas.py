@@ -71,71 +71,7 @@ class SPASelectionResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
-# Candidate Form Schemas
-class CandidateFormBase(BaseModel):
-    """Base candidate form schema"""
-    spa_id: Optional[int] = None
-    spa_name_text: Optional[str] = None
-    first_name: str
-    middle_name: Optional[str] = None
-    last_name: str
-    current_address: str
-    aadhar_address: Optional[str] = None
-    city: str
-    zip_code: str
-    state: str
-    country: str = "India"
-    phone_number: str
-    work_experience: str
-    Therapist_experience: str
-    alternate_number: Optional[str] = None
-    age: int
-    position_applied_for: str
-    education_certificate_courses: Optional[str] = None
 
-
-class CandidateFormCreate(CandidateFormBase):
-    """Candidate form creation schema"""
-    pass
-
-
-class CandidateFormUpdate(BaseModel):
-    """Candidate form update schema"""
-    spa_id: Optional[int] = None
-    spa_name_text: Optional[str] = None
-    first_name: Optional[str] = None
-    middle_name: Optional[str] = None
-    last_name: Optional[str] = None
-    current_address: Optional[str] = None
-    aadhar_address: Optional[str] = None
-    city: Optional[str] = None
-    zip_code: Optional[str] = None
-    state: Optional[str] = None
-    country: Optional[str] = None
-    phone_number: Optional[str] = None
-    work_experience: Optional[str] = None
-    Therapist_experience: Optional[str] = None
-    alternate_number: Optional[str] = None
-    age: Optional[int] = None
-    position_applied_for: Optional[str] = None
-    education_certificate_courses: Optional[str] = None
-
-
-class CandidateFormResponse(CandidateFormBase):
-    """Candidate form response schema"""
-    id: int
-    spa: Optional[SPAResponse] = None
-    passport_size_photo: Optional[str] = None
-    age_proof_document: Optional[str] = None
-    aadhar_card_front: Optional[str] = None
-    aadhar_card_back: Optional[str] = None
-    pan_card: Optional[str] = None
-    signature: Optional[str] = None
-    documents: Optional[List[str]] = None
-    created_at: datetime
-    updated_at: datetime
-    
-    model_config = {"from_attributes": True}
 
 
 # Hiring Form Schemas

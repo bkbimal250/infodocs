@@ -10,7 +10,7 @@ from sqlalchemy import (
     Column, Integer, String, Boolean, DateTime,
     Enum as SQLEnum, Text, JSON, ForeignKey
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, declared_attr
 from sqlalchemy.sql import func
 
 from config.database import Base
@@ -101,6 +101,10 @@ class CertificateBase(Base):
     
     # Track who created this certificate
     created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    
+    @declared_attr
+    def creator(cls):
+        return relationship("User", foreign_keys=[cls.created_by], lazy="select")
 
     certificate_pdf = Column(Text, nullable=True)
     certificate_data = Column(JSON, default=dict, nullable=False)

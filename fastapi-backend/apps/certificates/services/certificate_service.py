@@ -445,8 +445,22 @@ async def prepare_certificate_data(template: CertificateTemplate, certificate_da
     # Remove leading slash for file:// URLs to avoid double slashes
     uploads_base_path_str = str(uploads_base_path.resolve()).replace("\\", "/").lstrip("/")
     
-    spa_logo = spa.get("logo", "")
-    logger.debug(f"SPA logo from data: {spa_logo[:100] if spa_logo else 'None'}")
+    # Skip logo resolution for therapist certificates as they don't use it
+    if template.category == CertificateCategory.SPA_THERAPIST:
+        data = {
+            "date": certificate_data.get("date", datetime.now().strftime("%d/%m/%Y")),
+            "candidate_name": candidate_name,
+            "spa_logo": "",
+            "certificate_background_image": background_image,
+            "certificate_stamp_image": stamp_image,
+            "certificate_signatory_image": signatory_image,
+            "static_base_url": base_url if use_http_urls else f"file:///{static_base_path_str}",
+            "default_signature_image": f"{base_url}/static/images/{quote('Bhim Sir Signature.png', safe='')}" if use_http_urls else f"file:///{static_base_path_str}/images/{quote('Bhim Sir Signature.png', safe='')}",
+        }
+        # Continue to merge other fields below
+    else:
+        spa_logo = spa.get("logo", "")
+        logger.debug(f"SPA logo from data: {spa_logo[:100] if spa_logo else 'None'}")
     
     if spa_logo and spa_logo.strip():
         # If logo is a relative path (spa_logos/filename.jpg), convert to appropriate URL
@@ -487,7 +501,6 @@ async def prepare_certificate_data(template: CertificateTemplate, certificate_da
             logger.debug(f"Logo is already a full URL/path: {spa_logo[:100]}")
     else:
         spa_logo = ""  # Empty string if no logo
-        logger.warning(f"No SPA logo found in spa data. SPA object: {spa.get('name', 'Unknown')}")
     
     # Use address field directly from model (already contains full address)
     spa_address = spa.get("address", "").strip() if spa.get("address") else ""
@@ -1029,7 +1042,9 @@ async def create_generated_certificate(
         html_content = template.template_html
         rendered_html = render_html_template(html_content, data)
         try:
-            pdf_bytes = html_to_pdf(rendered_html)
+            # Optimized: Use run_in_threadpool to avoid blocking event loop
+            from starlette.concurrency import run_in_threadpool
+            pdf_bytes = await run_in_threadpool(html_to_pdf, rendered_html)
             certificate.certificate_pdf = await save_certificate_file(certificate.id, pdf_bytes, "pdf")
             await db.commit()
             await db.refresh(certificate)
@@ -1174,7 +1189,8 @@ async def get_user_certificates(db: AsyncSession, user_id: int, skip: int = 0, l
     # Execute all queries in parallel
     async def fetch_user_certificates(model):
         try:
-            stmt = select(model).where(model.created_by == user_id)
+            # Optimized: Added limit to avoid fetching all user certificates
+            stmt = select(model).where(model.created_by == user_id).limit(skip + limit)
             result = await db.execute(stmt)
             return list(result.scalars().all())
         except Exception as e:
@@ -1206,10 +1222,12 @@ async def get_user_certificates(db: AsyncSession, user_id: int, skip: int = 0, l
 async def get_all_certificates_with_users(db: AsyncSession, skip: int = 0, limit: int = 100):
     """Get all certificates with user information
     
-    Optimized: Executes queries in parallel and batches user lookups
+    Optimized: 
+    1. Uses selectinload for eager loading of creators (no N+1).
+    2. Limits per-table fetch to (skip + limit) instead of global 10,000.
     """
     import asyncio
-    from apps.users.models import User
+    from sqlalchemy.orm import selectinload, defer
     
     models = [
         SpaTherapistCertificate,
@@ -1225,7 +1243,19 @@ async def get_all_certificates_with_users(db: AsyncSession, skip: int = 0, limit
     # Execute all queries in parallel
     async def fetch_certificates(model):
         try:
-            stmt = select(model).offset(skip).limit(limit)
+            # Fetch only enough to potentially satisfy the pagination after sorting
+            # Optimized: Defer heavy columns that aren't needed in the list view (e.g., Base64 images)
+            stmt = select(model).options(
+                selectinload(model.creator),
+                defer(model.certificate_data),
+                # Defer common large fields even if they don't exist on all models (SQLAlchemy handles this)
+                *[defer(getattr(model, col)) for col in [
+                    'passport_size_photo', 'candidate_signature', 'candidate_photo', 
+                    'manager_signature', 'customer_address', 'template_html',
+                    'certificate_data', 'service_names', 'hsn_codes', 'quantities', 
+                    'price_rates', 'amounts', 'month_year_list', 'month_salary_list'
+                ] if hasattr(model, col)]
+            ).limit(skip + limit)
             result = await db.execute(stmt)
             return list(result.scalars().all())
         except Exception as e:
@@ -1240,23 +1270,11 @@ async def get_all_certificates_with_users(db: AsyncSession, skip: int = 0, limit
     for cert_list in results:
         all_certificates.extend(cert_list)
     
-    # Sort by generated_at
+    # Sort by generated_at / created_at
     all_certificates.sort(
         key=lambda x: x.generated_at if hasattr(x, 'generated_at') and x.generated_at else getattr(x, 'created_at', None) or datetime(1970, 1, 1, tzinfo=timezone.utc),
         reverse=True
     )
-    
-    # Get user information for each certificate (batch lookup)
-    user_ids = {cert.created_by for cert in all_certificates if cert.created_by}
-    if user_ids:
-        user_stmt = select(User).where(User.id.in_(user_ids))
-        user_result = await db.execute(user_stmt)
-        users = {user.id: user for user in user_result.scalars().all()}
-        
-        # Attach user info to certificates
-        for cert in all_certificates:
-            if cert.created_by and cert.created_by in users:
-                cert.creator = users[cert.created_by]
     
     return all_certificates
 
@@ -1337,15 +1355,24 @@ async def get_certificate_statistics(db: AsyncSession):
     # Helper to fetch stats for a single model
     async def fetch_model_stats(model, category):
         try:
-            # Total count
-            stmt = select(func.count(model.id))
-            count_result = await db.execute(stmt)
-            count = count_result.scalar() or 0
-            
-            # Count by user
+            # Optimized: Parallelize the two internal queries
+            count_stmt = select(func.count(model.id))
             user_stmt = select(model.created_by, func.count(model.id)).group_by(model.created_by)
-            user_result = await db.execute(user_stmt)
-            user_counts = {str(uid): c for uid, c in user_result.all() if uid} # Ensure keys are strings for JSON
+            
+            count_res, user_res = await asyncio.gather(
+                db.execute(count_stmt),
+                db.execute(user_stmt),
+                return_exceptions=True
+            )
+            
+            # Handle potential errors in parallel execution
+            count = 0
+            if not isinstance(count_res, Exception):
+                count = count_res.scalar() or 0
+                
+            user_counts = {}
+            if not isinstance(user_res, Exception):
+                user_counts = {str(uid): c for uid, c in user_res.all() if uid}
             
             return {
                 "count": count,
@@ -1356,7 +1383,7 @@ async def get_certificate_statistics(db: AsyncSession):
             logger.warning(f"Error fetching stats for {model.__tablename__}: {e}")
             return {"count": 0, "category": category.value if category else None, "user_counts": {}}
 
-    # Execute all queries concurrently
+    # Execute all model queries concurrently
     results = await asyncio.gather(*[fetch_model_stats(m, c) for m, c in models])
     
     # Aggregate results
@@ -1374,22 +1401,23 @@ async def get_certificate_statistics(db: AsyncSession):
             category_counts[cat] = count
             
         for uid, c in u_counts.items():
-            # uid is string from fetch_model_stats, convert to int for accumulation if needed, but dict keys are strings in JSON
-            # Let's keep uid as int for DB lookup, then convert to string for final JSON
             try:
                 uid_int = int(uid)
                 aggregated_user_counts[uid_int] = aggregated_user_counts.get(uid_int, 0) + c
             except ValueError:
                 pass
 
-
-    # Get user details for the aggregated counts
-    user_ids = list(aggregated_user_counts.keys())
+    # Optimized: Get user details for TOP 50 contributors only
+    user_ids = sorted(aggregated_user_counts.keys(), key=lambda x: aggregated_user_counts[x], reverse=True)[:50]
     user_details = []
     
     if user_ids:
-        # Fetch users in chunks if too many? For now, fetch all related users
-        user_stmt = select(User).where(User.id.in_(user_ids))
+        from sqlalchemy.orm import load_only
+        # Optimized: Load only required columns
+        user_stmt = select(User).options(
+            load_only(User.id, User.first_name, User.last_name, User.email)
+        ).where(User.id.in_(user_ids))
+        
         user_result = await db.execute(user_stmt)
         for user in user_result.scalars().all():
             user_details.append({
@@ -1400,21 +1428,23 @@ async def get_certificate_statistics(db: AsyncSession):
                 "count": aggregated_user_counts.get(user.id, 0)
             })
             
-    # Sort users by count desc
+    # Final sort of top contributors
     sorted_users = sorted(user_details, key=lambda x: x["count"], reverse=True)
     
     stats = {
         "total_certificates": total_count,
         "by_category": category_counts,
-        "by_user": sorted_users
+        "by_user": sorted_users,
     }
 
-    # Cache the result
+    # Cache the result for 10 minutes (600 seconds)
     try:
+        redis = await get_redis()
         if redis:
-            await redis.set("certificate_statistics", json.dumps(stats), ex=600) # Cache for 10 minutes
+            await redis.set("certificate_statistics", json.dumps(stats), ex=600)
     except Exception as e:
-        logger.warning(f"Failed to cache statistics: {e}")
+        logger.warning(f"Error saving to Redis: {e}")
 
     return stats
+
 

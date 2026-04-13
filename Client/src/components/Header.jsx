@@ -38,7 +38,6 @@ const Header = ({ user, onLogout }) => {
       return [
         { path: '/manager/dashboard', label: 'Dashboard' },
         { path: '/manager/certificates', label: 'Certificates' },
-        { path: '/manager/candidates', label: 'Candidates' },
       ];
     }
 

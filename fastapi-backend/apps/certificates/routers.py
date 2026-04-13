@@ -46,9 +46,6 @@ from apps.certificates.services.certificate_service import (
 from apps.certificates.services.pdf_generator import (
     render_html_template, 
     html_to_pdf, 
-    html_to_image,
-    pdf_to_image,
-    PDF2IMAGE_AVAILABLE
 )
 from apps.certificates.services.background_removal import (
     remove_background_from_image,
@@ -442,7 +439,8 @@ async def generate_certificate_async(
         
         # Helper to load SPA data (similar to sync endpoint)
         cert_data = certificate.certificate_data or {}
-        if certificate_data.spa_id:
+        # Skip SPA fetch for therapist certificates (not needed)
+        if certificate_data.spa_id and template.category != CertificateCategory.SPA_THERAPIST:
             from apps.forms_app.models import SPA
             from sqlalchemy import select
             spa_stmt = select(SPA).where(SPA.id == certificate_data.spa_id)
@@ -525,7 +523,8 @@ async def generate_certificate(
         # Load SPA data from database if spa_id is provided but spa object is missing
         cert_data = certificate.certificate_data or {}
         # Always load SPA from database if spa_id is provided to ensure logo is included
-        if certificate_data.spa_id:
+        # Skip for therapist certificates (not needed)
+        if certificate_data.spa_id and template.category != CertificateCategory.SPA_THERAPIST:
             from apps.forms_app.models import SPA
             from sqlalchemy import select
             spa_stmt = select(SPA).where(SPA.id == certificate_data.spa_id)
@@ -666,6 +665,17 @@ def convert_certificate_to_response(certificate):
         # Fallback to current time if no date available
         generated_at = datetime.now(timezone.utc).isoformat()
     
+    # Get creator info if available
+    creator_info = None
+    if hasattr(certificate, 'creator') and certificate.creator:
+        creator_info = {
+            "id": certificate.creator.id,
+            "first_name": certificate.creator.first_name,
+            "last_name": certificate.creator.last_name,
+            "username": certificate.creator.username,
+            "email": certificate.creator.email
+        }
+    
     return {
         "id": certificate.id,
         "template_id": template_id,
@@ -676,6 +686,7 @@ def convert_certificate_to_response(certificate):
         "is_public": is_public,
         "generated_at": generated_at,
         "category": category,  # Include category in response
+        "creator": creator_info, # Include creator info
     }
 
 
@@ -855,159 +866,6 @@ async def download_certificate_pdf(
                              headers={"Content-Disposition": f"attachment; filename=certificate_{certificate_id}.pdf"})
 
 
-@certificates_router.get("/generated/{certificate_id}/download/image")
-async def download_certificate_image(
-    certificate_id: int, 
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
-):
-    """Download certificate as image (PNG) - converts from PDF if available, otherwise generates from HTML.
-    Requires authentication (no public access)"""
-    certificate = await get_generated_certificate_by_id(db, certificate_id)
-    if not certificate:
-        raise HTTPException(status_code=404, detail="Certificate not found")
-    
-    # Check if user can access this certificate
-    is_admin = current_user.role in ["admin", "super_admin"]
-    is_hr = current_user.role == "hr"
-    is_manager = current_user.role == "spa_manager"
-    is_owner = getattr(certificate, 'created_by', None) == current_user.id
-    
-    # Admin, HR, and managers can download all certificates
-    # Regular users can only download their own certificates
-    if not (is_admin or is_hr or is_manager or is_owner):
-        raise HTTPException(status_code=403, detail="You don't have permission to download this certificate")
-
-    # First, try to convert from existing PDF if available
-    certificate_pdf = getattr(certificate, 'certificate_pdf', None)
-    if certificate_pdf:
-        pdf_path = Path(settings.UPLOAD_DIR) / certificate_pdf
-        if pdf_path.exists():
-            try:
-                # Read PDF file and convert to image
-                if not PDF2IMAGE_AVAILABLE:
-                    logger.warning("pdf2image not available, falling back to HTML generation")
-                else:
-                    with open(pdf_path, 'rb') as f:
-                        pdf_bytes = f.read()
-                    
-                    
-                    # Convert PDF to image (blocking operation)
-                    image_bytes = await run_in_threadpool(pdf_to_image, pdf_bytes, format="PNG", dpi=150)
-                    
-                    logger.info(f"Successfully converted PDF to image for certificate {certificate_id}")
-                    return StreamingResponse(
-                        io.BytesIO(image_bytes), 
-                        media_type="image/png",
-                        headers={"Content-Disposition": f"attachment; filename=certificate_{certificate_id}.png"}
-                    )
-            except Exception as e:
-                logger.warning(f"Failed to convert PDF to image: {e}, falling back to HTML generation", exc_info=True)
-
-    # Fallback: Generate from HTML template
-    template = await get_template_by_id(db, certificate.template_id)
-    if not template:
-        raise HTTPException(status_code=404, detail="Template not found")
-    
-    if not template.template_html:
-        raise HTTPException(status_code=400, detail="HTML template requires template_html content.")
-    
-    # Load SPA data from database if spa_id exists but spa object is missing
-    cert_data = certificate.certificate_data or {}
-    
-    # For MANAGER_SALARY certificates, merge model fields into cert_data
-    if hasattr(certificate, 'manager_name'):
-        from apps.certificates.models import ManagerSalaryCertificate
-        if isinstance(certificate, ManagerSalaryCertificate):
-            cert_data["manager_name"] = certificate.manager_name or cert_data.get("manager_name")
-            cert_data["position"] = certificate.position or cert_data.get("position")
-            cert_data["joining_date"] = certificate.joining_date or cert_data.get("joining_date")
-            cert_data["monthly_salary"] = certificate.monthly_salary or cert_data.get("monthly_salary")
-            cert_data["monthly_salary_in_words"] = certificate.monthly_salary_in_words or cert_data.get("monthly_salary_in_words")
-            if hasattr(certificate, 'month_year_list'):
-                cert_data["month_year_list"] = certificate.month_year_list if certificate.month_year_list else []
-            if hasattr(certificate, 'month_salary_list'):
-                cert_data["month_salary_list"] = certificate.month_salary_list if certificate.month_salary_list else []
-    
-    # For EXPERIENCE_LETTER certificates, merge model fields into cert_data
-    if hasattr(certificate, 'candidate_name') and hasattr(certificate, 'position') and hasattr(certificate, 'joining_date'):
-        from apps.certificates.models import ExperienceLetterCertificate
-        if isinstance(certificate, ExperienceLetterCertificate):
-            cert_data["candidate_name"] = certificate.candidate_name or cert_data.get("candidate_name")
-            cert_data["position"] = certificate.position or cert_data.get("position")
-            cert_data["joining_date"] = certificate.joining_date or cert_data.get("joining_date")
-            cert_data["end_date"] = certificate.end_date or cert_data.get("end_date")
-            cert_data["duration"] = certificate.duration or cert_data.get("duration")
-            cert_data["salary"] = certificate.salary or cert_data.get("salary")
-    
-    # For APPOINTMENT_LETTER certificates, merge model fields into cert_data
-    if hasattr(certificate, 'employee_name') and hasattr(certificate, 'start_date'):
-        from apps.certificates.models import AppointmentLetterCertificate
-        if isinstance(certificate, AppointmentLetterCertificate):
-            cert_data["employee_name"] = certificate.employee_name or cert_data.get("employee_name")
-            cert_data["position"] = certificate.position or cert_data.get("position")
-            cert_data["start_date"] = certificate.start_date or cert_data.get("start_date")
-            cert_data["salary"] = certificate.salary or cert_data.get("salary")
-            cert_data["manager_signature"] = certificate.manager_signature or cert_data.get("manager_signature")
-    
-    # For ID_CARD certificates, merge model fields into cert_data
-    if hasattr(certificate, 'candidate_name') and hasattr(certificate, 'designation'):
-        from apps.certificates.models import IDCardCertificate
-        if isinstance(certificate, IDCardCertificate):
-            cert_data["candidate_name"] = certificate.candidate_name or cert_data.get("candidate_name")
-            cert_data["candidate_photo"] = certificate.candidate_photo or cert_data.get("candidate_photo")
-            cert_data["designation"] = certificate.designation or cert_data.get("designation")
-            cert_data["date_of_joining"] = certificate.date_of_joining or cert_data.get("date_of_joining")
-            cert_data["contact_number"] = certificate.contact_number or cert_data.get("contact_number")
-            cert_data["issue_date"] = certificate.issue_date or cert_data.get("issue_date")
-    
-    # Always load SPA from database if spa_id exists to ensure logo is included
-    if hasattr(certificate, 'spa_id') and certificate.spa_id:
-        from apps.forms_app.models import SPA
-        from sqlalchemy import select
-        spa_stmt = select(SPA).where(SPA.id == certificate.spa_id)
-        spa_result = await db.execute(spa_stmt)
-        spa_obj = spa_result.scalar_one_or_none()
-        if spa_obj:
-            # If spa object already exists, merge logo from database
-            # Otherwise, create full spa object from database
-            if cert_data.get("spa"):
-                # Merge logo from database into existing spa object
-                cert_data["spa"]["logo"] = spa_obj.logo or cert_data["spa"].get("logo", "")
-                # Also ensure other fields are up to date from database
-                cert_data["spa"]["id"] = spa_obj.id
-                cert_data["spa"]["name"] = spa_obj.name or cert_data["spa"].get("name", "")
-                cert_data["spa"]["address"] = spa_obj.address or cert_data["spa"].get("address", "")
-            else:
-                # Create full spa object from database
-                cert_data["spa"] = {
-                    "id": spa_obj.id,
-                    "name": spa_obj.name or "",
-                    "address": spa_obj.address or "",
-                    "area": spa_obj.area or "",
-                    "city": spa_obj.city or "",
-                    "state": spa_obj.state or "",
-                    "country": spa_obj.country or "",
-                    "pincode": spa_obj.pincode or "",
-                    "phone_number": spa_obj.phone_number or "",
-                    "alternate_number": spa_obj.alternate_number or "",
-                    "email": spa_obj.email or "",
-                    "website": spa_obj.website or "",
-                    "logo": spa_obj.logo or "",
-                }
-            cert_data["spa_id"] = spa_obj.id
-    
-    # Get the name for this certificate type
-    certificate_name = get_certificate_name(certificate)
-    data = await prepare_certificate_data(template, cert_data, certificate_name, use_http_urls=False)
-    html_content = template.template_html
-    rendered_html = render_html_template(html_content, data)
-    # Run blocking image generation in a thread pool
-    image_bytes = await run_in_threadpool(html_to_image, rendered_html)
-
-    return StreamingResponse(io.BytesIO(image_bytes), media_type="image/png",
-                             headers={"Content-Disposition": f"attachment; filename=certificate_{certificate_id}.png"})
-
 
 # -------------------------
 # Protected Endpoints (Admin/Manager/HR)
@@ -1124,7 +982,7 @@ async def get_certificate_statistics_endpoint(
         raise HTTPException(status_code=500, detail=f"Failed to retrieve statistics: {str(e)}")
 
 
-@certificates_router.get("/admin/all")
+@certificates_router.get("/admin/all", response_model=List[GeneratedCertificateResponse])
 async def get_all_certificates_admin(
     skip: int = 0,
     limit: int = 100,
@@ -1133,29 +991,14 @@ async def get_all_certificates_admin(
 ):
     """Get all certificates with user information (admin only)"""
     try:
-        # Get all certificates without pagination first (to properly sort across all tables)
-        # Then apply pagination after sorting
-        certificates = await get_all_certificates_with_users(db, skip=0, limit=10000)
+        # Optimized fetching with specific skip/limit
+        certificates = await get_all_certificates_with_users(db, skip=skip, limit=limit)
         
-        # Apply pagination after combining and sorting
+        # Apply pagination after combining and sorting (now much faster as data is limited)
         paginated_certificates = certificates[skip:skip + limit]
         
-        # Convert to response format and include creator info
-        result = []
-        for cert in paginated_certificates:
-            cert_response = convert_certificate_to_response(cert)
-            # Add creator information if available
-            if hasattr(cert, 'creator') and cert.creator:
-                cert_response['creator'] = {
-                    'id': cert.creator.id,
-                    'first_name': cert.creator.first_name,
-                    'last_name': cert.creator.last_name,
-                    'email': cert.creator.email,
-                    'username': cert.creator.username,
-                }
-            result.append(cert_response)
-        
-        return result
+        # Pydantic will handle the conversion including creator info automatically
+        return paginated_certificates
     except Exception as e:
         logger.error(f"Error getting all certificates: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to retrieve certificates: {str(e)}")
@@ -1170,15 +1013,13 @@ async def get_all_certificates_hr(
 ):
     """Get all certificates for HR (HR can see all certificates from all users)"""
     try:
-        # Get all certificates without pagination first (to properly sort across all tables)
-        # Then apply pagination after sorting
-        certificates = await get_all_certificates_with_users(db, skip=0, limit=10000)
+        # Optimized fetching with specific skip/limit
+        certificates = await get_all_certificates_with_users(db, skip=skip, limit=limit)
         
         # Apply pagination after combining and sorting
         paginated_certificates = certificates[skip:skip + limit]
         
-        # Convert to response format
-        return [convert_certificate_to_response(cert) for cert in paginated_certificates]
+        return paginated_certificates
     except Exception as e:
         logger.error(f"Error getting HR certificates: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to retrieve certificates: {str(e)}")

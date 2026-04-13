@@ -196,7 +196,7 @@ async def init_db():
     )  # noqa
 
     # Forms App
-    from apps.forms_app.models import SPA, CandidateForm, Hiring_Form  # noqa
+    from apps.forms_app.models import SPA, Hiring_Form  # noqa
 
     # Tutorials
     from apps.tutorials.models import Tutorial  # noqa

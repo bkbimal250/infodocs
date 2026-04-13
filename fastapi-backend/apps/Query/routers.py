@@ -54,14 +54,7 @@ async def get_query_types_endpoint(
     current_user: User = Depends(get_current_active_user)
 ):
     """Get all query types"""
-    try:
-        types = await get_query_types(db, active_only=active_only)
-        return types
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error fetching query types: {str(e)}"
-        )
+    return await get_query_types(db, active_only=active_only)
 
 
 @query_router.post(

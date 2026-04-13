@@ -2,7 +2,8 @@
 Certificate Pydantic Schemas
 Centralised request/response models shared across routers/services.
 """
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
+from datetime import datetime
 
 from pydantic import BaseModel, EmailStr, ConfigDict, model_validator
 
@@ -47,8 +48,17 @@ class CertificateTemplateResponse(BaseModel):
 
 
 # --------------------------------------------
-# Generated Certificate Response
+# Generated Certificate Responses
 # --------------------------------------------
+
+class UserMinimalResponse(BaseModel):
+    """Minimal user information for creator tracking."""
+    id: int
+    first_name: str
+    last_name: str
+    username: str
+    email: Optional[str] = None
+
 
 class GeneratedCertificateResponse(BaseModel):
     """Response schema for generated certificates."""
@@ -60,10 +70,14 @@ class GeneratedCertificateResponse(BaseModel):
     candidate_name: Optional[str] = None
     candidate_email: Optional[str] = None
     spa_id: Optional[int] = None  # NEW
+    manager_name: Optional[str] = None   # For Manager Salary letters
+    employee_name: Optional[str] = None  # For Appointment letters
+    customer_name: Optional[str] = None  # For Invoice/Bills
     certificate_pdf: Optional[str] = None
     is_public: bool
-    generated_at: str
+    generated_at: datetime
     category: Optional[CertificateCategory] = None  # Certificate category
+    creator: Optional[UserMinimalResponse] = None   # Optional creator info
 
 
 # --------------------------------------------

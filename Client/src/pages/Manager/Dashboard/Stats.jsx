@@ -14,7 +14,6 @@ import { managerApi } from '../../../api/Manager/managerApi';
 const Stats = () => {
   const [stats, setStats] = useState({
     totalCertificates: 0,
-    totalCandidates: 0,
     totalHiringForms: 0,
   });
   const [loading, setLoading] = useState(true);
@@ -26,15 +25,13 @@ const Stats = () => {
   const loadStats = async () => {
     try {
       // Load all data in parallel
-      const [certsRes, candidatesRes, hiringRes] = await Promise.allSettled([
+      const [certsRes, hiringRes] = await Promise.allSettled([
         managerApi.getMyCertificates({ skip: 0, limit: 1000 }),
-        managerApi.getMyCandidateForms({ skip: 0, limit: 1000 }),
         managerApi.getMyHiringForms({ skip: 0, limit: 1000 }),
       ]);
 
       const newStats = {
         totalCertificates: 0,
-        totalCandidates: 0,
         totalHiringForms: 0,
       };
 
@@ -44,11 +41,7 @@ const Stats = () => {
         newStats.totalCertificates = Array.isArray(certificates) ? certificates.length : 0;
       }
 
-      // Process candidate forms
-      if (candidatesRes.status === 'fulfilled') {
-        const candidates = candidatesRes.value.data?.results || candidatesRes.value.data || [];
-        newStats.totalCandidates = Array.isArray(candidates) ? candidates.length : 0;
-      }
+
 
       // Process hiring forms
       if (hiringRes.status === 'fulfilled') {
@@ -73,14 +66,7 @@ const Stats = () => {
       color: 'blue',
       link: '/manager/certificates',
     },
-    {
-      title: 'Total Candidates',
-      value: stats.totalCandidates,
-      subtitle: 'Applications',
-      icon: HiOutlineUsers,
-      color: 'green',
-      link: '/manager/candidates',
-    },
+
     {
       title: 'Total Hiring Forms',
       value: stats.totalHiringForms,
@@ -93,7 +79,7 @@ const Stats = () => {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {[...Array(3)].map((_, i) => (
           <div key={i} className="bg-[var(--color-bg-primary)] rounded-lg shadow p-6 animate-pulse">
             <div className="h-4 bg-[var(--color-gray-200)] rounded w-3/4 mb-4"></div>
@@ -112,7 +98,7 @@ const Stats = () => {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {statCards.map((card, index) => {
         const CardContent = (
           <div

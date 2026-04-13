@@ -17,20 +17,16 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   }, []);
 
   const checkAuth = async () => {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      setIsAuthenticated(false);
-      setLoading(false);
-      return;
-    }
-
+    // We no longer check localStorage for a token. 
+    // We simply attempt to fetch the current user profile.
+    // If the 'access_token' cookie is missing or invalid, the API returns a 401.
     try {
       const response = await authApi.getCurrentUser();
       setUser(response.data);
       setIsAuthenticated(true);
     } catch (err) {
       setIsAuthenticated(false);
-      localStorage.removeItem('authToken');
+      localStorage.removeItem('user');
     } finally {
       setLoading(false);
     }

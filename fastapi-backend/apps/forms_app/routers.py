@@ -14,7 +14,6 @@ import logging
 import traceback
 import aiofiles
 from apps.forms_app.schemas import (
-    CandidateFormCreate, CandidateFormUpdate, CandidateFormResponse,
     HiringFormCreate, HiringFormUpdate, HiringFormResponse,
     SPACreate, SPAUpdate, SPAResponse,
     SPASelectionResponse
@@ -23,6 +22,7 @@ from apps.forms_app.schemas import (
 from apps.users.schemas import MessageResponseSchema
 
 logger = logging.getLogger(__name__)
+
 from apps.forms_app.services.spa_service import (
     create_spa,
     get_spa_by_id,
@@ -31,15 +31,7 @@ from apps.forms_app.services.spa_service import (
     delete_spa,
     hard_delete_spa,
 )
-from apps.forms_app.services.candidate_form_service import (
-    create_candidate_form,
-    get_candidate_form_by_id,
-    get_all_candidate_forms,
-    get_all_candidate_forms_with_users,
-    update_candidate_form,
-    delete_candidate_form,
-    get_forms_statistics,
-)
+
 from apps.forms_app.services.hiring_form_service import (
     create_hiring_form,
     get_hiring_form_by_id,
@@ -47,26 +39,9 @@ from apps.forms_app.services.hiring_form_service import (
     get_all_hiring_forms_with_users,
     update_hiring_form,
     delete_hiring_form,
+    get_forms_statistics,
 )
 
-
-from apps.forms_app.schemas import (
-    SPACreate,
-    SPAUpdate,
-    SPAResponse,
-    CandidateFormCreate,
-    CandidateFormUpdate,
-    CandidateFormResponse,
-    HiringFormCreate,
-    HiringFormUpdate,
-    HiringFormResponse,
-)
-from pydantic import BaseModel
-
-
-class MessageResponseSchema(BaseModel):
-    """Message response schema"""
-    message: str
 from core.exceptions import NotFoundError, ValidationError
 import os
 import uuid
@@ -77,7 +52,7 @@ forms_router = APIRouter()
 # File upload directory
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
-(UPLOAD_DIR / "candidate_forms").mkdir(exist_ok=True)
+
 
 
 async def save_uploaded_file(file: UploadFile, subdirectory: str = "") -> str:
@@ -107,127 +82,7 @@ async def list_spas(minimal: bool = True, db: AsyncSession = Depends(get_db)):
     return spas
 
 
-@forms_router.post("/candidate-forms", response_model=MessageResponseSchema, status_code=status.HTTP_201_CREATED)
-async def submit_candidate_form(
-    request: Request,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
-    first_name: str = Form(...),
-    last_name: str = Form(...),
-    middle_name: str = Form(None),
-    current_address: str = Form(...),
-    aadhar_address: str = Form(None),
-    city: str = Form(...),
-    zip_code: str = Form(...),
-    state: str = Form(...),
-    country: str = Form("India"),
-    phone_number: str = Form(...),
-    work_experience: str = Form(...),
-    Therapist_experience: str = Form(...),
-    alternate_number: str = Form(None),
-    age: int = Form(...),
-    position_applied_for: str = Form(...),
-    education_certificate_courses: str = Form(None),
-    spa_id: int = Form(None),
-    spa_name_text: str = Form(None),
-    passport_size_photo: UploadFile = File(None),
-    age_proof_document: UploadFile = File(None),
-    aadhar_card_front: UploadFile = File(None),
-    aadhar_card_back: UploadFile = File(None),
-    pan_card: UploadFile = File(None),
-    signature: UploadFile = File(None),
-    documents: List[UploadFile] = File(None),
-):
-    """Submit candidate form (Authentication required)"""
-    try:
-        # Validate that at least spa_id or spa_name_text is provided
-        if not spa_id and not spa_name_text:
-            raise HTTPException(
-                status_code=422,
-                detail="Either spa_id or spa_name_text must be provided"
-            )
-        
-        # Get IP address and user agent for activity tracking
-        ip_address = request.client.host if request.client else None
-        user_agent = request.headers.get("user-agent")
-        # Prepare file paths
-        file_paths = {}
-        
-        upload_targets = [
-            ("passport_size_photo", passport_size_photo),
-            ("age_proof_document", age_proof_document),
-            ("aadhar_card_front", aadhar_card_front),
-            ("aadhar_card_back", aadhar_card_back),
-            ("pan_card", pan_card),
-            ("signature", signature),
-        ]
 
-        for key, upload in upload_targets:
-            if upload:
-                file_paths[key] = await save_uploaded_file(upload, "candidate_forms")
-        
-        if documents:
-            doc_paths = []
-            for doc in documents:
-                doc_path = await save_uploaded_file(doc, "candidate_forms")
-                doc_paths.append(doc_path)
-            file_paths['documents'] = doc_paths
-        
-        # Create form data
-        form_data = CandidateFormCreate(
-            first_name=first_name,
-            last_name=last_name,
-            middle_name=middle_name,
-            current_address=current_address,
-            aadhar_address=aadhar_address,
-            city=city,
-            zip_code=zip_code,
-            state=state,
-            country=country,
-            phone_number=phone_number,
-            work_experience=work_experience,
-            Therapist_experience=Therapist_experience,
-            alternate_number=alternate_number,
-            age=age,
-            position_applied_for=position_applied_for,
-            education_certificate_courses=education_certificate_courses,
-            spa_id=spa_id,
-            spa_name_text=spa_name_text,
-        )
-        
-        # Create candidate form
-        candidate_form = await create_candidate_form(
-            db, 
-            form_data, 
-            file_paths if file_paths else None,
-            created_by=current_user.id
-        )
-        
-        # Track activity
-        try:
-            from apps.notifications.services.activity_service import log_activity
-            await log_activity(
-                db=db,
-                user_id=current_user.id,
-                activity_type="form_submitted",
-                activity_description=f"Submitted candidate form for {form_data.first_name} {form_data.last_name}",
-                entity_type="candidate_form",
-                entity_id=candidate_form.id,
-                metadata={
-                    "spa_id": form_data.spa_id,
-                    "position": form_data.position_applied_for
-                },
-                ip_address=ip_address,
-                user_agent=user_agent
-            )
-        except Exception as e:
-            logger.error(f"Error tracking form activity: {e}", exc_info=True)
-        
-        return MessageResponseSchema(message="Candidate form submitted successfully")
-    except ValidationError as e:
-        raise HTTPException(status_code=422, detail=e.message)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to submit form: {str(e)}")
 
 
 @forms_router.post("/hiring-forms", response_model=MessageResponseSchema, status_code=status.HTTP_201_CREATED)
@@ -571,101 +426,7 @@ async def delete_spa_location(
         raise HTTPException(status_code=404, detail=e.message)
 
 
-@forms_router.get("/candidate-forms", response_model=List[CandidateFormResponse])
-async def list_candidate_forms(
-    skip: int = 0,
-    limit: int = 100,
-    created_by: Optional[int] = None,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role("admin", "super_admin", "spa_manager", "hr", "user"))
-):
-    """List candidate form submissions
-    
-    - Admin/HR: See all forms (created_by is ignored)
-    - Manager/User: Only see their own forms (created_by is set to current_user.id)
-    """
-    # For managers and regular users, only show their own forms
-    if current_user.role in ("spa_manager", "user") and created_by is None:
-        created_by = current_user.id
-    
-    forms = await get_all_candidate_forms(db, skip=skip, limit=limit, created_by=created_by)
-    return forms
 
-
-@forms_router.get("/candidate-forms/{form_id}", response_model=CandidateFormResponse)
-async def get_candidate_form(
-    form_id: int,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role("admin", "super_admin", "spa_manager", "hr", "user"))
-):
-    """Get a single candidate form submission
-    
-    - Admin/HR: Can access any form
-    - Manager/User: Can only access their own forms
-    """
-    form = await get_candidate_form_by_id(db, form_id)
-    if not form:
-        raise HTTPException(status_code=404, detail="Candidate form not found")
-    
-    # For managers and regular users, ensure they can only access their own forms
-    if current_user.role in ("spa_manager", "user"):
-        if form.created_by != current_user.id:
-            raise HTTPException(status_code=403, detail="You can only access your own candidate forms")
-    
-    return form
-
-
-@forms_router.put("/candidate-forms/{form_id}", response_model=CandidateFormResponse)
-async def update_candidate_form_endpoint(
-    form_id: int,
-    form_data: CandidateFormUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role("admin", "super_admin", "spa_manager", "hr", "user"))
-):
-    """Update a candidate form submission
-    
-    - Admin/HR: Can update any form
-    - Manager/User: Can only update their own forms
-    """
-    form = await get_candidate_form_by_id(db, form_id)
-    if not form:
-        raise HTTPException(status_code=404, detail="Candidate form not found")
-    
-    # For managers and regular users, only allow updating their own forms
-    if current_user.role in ("spa_manager", "user"):
-        if form.created_by != current_user.id:
-            raise HTTPException(status_code=403, detail="You can only update your own candidate forms")
-    
-    form_dict = form_data.model_dump(exclude_unset=True)
-    updated_form = await update_candidate_form(db, form_id, form_dict)
-    if not updated_form:
-        raise HTTPException(status_code=404, detail="Candidate form not found")
-    return updated_form
-
-
-@forms_router.delete("/candidate-forms/{form_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_candidate_form_endpoint(
-    form_id: int,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role("admin", "super_admin", "spa_manager", "hr", "user"))
-):
-    """Delete a candidate form submission
-    
-    - Admin/HR: Can delete any form
-    - Manager/User: Can only delete their own forms
-    """
-    form = await get_candidate_form_by_id(db, form_id)
-    if not form:
-        raise HTTPException(status_code=404, detail="Candidate form not found")
-    
-    # For managers and regular users, only allow deleting their own forms
-    if current_user.role in ("spa_manager", "user"):
-        if form.created_by != current_user.id:
-            raise HTTPException(status_code=403, detail="You can only delete your own candidate forms")
-    
-    deleted = await delete_candidate_form(db, form_id)
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Candidate form not found")
 
 
 @forms_router.options("/files/{file_path:path}")
@@ -899,16 +660,7 @@ async def get_forms_statistics_endpoint(
     return await get_forms_statistics(db)
 
 
-@forms_router.get("/admin/candidate-forms")
-async def get_all_candidate_forms_admin(
-    skip: int = 0,
-    limit: int = 100,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_role("admin", "super_admin"))
-):
-    """Get all candidate forms with user information (admin only)"""
-    forms = await get_all_candidate_forms_with_users(db, skip=skip, limit=limit)
-    return forms
+
 
 
 @forms_router.get("/admin/hiring-forms")

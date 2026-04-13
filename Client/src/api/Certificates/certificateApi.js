@@ -85,16 +85,6 @@ export const certificateApi = {
     });
   },
 
-  /**
-   * Download certificate as image (PNG)
-   * @param {number} certificateId - Certificate ID
-   * @returns {Promise}
-   */
-  downloadImage: (certificateId) => {
-    return apiClient.get(`/certificates/generated/${certificateId}/download/image`, {
-      responseType: 'blob',
-    });
-  },
 
   /**
    * Remove background from an image file

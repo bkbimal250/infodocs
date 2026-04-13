@@ -41,8 +41,7 @@ class SPA(Base):
         nullable=False
     )
 
-    # Relationship with CandidateForm
-    candidates = relationship("CandidateForm", back_populates="spa")
+
     
     # Relationship with Hiring_Form
     hiring_forms = relationship("Hiring_Form", back_populates="spa")
@@ -63,62 +62,7 @@ class SPA(Base):
     
 
 
-class CandidateForm(Base):
-    """Candidate Form Submission Model"""
-    __tablename__ = "candidate_forms"
 
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-
-    # Foreign key to SPA (nullable to allow forms with spa_name_text only)
-    spa_id = Column(Integer, ForeignKey('spas.id'), nullable=True, index=True)
-    spa = relationship("SPA", back_populates="candidates")
-
-    
-    
-    # Track who submitted the form
-    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
-
-    spa_name_text = Column(String(255), nullable=True)  # If SPA not found in DB
-
-    # Candidate Personal Information
-    first_name = Column(String(100), nullable=False)
-    middle_name = Column(String(100), nullable=True)
-    last_name = Column(String(100), nullable=False)
-    current_address = Column(Text, nullable=False)
-    aadhar_address = Column(Text, nullable=True)
-    city = Column(String(100), nullable=False)
-    zip_code = Column(String(20), nullable=False)
-    state = Column(String(100), nullable=False)
-    country = Column(String(100), default="India", nullable=False)
-    phone_number = Column(String(20), nullable=False)
-    work_experience = Column(String(255), nullable=False)
-    Therapist_experience = Column(String(255), nullable=False)
-    alternate_number = Column(String(20), nullable=True)
-    age = Column(Integer, nullable=False)
-    position_applied_for = Column(String(255), nullable=False)
-    education_certificate_courses = Column(Text, nullable=True)
-
-
-
-
-    # Uploaded Documents (store file paths)
-    passport_size_photo = Column(String(500), nullable=True)
-    age_proof_document = Column(String(500), nullable=True)
-    aadhar_card_front = Column(String(500), nullable=True)
-    aadhar_card_back = Column(String(500), nullable=True)
-    pan_card = Column(String(500), nullable=True)
-    signature = Column(String(500), nullable=True)
-    documents = Column(JSON, nullable=True)  # Example: ["file1.png", "file2.pdf"]
-
-
-
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now(),
-        nullable=False
-    )
 
 
 # any one can send the hiring form to the spa

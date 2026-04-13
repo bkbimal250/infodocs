@@ -92,15 +92,31 @@ const Login = () => {
         });
       }
 
-      if (response.data.access_token) {
-        localStorage.setItem('authToken', response.data.access_token);
-        if (response.data.user) {
-          localStorage.setItem('user', JSON.stringify(response.data.user));
-        }
+      // Backend now sets the 'access_token' cookie and returns a minimal message
+      if (response.data.message === 'Login successful') {
+        // Since the login response is minimal for security, fetch user profile separately
+        try {
+          const userResponse = await authApi.getCurrentUser();
+          const user = userResponse.data;
 
-        const user = response.data.user;
-        const dashboardPath = getDashboardPath(user.role);
-        navigate(dashboardPath, { replace: true });
+          if (user) {
+            // Store non-sensitive UI preferences in localStorage
+            localStorage.setItem('user', JSON.stringify({
+              role: user.role,
+              username: user.first_name,
+            }));
+            
+            const dashboardPath = getDashboardPath(user.role);
+            navigate(dashboardPath, { replace: true });
+          } else {
+            setError('Could not retrieve user profile. Please try logging in again.');
+          }
+        } catch (profileErr) {
+          console.error('Error fetching profile after login:', profileErr);
+          setError('Verification failed. Please refresh and try again.');
+        }
+      } else {
+        setError('Login failed. Please check your credentials.');
       }
     } catch (err) {
       let errorMessage = 'Login failed. Please try again.';

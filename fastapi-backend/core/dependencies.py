@@ -12,18 +12,20 @@ from apps.users.models import User
 from apps.users.services.user_service import get_user_by_id
 from core.exceptions import AuthenticationError
 
-security = HTTPBearer()
-
+from fastapi import Request
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    request: Request,
     db: AsyncSession = Depends(get_db)
 ) -> User:
     """
-    Get current authenticated user from JWT token
+    Get current authenticated user from 'access_token' cookie
     """
     try:
-        token = credentials.credentials
+        token = request.cookies.get("access_token")
+        if not token:
+            raise AuthenticationError("Not authenticated")
+            
         payload = jwt.decode(
             token,
             settings.SECRET_KEY,
@@ -37,7 +39,7 @@ async def get_current_user(
     except Exception as e:
         import logging
         logger = logging.getLogger(__name__)
-        logger.error(f"Error decoding JWT token: {str(e)}", exc_info=True)
+        logger.error(f"Error decoding JWT token from cookie: {str(e)}", exc_info=True)
         raise AuthenticationError("Invalid token")
     
     try:
@@ -101,23 +103,23 @@ def require_role(*allowed_roles: str):
 
 
 async def get_optional_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer(auto_error=False)),
+    request: Request,
     db: AsyncSession = Depends(get_db)
 ) -> Optional[User]:
     """
-    Get current authenticated user from JWT token (optional - returns None if not authenticated)
+    Get current authenticated user from 'access_token' cookie (optional)
     """
-    if not credentials:
+    token = request.cookies.get("access_token")
+    if not token:
         return None
     
     try:
-        token = credentials.credentials
         payload = jwt.decode(
             token,
             settings.SECRET_KEY,
             algorithms=[settings.ALGORITHM]
         )
-        user_id: str = payload.get("sub")
+        user_id = payload.get("sub")
         if user_id is None:
             return None
     except (JWTError, Exception):

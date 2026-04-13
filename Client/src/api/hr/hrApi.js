@@ -5,42 +5,7 @@ import apiClient from '../../utils/apiConfig';
  * HR can see ALL forms and hiring data from all users (users, manager, admin)
  */
 export const hrApi = {
-  /**
-   * Get all candidate forms (from all users)
-   * @param {Object} params - Query parameters (skip, limit)
-   * @returns {Promise}
-   */
-  getCandidateForms: (params = {}) => {
-    return apiClient.get('/forms/candidate-forms', { params });
-  },
 
-  /**
-   * Get a single candidate form
-   * @param {number} id - Form ID
-   * @returns {Promise}
-   */
-  getCandidateForm: (id) => {
-    return apiClient.get(`/forms/candidate-forms/${id}`);
-  },
-
-  /**
-   * Update a candidate form
-   * @param {number} id - Form ID
-   * @param {Object} data - Updated form data
-   * @returns {Promise}
-   */
-  updateCandidateForm: (id, data) => {
-    return apiClient.put(`/forms/candidate-forms/${id}`, data);
-  },
-
-  /**
-   * Delete a candidate form
-   * @param {number} id - Form ID
-   * @returns {Promise}
-   */
-  deleteCandidateForm: (id) => {
-    return apiClient.delete(`/forms/candidate-forms/${id}`);
-  },
 
   /**
    * Get all hiring forms (from all users)
@@ -142,10 +107,5 @@ export const hrApi = {
    * @param {number} id - Certificate ID
    * @returns {Promise}
    */
-  downloadCertificateImage: (id) => {
-    return apiClient.get(`/certificates/generated/${id}/download/image`, {
-      responseType: 'blob'
-    });
-  },
 };
 

@@ -28,10 +28,9 @@ const DashboardStats = () => {
   const loadStats = async () => {
     try {
       // Load all data in parallel
-      const [certificatesRes, templatesRes, formsRes, hiringFormsRes] = await Promise.allSettled([
+      const [certificatesRes, templatesRes, hiringFormsRes] = await Promise.allSettled([
         hrApi.getCertificates({ skip: 0, limit: 1000 }),
         hrApi.getTemplates(),
-        hrApi.getCandidateForms({ skip: 0, limit: 1 }),
         hrApi.getHiringForms({ skip: 0, limit: 1 }),
       ]);
 
@@ -54,21 +53,7 @@ const DashboardStats = () => {
         newStats.totalTemplates = Array.isArray(templates) ? templates.length : 0;
       }
 
-      // Process forms (get total count)
-      if (formsRes.status === 'fulfilled') {
-        const forms = formsRes.value.data || [];
-        newStats.totalForms = Array.isArray(forms) ? forms.length : 0;
-        // If we got limited results, try to get a better count
-        if (forms.length === 1) {
-          try {
-            const allFormsRes = await hrApi.getCandidateForms({ skip: 0, limit: 1000 });
-            const allForms = allFormsRes.data || [];
-            newStats.totalForms = Array.isArray(allForms) ? allForms.length : 0;
-          } catch (e) {
-            // Use the count we have
-          }
-        }
-      }
+      // Candidate forms processing removed
 
       // Process hiring forms
       if (hiringFormsRes.status === 'fulfilled') {
@@ -110,14 +95,6 @@ const DashboardStats = () => {
       icon: HiOutlineClipboardList,
       color: 'purple',
       link: '/hr/templates',
-    },
-    {
-      title: 'Candidate Forms',
-      value: stats.totalForms,
-      subtitle: 'Submitted',
-      icon: HiOutlineDocument,
-      color: 'orange',
-      link: '/hr/candidates',
     },
     {
       title: 'Hiring Requirements',

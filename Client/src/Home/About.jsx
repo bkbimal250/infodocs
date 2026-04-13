@@ -27,8 +27,7 @@ export default function About() {
                 <span className="text-blue-600"> SPA &amp; wellness teams</span>
               </h1>
               <p className="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto lg:mx-0">
-                Infodocs is a focused document management platform that helps SPA and wellness
-                centers generate certificates, manage candidates, and streamline HR workflows
+                centers generate certificates, manage hiring requirements, and streamline HR workflows
                 — all in one secure place.
               </p>
 
@@ -103,8 +102,8 @@ export default function About() {
             <p>
               <strong className="text-slate-900">Infodocs</strong> is a modern, web-based
               document management system specifically built for SPA and wellness centers.
-              The platform streamlines certificate generation, candidate management, hiring
-              processes, and document workflows, helping organizations stay organized and compliant.
+              The platform streamlines certificate generation, hiring requirements,
+              and document workflows, helping organizations stay organized and compliant.
             </p>
             <p>
               Whether you&apos;re an administrator managing multiple locations, an HR professional
@@ -207,8 +206,8 @@ export default function About() {
                 Ready to streamline your document management?
               </h2>
               <p className="text-sm sm:text-base text-slate-600 max-w-xl">
-                Create an account to start generating certificates, managing candidates, and organizing
-                workflows with Infodocs.
+                Create an account to start generating certificates, managing workflows, and organizing
+                your SPA operations with Infodocs.
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3">
