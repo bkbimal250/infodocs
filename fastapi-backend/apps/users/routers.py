@@ -158,8 +158,8 @@ async def login(
             key="access_token",
             value=access_token,
             httponly=True,
-            secure=True,  # Set to True in production (HTTPS)
-            samesite="lax",
+            secure=True,
+            samesite="none",
             max_age=30 * 24 * 60 * 60,  # 30 days
         )
         
@@ -257,7 +257,7 @@ async def login_with_email(
             value=access_token,
             httponly=True,
             secure=True,
-            samesite="lax",
+            samesite="none",
             max_age=30 * 24 * 60 * 60,
         )
         
@@ -405,7 +405,7 @@ async def login_with_otp(
         value=access_token,
         httponly=True,
         secure=True,
-        samesite="lax",
+        samesite="none",
         max_age=30 * 24 * 60 * 60,
     )
     
@@ -589,7 +589,7 @@ async def logout(response: Response):
         key="access_token",
         httponly=True,
         secure=True,
-        samesite="lax"
+        samesite="none"
     )
     return MessageResponseSchema(message="Successfully logged out")
 
