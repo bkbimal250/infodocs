@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
 )
 from fastapi import HTTPException
+from core.exceptions import CustomException
 
 from config.settings import settings
 
@@ -148,15 +149,15 @@ async def get_db() -> AsyncSession:
                 logger.error(f"Database SQL error: {e}", exc_info=True)
                 await session.rollback()
                 raise
-            except HTTPException:
-                # Re-raise HTTPExceptions as-is (don't wrap them)
+            except (HTTPException, CustomException):
+                # Re-raise HTTPExceptions and CustomExceptions as-is (don't wrap them)
                 raise
             except Exception as e:
                 logger.error(f"Database operation error: {e}", exc_info=True)
                 await session.rollback()
                 raise
-    except HTTPException:
-        # Re-raise HTTPExceptions as-is
+    except (HTTPException, CustomException):
+        # Re-raise HTTPExceptions and CustomExceptions as-is
         raise
     except Exception as e:
         # If session creation itself fails, log and provide better error

@@ -597,7 +597,20 @@ async def logout(response: Response):
 @auth_router.get("/user", response_model=UserResponseSchema)
 async def get_current_user_info(current_user: User = Depends(get_current_active_user)):
     """Get current authenticated user info for session management"""
-    return current_user
+    return UserResponseSchema(
+        id=current_user.id,
+        username=current_user.username,
+        email=current_user.email,
+        first_name=current_user.first_name,
+        last_name=current_user.last_name,
+        role=current_user.role,
+        phone_number=current_user.phone_number,
+        is_active=current_user.is_active,
+        is_verified=current_user.is_verified,
+        spa_id=current_user.spa_id,
+        last_login_at=current_user.last_login_at,
+        created_at=current_user.created_at
+    )
 
 
 @auth_router.put("/user", response_model=UserResponseSchema)
