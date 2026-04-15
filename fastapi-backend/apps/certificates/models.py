@@ -29,6 +29,7 @@ class CertificateCategory(str, PyEnum):
     INVOICE_SPA_BILL = "invoice_spa_bill"
     ID_CARD = "id_card"
     DAILY_SHEET = "daily_sheet"
+ 
 
 
 class TemplateType(str, PyEnum):
@@ -271,6 +272,7 @@ class DailySheetCertificate(CertificateBase):
     spa = relationship("SPA", back_populates="daily_sheet_certificates")
 
     template = relationship("CertificateTemplate", back_populates="daily_sheet_certificates")
+
 
 
 

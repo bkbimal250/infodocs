@@ -31,21 +31,35 @@ REMBG_ERROR = None
 try:
     from rembg import remove, new_session
     REMBG_AVAILABLE = True
-    
-    # Initialize session globally to avoid per-request reload overhead
-    # using 'isnet-general-use' as it is better for signatures/general edges
-    try:
-         logger.info("Initializing rembg session (isnet-general-use)...")
-         REMBG_SESSION = new_session("isnet-general-use")
-         logger.info("✓ rembg session initialized (isnet-general-use)")
-    except Exception as e:
-        logger.warning(f"Failed to initialize isnet-general-use, falling back to u2net: {e}")
-        REMBG_SESSION = new_session("u2net")
-        logger.info("✓ rembg session initialized (u2net)")
-
 except ImportError as e:
     REMBG_ERROR = str(e)
     logger.warning(f"rembg not available: {e}. Install with 'pip install rembg[cpu]'")
+
+
+def get_rembg_session():
+    """
+    Lazy-initializes and returns the rembg session.
+    This prevents startup hangs during module import.
+    """
+    global REMBG_SESSION
+    if not REMBG_AVAILABLE:
+        return None
+        
+    if REMBG_SESSION is None:
+        try:
+            logger.info("Lazy-initializing rembg session (isnet-general-use)...")
+            REMBG_SESSION = new_session("isnet-general-use")
+            logger.info("✓ rembg session initialized (isnet-general-use)")
+        except Exception as e:
+            logger.warning(f"Failed to initialize isnet-general-use, falling back to u2net: {e}")
+            try:
+                REMBG_SESSION = new_session("u2net")
+                logger.info("✓ rembg session initialized (u2net)")
+            except Exception as e2:
+                logger.error(f"Failed to initialize any rembg session: {e2}")
+                return None
+    return REMBG_SESSION
+
 
 
 # ==============================================================================
@@ -54,10 +68,11 @@ except ImportError as e:
 
 async def _remove_background_using_rembg(image_data: bytes) -> bytes:
     """
-    Remove background using local rembg library with global session
+    Remove background using local rembg library with global session (lazy loaded)
     """
-    if not REMBG_AVAILABLE or REMBG_SESSION is None:
-        raise ImportError("rembg library not installed or session not initialized")
+    session = get_rembg_session()
+    if not REMBG_AVAILABLE or session is None:
+        raise ImportError("rembg library not installed or session failed to initialize")
     
     try:
         # Run in thread pool to avoid blocking event loop
@@ -66,9 +81,10 @@ async def _remove_background_using_rembg(image_data: bytes) -> bytes:
         # Use lambda to pass the global session
         output_bytes = await loop.run_in_executor(
             _executor,
-            lambda: remove(image_data, session=REMBG_SESSION)
+            lambda: remove(image_data, session=session)
         )
         return output_bytes
+
     
     except Exception as e:
         logger.error(f"Error using local rembg: {e}", exc_info=True)

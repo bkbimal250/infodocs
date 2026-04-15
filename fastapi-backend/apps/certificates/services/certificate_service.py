@@ -8,6 +8,7 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone
 from urllib.parse import quote
 import logging
+from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, delete, func
@@ -395,7 +396,7 @@ async def prepare_certificate_data(template: CertificateTemplate, certificate_da
         candidate_name: Name of the candidate
         use_http_urls: If True, use HTTP URLs for images (for browser preview). If False, use file:// URLs (for PDF generation)
     """
-    spa = certificate_data.get("spa", {})
+    spa = certificate_data.get("spa") or {}
 
     # Get static file base path (using cached path)
     static_base_path = _get_static_path()
@@ -445,73 +446,61 @@ async def prepare_certificate_data(template: CertificateTemplate, certificate_da
     # Remove leading slash for file:// URLs to avoid double slashes
     uploads_base_path_str = str(uploads_base_path.resolve()).replace("\\", "/").lstrip("/")
     
+    # Initialize defaults to prevent NameError and handle cases without SPA
+    spa_logo = ""
+    spa_address = spa.get("address", "").strip() if spa.get("address") else ""
+
     # Skip logo resolution for therapist certificates as they don't use it
-    if template.category == CertificateCategory.SPA_THERAPIST:
-        data = {
-            "date": certificate_data.get("date", datetime.now().strftime("%d/%m/%Y")),
-            "candidate_name": candidate_name,
-            "spa_logo": "",
-            "certificate_background_image": background_image,
-            "certificate_stamp_image": stamp_image,
-            "certificate_signatory_image": signatory_image,
-            "static_base_url": base_url if use_http_urls else f"file:///{static_base_path_str}",
-            "default_signature_image": f"{base_url}/static/images/{quote('Bhim Sir Signature.png', safe='')}" if use_http_urls else f"file:///{static_base_path_str}/images/{quote('Bhim Sir Signature.png', safe='')}",
-        }
-        # Continue to merge other fields below
-    else:
+    if template.category != CertificateCategory.SPA_THERAPIST:
         spa_logo = spa.get("logo", "")
         logger.debug(f"SPA logo from data: {spa_logo[:100] if spa_logo else 'None'}")
-    
-    if spa_logo and spa_logo.strip():
-        # If logo is a relative path (spa_logos/filename.jpg), convert to appropriate URL
-        if not spa_logo.startswith("http") and not spa_logo.startswith("file://") and not spa_logo.startswith("/"):
-            # For PDF generation, use file:// path
-            if use_http_urls:
-                # For preview: use HTTP URL - try uploads first, then media
-                # Check if file exists in uploads
-                uploads_logo_path = uploads_base_path / spa_logo
-                if uploads_logo_path.exists():
-                    spa_logo = f"{base_url}/uploads/{spa_logo}"
-                    logger.debug(f"Preview: Using uploads logo URL: {spa_logo}")
-                else:
-                    # Fallback to media
-                    spa_logo = f"{base_url}/media/{spa_logo}"
-                    logger.debug(f"Preview: Using media logo URL: {spa_logo}")
-            else:
-                # For PDF: use file:// path (absolute path)
-                # Try uploads first (where files are actually saved)
-                uploads_logo_path = uploads_base_path / spa_logo
-                if uploads_logo_path.exists():
-                    # Ensure proper file:// URL format (file:///absolute/path)
-                    spa_logo = f"file:///{uploads_base_path_str}/{spa_logo}"
-                    logger.info(f"PDF: Found logo in uploads: {spa_logo}")
-                else:
-                    # Fallback to media directory
-                    media_logo_path = Path(media_base_path) / spa_logo
-                    media_base_path_str_clean = media_base_path_str.lstrip("/")
-                    if media_logo_path.exists():
-                        spa_logo = f"file:///{media_base_path_str_clean}/{spa_logo}"
-                        logger.info(f"PDF: Found logo in media: {spa_logo}")
+        
+        if spa_logo and spa_logo.strip():
+            # If logo is a relative path (spa_logos/filename.jpg), convert to appropriate URL
+            if not spa_logo.startswith("http") and not spa_logo.startswith("file://") and not spa_logo.startswith("/"):
+                # For PDF generation, use file:// path
+                if use_http_urls:
+                    # For preview: use HTTP URL - try uploads first, then media
+                    # Check if file exists in uploads
+                    uploads_logo_path = uploads_base_path / spa_logo
+                    if uploads_logo_path.exists():
+                        spa_logo = f"{base_url}/uploads/{spa_logo}"
+                        logger.debug(f"Preview: Using uploads logo URL: {spa_logo}")
                     else:
-                        # Try uploads anyway (might work if path is correct)
+                        # Fallback to media
+                        spa_logo = f"{base_url}/media/{spa_logo}"
+                        logger.debug(f"Preview: Using media logo URL: {spa_logo}")
+                else:
+                    # For PDF: use file:// path (absolute path)
+                    # Try uploads first (where files are actually saved)
+                    uploads_logo_path = uploads_base_path / spa_logo
+                    if uploads_logo_path.exists():
+                        # Ensure proper file:// URL format (file:///absolute/path)
                         spa_logo = f"file:///{uploads_base_path_str}/{spa_logo}"
-                        logger.warning(f"PDF: Logo not found in uploads or media, using uploads path anyway: {spa_logo}")
-        # If it's already a full URL or file:// path, keep it as is
-        else:
-            logger.debug(f"Logo is already a full URL/path: {spa_logo[:100]}")
-    else:
-        spa_logo = ""  # Empty string if no logo
+                        logger.info(f"PDF: Found logo in uploads: {spa_logo}")
+                    else:
+                        # Fallback to media directory
+                        media_logo_path = Path(media_base_path) / spa_logo
+                        media_base_path_str_clean = media_base_path_str.lstrip("/")
+                        if media_logo_path.exists():
+                            spa_logo = f"file:///{media_base_path_str_clean}/{spa_logo}"
+                            logger.info(f"PDF: Found logo in media: {spa_logo}")
+                        else:
+                            # Try uploads anyway (might work if path is correct)
+                            spa_logo = f"file:///{uploads_base_path_str}/{spa_logo}"
+                            logger.warning(f"PDF: Logo not found in uploads or media, using uploads path anyway: {spa_logo}")
+            # If it's already a full URL or file:// path, keep it as is
+            else:
+                logger.debug(f"Logo is already a full URL/path: {spa_logo[:100]}")
     
-    # Use address field directly from model (already contains full address)
-    spa_address = spa.get("address", "").strip() if spa.get("address") else ""
-    
+    # Build the main data dictionary once
     data = {
         "date": certificate_data.get("date", datetime.now().strftime("%d/%m/%Y")),
         "candidate_name": candidate_name,
 
-        # SPA info
+        # SPA info (will be empty/generic for therapists)
         "spa_name": spa.get("name", ""),
-        "spa_address": spa_address,  # Use address field directly
+        "spa_address": spa_address,
         "spa_area": spa.get("area", ""),
         "spa_city": spa.get("city", ""),
         "spa_state": spa.get("state", ""),
@@ -521,17 +510,14 @@ async def prepare_certificate_data(template: CertificateTemplate, certificate_da
         "spa_phone1": spa.get("alternate_number", ""),
         "spa_email": spa.get("email", ""),
         "spa_website": spa.get("website", ""),
-        "spa_logo": spa_logo,  # Logo with proper path conversion
+        "spa_logo": spa_logo,
         
         # Static image paths
         "certificate_background_image": background_image,
         "certificate_stamp_image": stamp_image,
         "certificate_signatory_image": signatory_image,
-        "daily_sheet_background": daily_sheet_bg,  # Daily Sheet background image
-        # Default signature image path
-        # Note: File name is "Bhim Sir Signature.png" (capital S in Signature)
+        "daily_sheet_background": daily_sheet_bg,
         "default_signature_image": f"{base_url}/static/images/{quote('Bhim Sir Signature.png', safe='')}" if use_http_urls else f"file:///{static_base_path_str}/images/{quote('Bhim Sir Signature.png', safe='')}",
-        # Also provide static_base_url for templates that use it directly
         "static_base_url": base_url if use_http_urls else f"file:///{static_base_path_str}",
     }
 
@@ -881,7 +867,7 @@ async def create_generated_certificate(
     CertificateModel = get_certificate_model(template.category)
     certificate_payload = certificate_data or {}
 
-    spa_payload = certificate_payload.get("spa", {})
+    spa_payload = certificate_payload.get("spa") or {}
     spa_id = certificate_payload.get("spa_id") or spa_payload.get("id")
 
     if template.category in SPA_REQUIRED_CATEGORIES and not spa_id:
@@ -906,6 +892,7 @@ async def create_generated_certificate(
             "start_date": certificate_payload.get("start_date"),
             "end_date": certificate_payload.get("end_date"),
             # Save base64 images as files and store file paths
+        
             "passport_size_photo": None,  # Will be set after certificate is created
             "candidate_signature": None,  # Will be set after certificate is created
         },
@@ -1279,8 +1266,13 @@ async def get_all_certificates_with_users(db: AsyncSession, skip: int = 0, limit
     return all_certificates
 
 
-async def delete_certificate(db: AsyncSession, certificate_id: int, category: Optional[CertificateCategory] = None) -> bool:
-    """Delete a certificate by ID from the appropriate table"""
+
+async def delete_certificate(
+    db: AsyncSession,
+    certificate_id: int,
+    category: Optional[CertificateCategory] = None
+) -> bool:
+
     models = [
         (SpaTherapistCertificate, CertificateCategory.SPA_THERAPIST),
         (ManagerSalaryCertificate, CertificateCategory.MANAGER_SALARY),
@@ -1290,8 +1282,39 @@ async def delete_certificate(db: AsyncSession, certificate_id: int, category: Op
         (IDCardCertificate, CertificateCategory.ID_CARD),
         (GeneratedCertificate, None),
     ]
-    
-    # If category is provided, only check that specific model
+
+    async def delete_record(model):
+        # 1. Fetch record
+        result = await db.execute(
+            select(model).where(model.id == certificate_id)
+        )
+        certificate = result.scalar_one_or_none()
+
+        if not certificate:
+            return False
+
+        # 2. Delete file (VERY IMPORTANT)
+        file_path = getattr(certificate, "file_path", None)
+
+        if file_path:
+            path = Path(file_path)
+
+            if not path.is_absolute():
+                path = Path.cwd() / path
+
+            if path.exists():
+                path.unlink()
+                print(f"Deleted file: {path}")
+            else:
+                print(f"File not found: {path}")
+
+        # 3. Delete DB record
+        await db.delete(certificate)
+        await db.commit()
+
+        return True
+
+    # 👉 If category provided
     if category:
         model_map = {
             CertificateCategory.SPA_THERAPIST: SpaTherapistCertificate,
@@ -1302,25 +1325,20 @@ async def delete_certificate(db: AsyncSession, certificate_id: int, category: Op
             CertificateCategory.ID_CARD: IDCardCertificate,
             CertificateCategory.DAILY_SHEET: DailySheetCertificate,
         }
+
         model = model_map.get(category)
         if model:
-            stmt = delete(model).where(model.id == certificate_id)
-            result = await db.execute(stmt)
-            await db.commit()
-            return result.rowcount > 0
+            return await delete_record(model)
+
         return False
-    
-    # If no category, search all models
+
+    # 👉 If no category → search all models
     for model, _ in models:
-        stmt = delete(model).where(model.id == certificate_id)
-        result = await db.execute(stmt)
-        if result.rowcount > 0:
-            await db.commit()
+        deleted = await delete_record(model)
+        if deleted:
             return True
-    
+
     return False
-
-
 
 async def get_certificate_statistics(db: AsyncSession):
     """Get certificate statistics: total, by user, by category (Optimized with parallel queries & Redis caching)"""
