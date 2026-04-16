@@ -133,8 +133,10 @@ async def submit_hiring_form(
         
         return MessageResponseSchema(message="Hiring form submitted successfully")
     except ValidationError as e:
+        logger.error(f"Validation error in hiring form submission by user {current_user.id}: {e.message}")
         raise HTTPException(status_code=422, detail=e.message)
     except Exception as e:
+        logger.error(f"Unexpected error in hiring form submission by user {current_user.id}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to submit hiring form: {str(e)}")
 
 

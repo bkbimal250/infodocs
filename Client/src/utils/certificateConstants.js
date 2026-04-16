@@ -16,6 +16,8 @@ export const CERTIFICATE_CATEGORIES = {
   INVOICE_SPA_BILL: 'invoice_spa_bill',
   ID_CARD: 'id_card',
   DAILY_SHEET: 'daily_sheet',
+  UNDER_TAKING_SHEET: 'undertaking_sheet',
+  JOB_FORM_SHEET: 'job_form_sheet',
 };
 
 export const CERTIFICATE_CATEGORY_METADATA = {
@@ -59,6 +61,16 @@ export const CERTIFICATE_CATEGORY_METADATA = {
     icon: 'daily-sheet',
     description: 'Daily transaction and activity sheet',
   },
+  [CERTIFICATE_CATEGORIES.UNDER_TAKING_SHEET]: {
+    title: 'Undertaking Sheet',
+    icon: 'daily-sheet',
+    description: 'Official undertaking and declaration form',
+  },
+  [CERTIFICATE_CATEGORIES.JOB_FORM_SHEET]: {
+    title: 'Job Application Form',
+    icon: 'daily-sheet',
+    description: 'Comprehensive employee job application form',
+  }
 };
 
 export const SPA_REQUIRED_CATEGORIES = [
@@ -68,6 +80,8 @@ export const SPA_REQUIRED_CATEGORIES = [
   CERTIFICATE_CATEGORIES.INVOICE_SPA_BILL,
   CERTIFICATE_CATEGORIES.ID_CARD,
   CERTIFICATE_CATEGORIES.DAILY_SHEET,
+  CERTIFICATE_CATEGORIES.UNDER_TAKING_SHEET,
+  CERTIFICATE_CATEGORIES.JOB_FORM_SHEET,
 ];
 
 // ========================
@@ -75,7 +89,7 @@ export const SPA_REQUIRED_CATEGORIES = [
 // ========================
 
 export const CERTIFICATE_FIELDS = {
-  
+
   [CERTIFICATE_CATEGORIES.SPA_THERAPIST]: {
     title: 'Spa Therapist & Beautician Certificate',
     icon: 'spa',
@@ -105,7 +119,7 @@ export const CERTIFICATE_FIELDS = {
       { name: 'salary_breakdown', label: 'Salary Breakdown (JSON)', type: 'textarea', placeholder: '[{"month":"Jan 2025","salary":"40,000"}]' },
     ],
   },
-  
+
 
   [CERTIFICATE_CATEGORIES.OFFER_LETTER]: {
     title: 'Offer Letter',
@@ -133,7 +147,7 @@ export const CERTIFICATE_FIELDS = {
       { name: 'end_date', label: 'End Date', type: 'date', placeholder: 'July 30, 2025' },
       { name: 'duration', label: 'Duration', type: 'text', placeholder: '3 months' },
       { name: 'salary', label: 'Salary', type: 'text', placeholder: 'Rs. 25,000/-' },
-      
+
     ],
   },
 
@@ -191,6 +205,43 @@ export const CERTIFICATE_FIELDS = {
     fields: [
       // Daily Sheet only uses SPA data - no additional fields needed
       // The template will display spa_name and spa_location from the selected SPA
+    ],
+  },
+  [CERTIFICATE_CATEGORIES.UNDER_TAKING_SHEET]: {
+    title: 'Undertaking Sheet',
+    icon: 'daily-sheet',
+    description: 'Candidate undertaking form with photo and signature',
+    requiredFields: ['employee_name', 'employee_position', 'date'],
+    fields: [
+      { name: 'employee_name', label: 'Employee Name', type: 'text', placeholder: 'Full Name' },
+      { name: 'employee_position', label: 'Position', type: 'text', placeholder: 'Job Position' },
+      { name: 'date', label: 'Date', type: 'date' },
+      { name: 'employee_photo', label: 'Employee Photo', type: 'file' },
+      { name: 'employee_signature', label: 'Employee Signature', type: 'file' },
+    ],
+  },
+  [CERTIFICATE_CATEGORIES.JOB_FORM_SHEET]: {
+    title: 'Job Application Form',
+    icon: 'daily-sheet',
+    description: 'Detailed job application form with personal and professional details',
+    requiredFields: ['first_name', 'last_name', 'phone', 'address', 'city', 'state', 'zip_code', 'age'],
+    fields: [
+      { name: 'first_name', label: 'First Name', type: 'text', placeholder: 'First Name' },
+      { name: 'middle_name', label: 'Middle Name', type: 'text', placeholder: 'Middle Name (Optional)' },
+      { name: 'last_name', label: 'Last Name', type: 'text', placeholder: 'Last Name' },
+      { name: 'phone', label: 'Phone Number', type: 'text', placeholder: 'Mobile Number' },
+      { name: 'alt_phone', label: 'Alternate Phone', type: 'text', placeholder: 'Optional' },
+      { name: 'address', label: 'Address', type: 'textarea', placeholder: 'Current Address' },
+      { name: 'city', label: 'City', type: 'text' },
+      { name: 'state', label: 'State', type: 'text' },
+      { name: 'zip_code', label: 'Zip Code', type: 'text' },
+      { name: 'age', label: 'Age', type: 'text' },
+      { name: 'age_proof', label: 'Age Proof (ID Type)', type: 'text', placeholder: 'Aadhar / PAN / DL' },
+      { name: 'position_applied', label: 'Position Applied For', type: 'text' },
+      { name: 'skills', label: 'Skills / Experience', type: 'textarea' },
+      { name: 'employee_photo', label: 'Employee Photo', type: 'file' },
+      { name: 'employee_signature', label: 'Employee Signature', type: 'file' },
+      { name: 'date', label: 'Date', type: 'date' },
     ],
   },
 };

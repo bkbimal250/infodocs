@@ -54,6 +54,10 @@ class SPA(Base):
     id_card_certificates = relationship("IDCardCertificate", back_populates="spa")
     daily_sheet_certificates = relationship("DailySheetCertificate", back_populates="spa")
     
+    # Missing relationships for new certificate models
+    spa_undertaking_sheets = relationship("UndertakingSheet", back_populates="spa")
+    spa_jobform_sheets = relationship("JobformSheet", back_populates="spa")
+    
     # relationship with DailySheet
     daily_sheets = relationship("DailySheet", back_populates="spa")
 

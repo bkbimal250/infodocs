@@ -370,6 +370,7 @@ const CreateCertifications = () => {
         formData.employee_name ||
         formData.customer_name ||
         formData.name ||
+        (formData.first_name ? `${formData.first_name} ${formData.last_name || ''}`.trim() : '') ||
         '';
     }
     if (!requestName && categoryKey !== CERTIFICATE_CATEGORIES.DAILY_SHEET) {
@@ -440,6 +441,7 @@ const CreateCertifications = () => {
         formData.employee_name ||
         formData.customer_name ||
         formData.name ||
+        (formData.first_name ? `${formData.first_name} ${formData.last_name || ''}`.trim() : '') ||
         '';
     }
     if (!requestName) {

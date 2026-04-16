@@ -190,6 +190,39 @@ def get_category_template_structure(category: CertificateCategory) -> Dict:
                 # Template uses: spa_name, spa_location, daily_sheet_background
             ],
             "spa_required": True
+        },
+        CertificateCategory.UNDER_TAKING_SHEET: {
+            "name": "Undertaking Sheet",
+            "fields": [
+                "employee_name",
+                "employee_position",
+                "employee_photo",
+                "employee_signature",
+                "date"
+            ],
+            "spa_required": True
+        },
+        CertificateCategory.JOB_FORM_SHEET: {
+            "name": "Job Form Sheet",
+            "fields": [
+                "first_name",
+                "middle_name",
+                "last_name",
+                "phone",
+                "alt_phone",
+                "address",
+                "city",
+                "state",
+                "zip_code",
+                "age",
+                "age_proof",
+                "position_applied",
+                "skills",
+                "employee_photo",
+                "employee_signature",
+                "date"
+            ],
+            "spa_required": True
         }
     }
     

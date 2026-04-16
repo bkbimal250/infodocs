@@ -71,7 +71,9 @@ class GeneratedCertificateResponse(BaseModel):
     candidate_email: Optional[str] = None
     spa_id: Optional[int] = None  # NEW
     manager_name: Optional[str] = None   # For Manager Salary letters
-    employee_name: Optional[str] = None  # For Appointment letters
+    employee_name: Optional[str] = None  # For Appointment letters, sheets
+    first_name: Optional[str] = None    # For Job Form sheets
+    last_name: Optional[str] = None     # For Job Form sheets
     customer_name: Optional[str] = None  # For Invoice/Bills
     certificate_pdf: Optional[str] = None
     is_public: bool

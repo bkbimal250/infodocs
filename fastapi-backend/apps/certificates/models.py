@@ -29,6 +29,8 @@ class CertificateCategory(str, PyEnum):
     INVOICE_SPA_BILL = "invoice_spa_bill"
     ID_CARD = "id_card"
     DAILY_SHEET = "daily_sheet"
+    UNDER_TAKING_SHEET = "undertaking_sheet"
+    JOB_FORM_SHEET = "job_form_sheet"
  
 
 
@@ -88,6 +90,14 @@ class CertificateTemplate(Base):
     generated_certificates = relationship(
         "GeneratedCertificate", back_populates="template", cascade="all, delete-orphan"
     )
+    undertaking_sheets = relationship(
+        "UndertakingSheet", back_populates="template", cascade="all, delete-orphan"
+    )
+    jobform_sheets = relationship(
+        "JobformSheet", back_populates="template", cascade="all, delete-orphan"
+    )
+
+    
 
 
 # ---------------------------
@@ -274,6 +284,72 @@ class DailySheetCertificate(CertificateBase):
     template = relationship("CertificateTemplate", back_populates="daily_sheet_certificates")
 
 
+class UndertakingSheet(CertificateBase):
+    __tablename__ = "undertaking_sheets"
+
+    # Basic Info
+    employee_name = Column(String(255))
+    employee_position = Column(String(255))
+
+    # Assets
+    employee_photo = Column(Text, nullable=True)
+    employee_signature = Column(Text, nullable=True)
+
+    # Extra (IMPORTANT)
+    date = Column(String(50), nullable=True)
+
+    category = Column(
+        SQLEnum(CertificateCategory, native_enum=False, length=50, create_constraint=False),
+        default=CertificateCategory.UNDER_TAKING_SHEET,
+        nullable=False
+    )
+
+    spa_id = Column(Integer, ForeignKey("spas.id"), nullable=True)
+    spa = relationship("SPA", back_populates="spa_undertaking_sheets")
+
+    template = relationship("CertificateTemplate", back_populates="undertaking_sheets")
+
+class JobformSheet(CertificateBase):
+    __tablename__ = "jobform_sheets"
+
+    # Name split (better for UI + PDF)
+    first_name = Column(String(100))
+    middle_name = Column(String(100), nullable=True)
+    last_name = Column(String(100))
+
+    # Contact
+    phone = Column(String(20))
+    alt_phone = Column(String(20), nullable=True)
+
+    # Address
+    address = Column(Text)
+    city = Column(String(100))
+    state = Column(String(100))
+    zip_code = Column(String(20))
+
+    # Extra
+    age = Column(String(10))
+    age_proof = Column(String(100))
+
+    position_applied = Column(String(255))
+    skills = Column(Text, nullable=True)
+
+    # Assets
+    employee_photo = Column(Text, nullable=True)
+    employee_signature = Column(Text, nullable=True)
+
+    date = Column(String(50), nullable=True)
+
+    category = Column(
+        SQLEnum(CertificateCategory, native_enum=False, length=50, create_constraint=False),
+        default=CertificateCategory.JOB_FORM_SHEET,
+        nullable=False
+    )
+
+    spa_id = Column(Integer, ForeignKey("spas.id"), nullable=True)
+    spa = relationship("SPA", back_populates="spa_jobform_sheets")
+
+    template = relationship("CertificateTemplate", back_populates="jobform_sheets")
 
 
 # ---------------------------

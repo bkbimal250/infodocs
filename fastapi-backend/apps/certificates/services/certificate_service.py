@@ -25,6 +25,8 @@ from apps.certificates.models import (
     InvoiceSpaBillCertificate,
     IDCardCertificate,
     DailySheetCertificate,
+    UndertakingSheet,
+    JobformSheet,
 )
 from apps.certificates.services.pdf_generator import (
     render_html_template,
@@ -98,6 +100,9 @@ SPA_REQUIRED_CATEGORIES = {
     CertificateCategory.INVOICE_SPA_BILL,
     CertificateCategory.ID_CARD,
     CertificateCategory.DAILY_SHEET,
+    CertificateCategory.UNDER_TAKING_SHEET,
+    CertificateCategory.JOB_FORM_SHEET,
+
     # Note: SPA_THERAPIST does NOT require spa_id
 }
 
@@ -383,6 +388,10 @@ def get_template_name_by_category(category: CertificateCategory) -> str:
         CertificateCategory.INVOICE_SPA_BILL: "invoice",
         CertificateCategory.SPA_THERAPIST: "completion_certificate",
         CertificateCategory.ID_CARD: "id_card",
+        CertificateCategory.DAILY_SHEET: "daily_sheet",
+        CertificateCategory.UNDER_TAKING_SHEET: "undertaking_sheet",
+        CertificateCategory.JOB_FORM_SHEET: "job_form_sheet",
+
     }
     return mapping.get(category, "salary_certificate")
 
@@ -693,6 +702,32 @@ async def prepare_certificate_data(template: CertificateTemplate, certificate_da
             data["candidate_photo"] = ""
             logger.debug("No candidate_photo provided")
 
+    # For UNDER_TAKING_SHEET and JOB_FORM_SHEET, handle employee_photo and employee_signature
+    if template.category in (CertificateCategory.UNDER_TAKING_SHEET, CertificateCategory.JOB_FORM_SHEET):
+        base_url = certificate_data.get("base_url", settings.API_BASE_URL)
+        media_base_path = _get_media_path()
+        media_base_path_str = str(media_base_path).replace("\\", "/").lstrip("/")
+        
+        # Handle employee_photo
+        if data.get("employee_photo"):
+            photo = data["employee_photo"]
+            if photo.startswith("certificates/"):
+                if use_http_urls:
+                    data["employee_photo"] = f"{base_url}/media/{photo}"
+                else:
+                    data["employee_photo"] = f"file:///{media_base_path_str}/{photo}"
+            # Keep base64 as is
+
+        # Handle employee_signature
+        if data.get("employee_signature"):
+            sig = data["employee_signature"]
+            if sig.startswith("certificates/"):
+                if use_http_urls:
+                    data["employee_signature"] = f"{base_url}/media/{sig}"
+                else:
+                    data["employee_signature"] = f"file:///{media_base_path_str}/{sig}"
+            # Keep base64 as is
+
     # Category-specific defaults (only set if not already in data)
 
     # Build salary breakdown HTML for Manager Salary certificates
@@ -789,7 +824,33 @@ async def prepare_certificate_data(template: CertificateTemplate, certificate_da
             # Daily Sheet only needs SPA data
             "spa_name": spa.get("name", ""),
             "spa_location": spa.get("city", "") or spa.get("address", "") or spa.get("area", ""),
+        },
+        CertificateCategory.UNDER_TAKING_SHEET: {
+            "employee_name": candidate_name,
+            "employee_position": "",
+            "employee_photo": "",
+            "employee_signature": "",
+            "date": datetime.now().strftime("%d/%m/%Y")
+        },
+        CertificateCategory.JOB_FORM_SHEET: {
+            "first_name": "",
+            "middle_name": "",
+            "last_name": "",
+            "phone": "",
+            "alt_phone": "",
+            "address": "",
+            "city": "",
+            "state": "",
+            "zip_code": "",
+            "age": "",
+            "age_proof": "",
+            "position_applied": "",
+            "skills": "",
+            "employee_photo": "",
+            "employee_signature": "",
+            "date": datetime.now().strftime("%d/%m/%Y")
         }
+
     }
 
     # Only set defaults if key doesn't exist or is empty
@@ -840,6 +901,9 @@ def get_certificate_model(category: CertificateCategory):
         CertificateCategory.INVOICE_SPA_BILL: InvoiceSpaBillCertificate,
         CertificateCategory.ID_CARD: IDCardCertificate,
         CertificateCategory.DAILY_SHEET: DailySheetCertificate,
+        CertificateCategory.UNDER_TAKING_SHEET: UndertakingSheet,
+        CertificateCategory.JOB_FORM_SHEET: JobformSheet
+
     }
     return model_map.get(category, GeneratedCertificate)
 
@@ -947,6 +1011,33 @@ async def create_generated_certificate(
         CertificateCategory.DAILY_SHEET: {
             # Daily Sheet only uses SPA data, no specific fields needed
         },
+
+        CertificateCategory.UNDER_TAKING_SHEET: {
+            "employee_name": certificate_payload.get("employee_name") or name,
+            "employee_position": certificate_payload.get("employee_position"),
+            "date": certificate_payload.get("date") or datetime.now().strftime("%d/%m/%Y"),
+            "employee_photo": None,
+            "employee_signature": None,
+        },
+
+        CertificateCategory.JOB_FORM_SHEET: {
+            "first_name": certificate_payload.get("first_name"),
+            "middle_name": certificate_payload.get("middle_name"),
+            "last_name": certificate_payload.get("last_name"),
+            "phone": certificate_payload.get("phone"),
+            "alt_phone": certificate_payload.get("alt_phone"),
+            "address": certificate_payload.get("address"),
+            "city": certificate_payload.get("city"),
+            "state": certificate_payload.get("state"),
+            "zip_code": certificate_payload.get("zip_code"),
+            "age": certificate_payload.get("age"),
+            "age_proof": certificate_payload.get("age_proof"),
+            "position_applied": certificate_payload.get("position_applied"),
+            "skills": certificate_payload.get("skills"),
+            "date": certificate_payload.get("date") or datetime.now().strftime("%d/%m/%Y"),
+            "employee_photo": None,
+            "employee_signature": None,
+        }
         
     }
 
@@ -971,9 +1062,24 @@ async def create_generated_certificate(
             signature_path = await save_base64_image(signature, certificate.id, "signature")
             if signature_path:
                 certificate.candidate_signature = signature_path
+
+    # Save base64 images as files for UNDER_TAKING_SHEET and JOB_FORM_SHEET categories
+    elif template.category in (CertificateCategory.UNDER_TAKING_SHEET, CertificateCategory.JOB_FORM_SHEET):
+        employee_photo = certificate_payload.get("employee_photo")
+        employee_signature = certificate_payload.get("employee_signature")
+        
+        if employee_photo:
+            photo_path = await save_base64_image(employee_photo, certificate.id, "photo")
+            if photo_path:
+                certificate.employee_photo = photo_path
+        
+        if employee_signature:
+            sig_path = await save_base64_image(employee_signature, certificate.id, "signature")
+            if sig_path:
+                certificate.employee_signature = sig_path
     
     # Save base64 images as files for ID_CARD category
-    if template.category == CertificateCategory.ID_CARD:
+    elif template.category == CertificateCategory.ID_CARD:
         candidate_photo = certificate_payload.get("candidate_photo")
         
         if candidate_photo:
@@ -990,6 +1096,8 @@ async def create_generated_certificate(
         CertificateCategory.EXPERIENCE_LETTER: "candidate_name",
         CertificateCategory.APPOINTMENT_LETTER: "employee_name",
         CertificateCategory.ID_CARD: "candidate_name",
+        CertificateCategory.UNDER_TAKING_SHEET: "employee_name",
+        CertificateCategory.JOB_FORM_SHEET: "first_name",
     }.get(template.category, None)
     display_name = getattr(certificate, display_name_field, name) if display_name_field else name
 
@@ -1000,6 +1108,12 @@ async def create_generated_certificate(
             certificate_payload["passport_size_photo"] = certificate.passport_size_photo
         if certificate.candidate_signature:
             certificate_payload["candidate_signature"] = certificate.candidate_signature
+            
+    elif template.category in (CertificateCategory.UNDER_TAKING_SHEET, CertificateCategory.JOB_FORM_SHEET):
+        if certificate.employee_photo:
+            certificate_payload["employee_photo"] = certificate.employee_photo
+        if certificate.employee_signature:
+            certificate_payload["employee_signature"] = certificate.employee_signature
     
     if template.category == CertificateCategory.ID_CARD:
         # Use saved photo path from database if available
@@ -1094,6 +1208,8 @@ async def get_generated_certificate_by_id(db: AsyncSession, certificate_id: int)
         IDCardCertificate,
         DailySheetCertificate,
         GeneratedCertificate,
+        UndertakingSheet,
+        JobformSheet
     ]
     
     # Search all certificate tables
@@ -1125,6 +1241,8 @@ async def get_public_certificates(db: AsyncSession, skip: int = 0, limit: int = 
         InvoiceSpaBillCertificate,
         IDCardCertificate,
         DailySheetCertificate,
+        UndertakingSheet,
+        JobformSheet,
         GeneratedCertificate,
     ]
     
@@ -1170,6 +1288,8 @@ async def get_user_certificates(db: AsyncSession, user_id: int, skip: int = 0, l
         InvoiceSpaBillCertificate,
         IDCardCertificate,
         DailySheetCertificate,
+        UndertakingSheet,
+        JobformSheet,
         GeneratedCertificate,
     ]
     
@@ -1224,6 +1344,8 @@ async def get_all_certificates_with_users(db: AsyncSession, skip: int = 0, limit
         InvoiceSpaBillCertificate,
         IDCardCertificate,
         DailySheetCertificate,
+        UndertakingSheet,
+        JobformSheet,
         GeneratedCertificate,
     ]
     
@@ -1240,7 +1362,8 @@ async def get_all_certificates_with_users(db: AsyncSession, skip: int = 0, limit
                     'passport_size_photo', 'candidate_signature', 'candidate_photo', 
                     'manager_signature', 'customer_address', 'template_html',
                     'certificate_data', 'service_names', 'hsn_codes', 'quantities', 
-                    'price_rates', 'amounts', 'month_year_list', 'month_salary_list'
+                    'price_rates', 'amounts', 'month_year_list', 'month_salary_list',
+                    'employee_photo', 'employee_signature'
                 ] if hasattr(model, col)]
             ).limit(skip + limit)
             result = await db.execute(stmt)
@@ -1280,6 +1403,9 @@ async def delete_certificate(
         (AppointmentLetterCertificate, CertificateCategory.APPOINTMENT_LETTER),
         (InvoiceSpaBillCertificate, CertificateCategory.INVOICE_SPA_BILL),
         (IDCardCertificate, CertificateCategory.ID_CARD),
+        (DailySheetCertificate, CertificateCategory.DAILY_SHEET),
+        (UndertakingSheet, CertificateCategory.UNDER_TAKING_SHEET),
+        (JobformSheet, CertificateCategory.JOB_FORM_SHEET),
         (GeneratedCertificate, None),
     ]
 
@@ -1324,6 +1450,8 @@ async def delete_certificate(
             CertificateCategory.INVOICE_SPA_BILL: InvoiceSpaBillCertificate,
             CertificateCategory.ID_CARD: IDCardCertificate,
             CertificateCategory.DAILY_SHEET: DailySheetCertificate,
+            CertificateCategory.UNDER_TAKING_SHEET: UndertakingSheet,
+            CertificateCategory.JOB_FORM_SHEET: JobformSheet
         }
 
         model = model_map.get(category)
@@ -1367,6 +1495,8 @@ async def get_certificate_statistics(db: AsyncSession):
         (InvoiceSpaBillCertificate, CertificateCategory.INVOICE_SPA_BILL),
         (IDCardCertificate, CertificateCategory.ID_CARD),
         (DailySheetCertificate, CertificateCategory.DAILY_SHEET),
+        (UndertakingSheet, CertificateCategory.UNDER_TAKING_SHEET),
+        (JobformSheet, CertificateCategory.JOB_FORM_SHEET),
         (GeneratedCertificate, None),
     ]
     

@@ -201,7 +201,7 @@ const AppRouter = () => {
           <Route
             path="/hiring-forms"
             element={
-              <ProtectedRoute allowedRoles={['admin', 'super_admin', 'spa_manager', 'hr']}>
+              <ProtectedRoute allowedRoles={['user', 'admin', 'super_admin', 'spa_manager', 'hr']}>
                 <Layout>
                   <HiringForms />
                 </Layout>

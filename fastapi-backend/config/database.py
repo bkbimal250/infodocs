@@ -194,6 +194,8 @@ async def init_db():
         IDCardCertificate,
         DailySheet,
         DailySheetCertificate,
+        UndertakingSheet,
+        JobformSheet,
     )  # noqa
 
     # Forms App

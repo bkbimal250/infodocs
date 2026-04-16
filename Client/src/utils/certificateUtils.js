@@ -324,6 +324,35 @@ export const prepareCertificateData = (category, formData, invoiceItems = []) =>
         candidate_photo: formData.candidate_photo || '',
       };
 
+    case CERTIFICATE_CATEGORIES.UNDER_TAKING_SHEET:
+      return {
+        ...baseData,
+        employee_name: formData.employee_name || '',
+        employee_position: formData.employee_position || '',
+        employee_photo: formData.employee_photo || '',
+        employee_signature: formData.employee_signature || '',
+      };
+
+    case CERTIFICATE_CATEGORIES.JOB_FORM_SHEET:
+      return {
+        ...baseData,
+        first_name: formData.first_name || '',
+        middle_name: formData.middle_name || '',
+        last_name: formData.last_name || '',
+        phone: formData.phone || '',
+        alt_phone: formData.alt_phone || '',
+        address: formData.address || '',
+        city: formData.city || '',
+        state: formData.state || '',
+        zip_code: formData.zip_code || '',
+        age: formData.age || '',
+        age_proof: formData.age_proof || '',
+        position_applied: formData.position_applied || '',
+        skills: formData.skills || '',
+        employee_photo: formData.employee_photo || '',
+        employee_signature: formData.employee_signature || '',
+      };
+
     case CERTIFICATE_CATEGORIES.DAILY_SHEET:
       // Daily Sheet only uses SPA data - no additional fields needed
       return {

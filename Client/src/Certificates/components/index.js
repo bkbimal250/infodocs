@@ -6,6 +6,8 @@ import OfferLetterForm from './OfferLetterForm';
 import InvoiceCertificateForm from './InvoiceCertificateForm';
 import IdCardForm from './IdCardForm';
 import DailySheetForm from './DailySheetForm';
+import UnderTakingSheet from './UnderTakingSheet';
+import JobFormsheet from './JobFormsheet';
 import CertificateFormFields from './CertificateFormFields';
 import ImageUpload from './ImageUpload';
 import SignatureUpload from './SignatureUpload';
@@ -24,6 +26,8 @@ export {
   InvoiceCertificateForm,
   IdCardForm,
   DailySheetForm,
+  UnderTakingSheet,
+  JobFormsheet,
   CertificateFormFields,
   ImageUpload,
   SignatureUpload,
@@ -50,6 +54,8 @@ export const getCertificateFormComponent = (certificateCategoryDisplay) => {
     [CERTIFICATE_CATEGORIES.INVOICE_SPA_BILL]: InvoiceCertificateForm,
     [CERTIFICATE_CATEGORIES.ID_CARD]: IdCardForm,
     [CERTIFICATE_CATEGORIES.DAILY_SHEET]: DailySheetForm,
+    [CERTIFICATE_CATEGORIES.UNDER_TAKING_SHEET]: UnderTakingSheet,
+    [CERTIFICATE_CATEGORIES.JOB_FORM_SHEET]: JobFormsheet,
   };
   // Return null for categories without a specific component instead of CertificateFormFields object
   return components[certificateCategoryDisplay] || null;

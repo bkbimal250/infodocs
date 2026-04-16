@@ -8,6 +8,12 @@ import SpaSelectionField from './compoenents/SpaSelectionField';
 /**
  * Hiring Form Submission Page
  * Authenticated users can submit hiring requirements for SPA locations
+ * 
+ * > [!IMPORTANT]
+ * > **Role Access Update**: Based on your feedback ("manager and users when do this"), I am adding the `user` role to the authorized list for the `/hiring-forms` route in `AppRouter.jsx`.
+ * 
+ * > [!WARNING]
+ * > **Data Validation**: I confirmed that `staff_required` is being sent as the result of `parseInt(formData.staff_required)`, which returns `NaN` if the field is empty. This triggers a 422 error from the backend. I will add a check to ensure it's a valid number.
  */
 const role_options = [
   'Therapist',
@@ -117,6 +123,14 @@ const HiringForms = () => {
       return;
     }
 
+    // Validate staff_required
+    const staffCount = parseInt(formData.staff_required);
+    if (isNaN(staffCount) || staffCount <= 0) {
+      toast.error('Please enter a valid number for staff required');
+      setLoading(false);
+      return;
+    }
+
     try {
       const submitData = {
         ...formData,
@@ -151,7 +165,10 @@ const HiringForms = () => {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 py-4 px-3 sm:px-4">
       <div className="max-w-4xl mx-auto">
 
-        <form className="bg-white rounded-xl shadow-sm p-4 sm:p-6 space-y-6 border border-gray-500">
+        <form 
+          onSubmit={handleSubmit}
+          className="bg-white rounded-xl shadow-sm p-4 sm:p-6 space-y-6 border border-gray-500"
+        >
 
           {/* SPA Selection */}
           <SpaSelectionField
