@@ -1,14 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { HiOutlineDocumentText } from 'react-icons/hi';
+import {
+  HiOutlineDocumentText,
+  HiOutlinePlus,
+  HiOutlineChartPie,
+  HiOutlineCalendar,
+  HiOutlineCollection
+} from 'react-icons/hi';
 import { authApi } from '../../../api/Auth/authApi';
 import { managerApi } from '../../../api/Manager/managerApi';
 import apiClient from '../../../utils/apiConfig';
 import CertificateTable from './certificateTable';
+import CertificateFilter from './Components/CertificateFilter';
 
 /**
  * Manager Certificates Page
- * Shows only certificates created by the current manager
+ * Shows only certificates created by the current manager with a professional dashboard
  */
 const Certificates = () => {
   const [certificates, setCertificates] = useState([]);
@@ -31,7 +38,7 @@ const Certificates = () => {
     if (user) {
       loadCertificates();
     }
-  }, [user, filters]);
+  }, [user]); // We only reload from API when user changes or initially. Filters are client-side now.
 
   const loadUser = async () => {
     try {
@@ -44,43 +51,11 @@ const Certificates = () => {
 
   const loadCertificates = async () => {
     if (!user) return;
-    
+
     try {
       setLoading(true);
-      // Get manager's certificates from backend
       const response = await managerApi.getMyCertificates({ limit: 1000 });
-      const myCertificates = Array.isArray(response.data) ? response.data : [];
-
-      // Apply additional filters
-      let filtered = myCertificates;
-      if (filters.search) {
-        const searchLower = filters.search.toLowerCase();
-        filtered = filtered.filter(cert => {
-          const name = getCandidateName(cert).toLowerCase();
-          return name.includes(searchLower);
-        });
-      }
-      if (filters.category) {
-        filtered = filtered.filter(cert => {
-          const category = (cert.certificate_data?.category || cert.category || '').toLowerCase();
-          return category === filters.category.toLowerCase();
-        });
-      }
-      if (filters.dateFrom) {
-        filtered = filtered.filter(cert => {
-          const certDate = new Date(cert.generated_at || cert.created_at);
-          return certDate >= new Date(filters.dateFrom);
-        });
-      }
-      if (filters.dateTo) {
-        filtered = filtered.filter(cert => {
-          const certDate = new Date(cert.generated_at || cert.created_at);
-          return certDate <= new Date(filters.dateTo);
-        });
-      }
-
-      setCertificates(filtered);
-      // Reset to first page when filters change
+      setCertificates(Array.isArray(response.data) ? response.data : []);
       setCurrentPage(1);
     } catch (error) {
       console.error('Error loading certificates:', error);
@@ -90,17 +65,82 @@ const Certificates = () => {
     }
   };
 
+  const getCandidateName = (certificate) => {
+    const category = (certificate.certificate_data?.category || certificate.category || '').toLowerCase();
+    if (category === 'daily_sheet') {
+      return certificate.certificate_data?.spa?.name || certificate.spa?.name || 'N/A';
+    }
+    return certificate.candidate_name ||
+      certificate.therapist_name ||
+      certificate.employee_name ||
+      certificate.manager_name ||
+      certificate.customer_name ||
+      'N/A';
+  };
+
+  // Memoized Filtered List
+  const filteredCertificates = useMemo(() => {
+    return certificates.filter(cert => {
+      const matchesSearch = !filters.search ||
+        getCandidateName(cert).toLowerCase().includes(filters.search.toLowerCase());
+
+      const certCategory = (cert.certificate_data?.category || cert.category || '').toLowerCase();
+      const matchesCategory = !filters.category ||
+        certCategory === filters.category.toLowerCase();
+
+      const certDate = new Date(cert.generated_at || cert.created_at);
+      const matchesDateFrom = !filters.dateFrom || certDate >= new Date(filters.dateFrom);
+      const matchesDateTo = !filters.dateTo || certDate <= new Date(filters.dateTo);
+
+      return matchesSearch && matchesCategory && matchesDateFrom && matchesDateTo;
+    });
+  }, [certificates, filters]);
+
+  // Dashboard Stats
+  const stats = useMemo(() => {
+    const now = new Date();
+    const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const categories = certificates.reduce((acc, cert) => {
+      const cat = cert.category || cert.certificate_data?.category || 'Unknown';
+      acc[cat] = (acc[cat] || 0) + 1;
+      return acc;
+    }, {});
+
+    const topCategory = Object.entries(categories).sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A';
+
+    return [
+      {
+        label: 'Total Certificates',
+        value: certificates.length,
+        icon: HiOutlineCollection,
+        color: 'blue'
+      },
+      {
+        label: 'This Month',
+        value: certificates.filter(c => new Date(c.generated_at || c.created_at) >= startOfMonth).length,
+        icon: HiOutlineCalendar,
+        color: 'green'
+      },
+      {
+        label: 'This Week',
+        value: certificates.filter(c => new Date(c.generated_at || c.created_at) >= startOfWeek).length,
+        icon: HiOutlineChartPie,
+        color: 'purple'
+      },
+      {
+        label: 'Top Category',
+        value: topCategory.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        icon: HiOutlineDocumentText,
+        color: 'orange'
+      }
+    ];
+  }, [certificates]);
+
   const downloadPDF = async (certificateId) => {
     try {
-      const response = await apiClient.get(
-        `/certificates/generated/${certificateId}/download/pdf`,
-        { responseType: 'blob' }
-      );
-      
-      if (!response.data) {
-        throw new Error('No data received from server');
-      }
-      
+      const response = await apiClient.get(`/certificates/generated/${certificateId}/download/pdf`, { responseType: 'blob' });
       const blob = new Blob([response.data], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -109,237 +149,101 @@ const Certificates = () => {
       document.body.appendChild(link);
       link.click();
       link.remove();
-      
-      // Clean up the URL after a short delay
-      setTimeout(() => {
-        window.URL.revokeObjectURL(url);
-      }, 100);
+      setTimeout(() => window.URL.revokeObjectURL(url), 100);
     } catch (error) {
-      console.error('Error downloading certificate:', error);
-      const errorMessage = error.response?.data?.detail || error.message || 'Failed to download certificate';
-      alert(`Failed to download certificate: ${errorMessage}`);
+      console.error('Error downloading PDF:', error);
+      alert('Failed to download certificate');
     }
   };
 
-  const downloadImage = async (certificateId) => {
-    try {
-      const response = await apiClient.get(
-        `/certificates/generated/${certificateId}/download/image`,
-        { responseType: 'blob' }
-      );
-      
-      if (!response.data) {
-        throw new Error('No data received from server');
-      }
-      
-      const blob = new Blob([response.data], { type: 'image/png' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `certificate_${certificateId}.png`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      
-      // Clean up the URL after a short delay
-      setTimeout(() => {
-        window.URL.revokeObjectURL(url);
-      }, 100);
-    } catch (error) {
-      console.error('Error downloading certificate image:', error);
-      const errorMessage = error.response?.data?.detail || error.message || 'Failed to download certificate image';
-      alert(`Failed to download certificate image: ${errorMessage}`);
-    }
+  const handleClearFilters = () => {
+    setFilters({ search: '', category: '', dateFrom: '', dateTo: '' });
   };
-
-  const printPDF = async (certificateId) => {
-    try {
-      const response = await apiClient.get(
-        `/certificates/generated/${certificateId}/download/pdf`,
-        { responseType: 'blob' }
-      );
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
-      const printWindow = window.open(url, '_blank');
-      
-      if (printWindow) {
-        // Wait for PDF to load before printing
-        printWindow.addEventListener('load', () => {
-          setTimeout(() => {
-            printWindow.print();
-            // Clean up URL after a delay (user can cancel print dialog)
-            setTimeout(() => {
-              window.URL.revokeObjectURL(url);
-            }, 1000);
-          }, 500);
-        });
-        
-        // Fallback: if window doesn't load, try printing anyway
-        setTimeout(() => {
-          if (printWindow && !printWindow.closed) {
-            try {
-              printWindow.print();
-            } catch (e) {
-              console.error('Error triggering print:', e);
-            }
-          }
-        }, 1000);
-      } else {
-        // If popup blocked, fallback to download
-        alert('Popup blocked. Please allow popups and try again, or use the download button.');
-        window.URL.revokeObjectURL(url);
-      }
-    } catch (error) {
-      console.error('Error printing certificate:', error);
-      alert('Failed to print certificate. Please try downloading instead.');
-    }
-  };
-
-  const getCandidateName = (certificate) => {
-    // For Daily Sheet, show SPA name instead
-    const category = (certificate.certificate_data?.category || certificate.category || '').toLowerCase();
-    if (category === 'daily_sheet') {
-      return certificate.certificate_data?.spa?.name || 
-             certificate.spa?.name || 
-             'N/A';
-    }
-    return certificate.candidate_name || 
-           certificate.therapist_name || 
-           certificate.employee_name || 
-           certificate.manager_name || 
-           certificate.customer_name || 
-           'N/A';
-  };
-
-  const getCategoryName = (certificate) => {
-    const category = certificate.certificate_data?.category || certificate.category || '';
-    // Return the raw category value for the table component to format
-    return category || 'Unknown';
-  };
-
-  // Calculate pagination
-  const totalPages = Math.ceil(certificates.length / itemsPerPage);
-  const totalItems = certificates.length;
 
   if (loading && !user) {
     return (
-      <div className="min-h-screen bg-[var(--color-bg-secondary)] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="text-gray-500 animate-pulse font-medium">Preparing your certificates...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg-secondary)] py-8">
+    <div className="min-h-screen bg-gray-50/50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          
+
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Certificate Manager</h1>
+            <p className="text-gray-500 mt-1">Manage, download, and track your generated certificates</p>
+          </div>
           <Link
-                to="/certificates"
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                Create  Certificate
-              </Link>
-        
+            to="/certificates"
+            className="inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-sm hover:shadow-md font-medium gap-2"
+          >
+            <HiOutlinePlus className="h-5 w-5" />
+            Create Certificate
+          </Link>
+        </div>
+
+        {/* Stats Dashboard */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {stats.map((stat, idx) => (
+            <div key={idx} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 group hover:border-blue-200 transition-colors">
+              <div className={`p-3 rounded-xl bg-${stat.color}-50 text-${stat.color}-600 group-hover:bg-${stat.color}-100 transition-colors`}>
+                <stat.icon className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500">{stat.label}</p>
+                <h3 className="text-xl font-bold text-gray-900 mt-0.5">{stat.value}</h3>
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Filters */}
-        <div className="bg-[var(--color-bg-primary)] rounded-lg shadow p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Search
-              </label>
-              <input
-                type="text"
-                placeholder="Search certificates..."
-                value={filters.search}
-                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Category
-              </label>
-              <select
-                value={filters.category}
-                onChange={(e) => setFilters({ ...filters, category: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">All Categories</option>
-                <option value="spa_therapist">Spa Therapist</option>
-                <option value="manager_salary">Manager Salary</option>
-                <option value="experience_letter">Experience Letter</option>
-                <option value="appointment_letter">Appointment Letter</option>
-                <option value="invoice_spa_bill">Invoice/SPA Bill</option>
-                <option value="id_card">ID Card</option>
-                <option value="offer_letter">Offer Letter</option>
-                <option value="daily_sheet">Daily Sheet</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                From Date
-              </label>
-              <input
-                type="date"
-                value={filters.dateFrom}
-                onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                To Date
-              </label>
-              <input
-                type="date"
-                value={filters.dateTo}
-                onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-        </div>
+        <CertificateFilter
+          filters={filters}
+          setFilters={setFilters}
+          onClear={handleClearFilters}
+        />
 
-        {/* Certificates List */}
-        <div className="bg-[var(--color-bg-primary)] rounded-lg shadow overflow-hidden">
+        {/* Main List Area */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           {loading ? (
-            <div className="p-12 text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-4 text-[var(--color-text-secondary)]">Loading certificates...</p>
+            <div className="p-20 text-center">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="mt-4 text-gray-500 font-medium">Updating list...</p>
             </div>
-          ) : certificates.length === 0 ? (
-            <div className="p-12 text-center">
-              <HiOutlineDocumentText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-[var(--color-text-primary)] mb-2">No certificates found</h3>
-              <p className="text-[var(--color-text-secondary)] mb-6">You haven't created any certificates yet.</p>
-
-              
-              <Link
-                to="/certificates"
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          ) : filteredCertificates.length === 0 ? (
+            <div className="p-20 text-center">
+              <div className="inline-flex items-center justify-center p-4 bg-gray-50 rounded-full mb-4">
+                <HiOutlineDocumentText className="h-10 w-10 text-gray-300" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">No certificates matching filters</h3>
+              <p className="text-gray-500 max-w-xs mx-auto mt-2">Try adjusting your search or filters to find what you're looking for.</p>
+              <button
+                onClick={handleClearFilters}
+                className="mt-6 text-blue-600 font-medium hover:text-blue-700"
               >
-                Create  Certificate
-              </Link>
-
-
+                Clear all filters
+              </button>
             </div>
           ) : (
             <CertificateTable
-              certificates={certificates}
+              certificates={filteredCertificates}
               currentPage={currentPage}
-              totalPages={totalPages}
+              totalPages={Math.ceil(filteredCertificates.length / itemsPerPage)}
               itemsPerPage={itemsPerPage}
-              totalItems={totalItems}
+              totalItems={filteredCertificates.length}
               onPageChange={setCurrentPage}
               onDownloadPDF={downloadPDF}
-              onDownloadImage={downloadImage}
-              onPrint={printPDF}
               getCandidateName={getCandidateName}
-              getCategoryName={getCategoryName}
+              getCategoryName={(c) => c.category || c.certificate_data?.category}
             />
           )}
         </div>
@@ -349,3 +253,4 @@ const Certificates = () => {
 };
 
 export default Certificates;
+

@@ -12,6 +12,7 @@ from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, delete, func
+from sqlalchemy.orm import joinedload, selectinload, defer
 
 from apps.certificates.models import (
     CertificateTemplate,
@@ -1345,7 +1346,7 @@ async def get_all_certificates_with_users(db: AsyncSession, skip: int = 0, limit
     2. Limits per-table fetch to (skip + limit) instead of global 10,000.
     """
     import asyncio
-    from sqlalchemy.orm import selectinload, defer
+    
     
     models = [
         SpaTherapistCertificate,

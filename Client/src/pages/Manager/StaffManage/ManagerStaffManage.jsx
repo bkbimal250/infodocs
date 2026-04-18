@@ -16,6 +16,7 @@ const ManagerStaffManage = () => {
   const [spa, setSpa] = useState(null);
   const [allSpasMap, setAllSpasMap] = useState({});
   const [staff, setStaff] = useState([]);
+  const [totalItems, setTotalItems] = useState(0);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     total_active: 0,
@@ -69,11 +70,20 @@ const ManagerStaffManage = () => {
 
   const loadStaff = async (spaId) => {
     try {
-      const params = { spa_id: spaId };
+      setLoading(true);
+      const skip = (currentPage - 1) * itemsPerPage;
+      const params = { 
+        spa_id: spaId,
+        skip,
+        limit: itemsPerPage
+      };
+      
       if (filters.status) params.status = filters.status;
       if (filters.search) params.search = filters.search;
+      
       const res = await staffApi.getAllStaff(params);
-      setStaff(res.data || []);
+      setStaff(res.data.items || []);
+      setTotalItems(res.data.total || 0);
     } catch (err) {
       toast.error('Failed to load staff list');
     } finally {
@@ -84,14 +94,15 @@ const ManagerStaffManage = () => {
   // Re-fetch when filters change
   useEffect(() => {
     if (user?.spa_id) loadStaff(user.spa_id);
-  }, [filters]);
+  }, [filters, currentPage]);
 
   const loadStats = async (spaId) => {
     try {
-      const todayRes = await staffApi.getTodayAnalytics({ spa_id: spaId });
-      const overallRes = await staffApi.getOverallAnalytics({ spa_id: spaId });
-      setStats({ ...overallRes.data, today: todayRes.data });
-    } catch (err) { }
+      const res = await staffApi.getConsolidatedAnalytics({ spa_id: spaId });
+      setStats(res.data);
+    } catch (err) {
+      console.error('Failed to load stats:', err);
+    }
   };
 
   const executeDeleteStaff = async (member) => {
@@ -139,10 +150,7 @@ const ManagerStaffManage = () => {
   };
 
   // Pagination
-  const paginatedStaff = staff.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const paginatedStaff = staff;
 
   if (!user?.spa_id && !loading) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
@@ -187,7 +195,7 @@ const ManagerStaffManage = () => {
           <StaffTable
             loading={loading}
             staff={paginatedStaff}
-            totalItems={staff.length}
+            totalItems={totalItems}
             currentPage={currentPage}
             itemsPerPage={itemsPerPage}
             onPageChange={setCurrentPage}
