@@ -1,156 +1,152 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { staffApi, adminApi } from '../../../api';
 import { toast } from 'react-hot-toast';
 import { FormSkeleton } from '../../../components/LoadingSkeleton';
 import {
-  FaUser, FaBriefcase, FaFileAlt, FaMapMarkerAlt,
-  FaTimes, FaHeartbeat, FaArrowLeft, FaSave,
-  FaCloudUploadAlt, FaCheckCircle, FaSpinner
+  FaUser, FaBriefcase, FaFileAlt, FaArrowLeft, FaArrowRight,
+  FaSave, FaSpinner, FaCloudUploadAlt, FaCheckCircle, FaMapMarkerAlt,
+  FaCheck
 } from 'react-icons/fa';
 
-/**
- * UI Helper Components
- */
-const TabButton = ({ id, icon, label, active, onClick }) => (
-  <button
-    type="button"
-    onClick={() => onClick(id)}
-    className={`flex-grow flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all ${active === id
-      ? 'bg-white text-indigo-600 shadow-sm border border-gray-500'
-      : 'text-gray-400 hover:text-gray-600 hover:bg-white/50'
-      }`}
-  >
-    {icon}
-    <span className="hidden sm:inline">{label}</span>
-    <span className="sm:hidden">{label.split(' ')[0]}</span>
-  </button>
-);
+const STORAGE_PREFIX = 'manager_edit_staff_';
 
-const Section = ({ title, icon, children }) => (
-  <div className="space-y-4">
-    <div className="flex items-center gap-2 px-1">
-      <div className="text-indigo-600 bg-indigo-50 p-2 rounded-lg text-sm">{icon}</div>
-      <h4 className="font-extrabold text-gray-900  tracking-tight text-xs">{title}</h4>
-    </div>
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      {children}
-    </div>
-  </div>
-);
-
-const FormInput = ({ label, name, value, onChange, type = 'text', required = false, placeholder = '' }) => (
-  <div className="space-y-1">
-    <label className="block text-[10px] font-bold text-gray-400  tracking-widest ml-1">{label}</label>
+/* ─── Floating Label Input ─── */
+const FloatingInput = ({ label, name, value, onChange, type = 'text', required, disabled }) => (
+  <div className="relative">
     <input
       type={type}
       name={name}
+      id={`edit-${name}`}
       value={value || ''}
       onChange={onChange}
       required={required}
-      placeholder={placeholder}
-      className="w-full p-3 bg-gray-50 border border-gray-500 rounded-xl outline-none focus:bg-white focus:border-indigo-500 transition-all text-sm font-medium"
+      disabled={disabled}
+      placeholder=" "
+      className="peer w-full px-3 pt-5 pb-2 border rounded-lg text-sm outline-none focus:border-gray-900 transition-colors bg-white disabled:bg-gray-50"
     />
+    <label
+      htmlFor={`edit-${name}`}
+      className="absolute left-3 top-2 text-[10px] text-gray-400 font-medium transition-all
+        peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-300
+        peer-focus:top-2 peer-focus:text-[10px] peer-focus:text-gray-600 pointer-events-none"
+    >
+      {label}{required && ' *'}
+    </label>
   </div>
 );
 
-const FormSelect = ({ label, name, value, onChange, options, required = false }) => (
-  <div className="space-y-1">
-    <label className="block text-[10px] font-bold text-gray-400  tracking-widest ml-1">{label}</label>
+/* ─── Floating Label Select ─── */
+const FloatingSelect = ({ label, name, value, onChange, options, required }) => (
+  <div className="relative">
     <select
       name={name}
+      id={`edit-${name}`}
       value={value || ''}
       onChange={onChange}
       required={required}
-      className="w-full p-3 bg-gray-50 border border-gray-500 rounded-xl outline-none focus:bg-white focus:border-indigo-500 transition-all text-sm font-medium"
+      className="peer w-full px-3 pt-5 pb-2 border rounded-lg text-sm outline-none focus:border-gray-900 transition-colors bg-white appearance-none"
     >
-      <option value="">Select {label}</option>
-      {options.map((opt, index) => (
-        <option key={index} value={opt.value}>{opt.label}</option>
+      <option value=""></option>
+      {options.map((opt, i) => (
+        <option key={i} value={opt.value}>{opt.label}</option>
       ))}
     </select>
+    <label
+      htmlFor={`edit-${name}`}
+      className="absolute left-3 top-2 text-[10px] text-gray-400 font-medium pointer-events-none"
+    >
+      {label}{required && ' *'}
+    </label>
+    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-300">▾</div>
   </div>
 );
 
-const FormTextarea = ({ label, name, value, onChange, placeholder = '' }) => (
-  <div className="space-y-1">
-    <label className="block text-[10px] font-bold text-gray-400  tracking-widest ml-1">{label}</label>
+/* ─── Floating Label Textarea ─── */
+const FloatingTextarea = ({ label, name, value, onChange }) => (
+  <div className="relative">
     <textarea
       name={name}
+      id={`edit-${name}`}
       value={value || ''}
       onChange={onChange}
-      placeholder={placeholder}
-      className="w-full p-3 bg-gray-50 border border-gray-500 rounded-xl outline-none focus:bg-white focus:border-indigo-500 transition-all text-sm font-medium h-20 resize-none"
+      placeholder=" "
+      rows={3}
+      className="peer w-full px-3 pt-5 pb-2 border rounded-lg text-sm outline-none focus:border-gray-900 transition-colors bg-white resize-none"
     />
+    <label
+      htmlFor={`edit-${name}`}
+      className="absolute left-3 top-2 text-[10px] text-gray-400 font-medium transition-all
+        peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-300
+        peer-focus:top-2 peer-focus:text-[10px] peer-focus:text-gray-600 pointer-events-none"
+    >
+      {label}
+    </label>
   </div>
 );
 
-const FileInput = ({ label, name, value, uploading, onUpload }) => {
-  const getImageUrl = (path) => {
+/* ─── File Upload ─── */
+const FileUpload = ({ label, name, value, uploading, onUpload }) => {
+  const getUrl = (path) => {
     if (!path) return null;
     if (path.startsWith('http')) return path;
-    const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://infodocs.api.d0s369.co.in').split('/api')[0];
-    const cleanPath = path.replace(/^\//, '');
-    return `${API_BASE_URL}/media/${cleanPath}`;
+    const base = (import.meta.env.VITE_API_BASE_URL || '').split('/api')[0];
+    return `${base}/media/${path.replace(/^\//, '')}`;
   };
-
   return (
-    <div className="space-y-1">
-      <label className="block text-[10px] font-bold text-gray-400  tracking-widest ml-1">{label}</label>
-      <div className="relative group">
-        <input
-          type="file"
-          accept="image/*,application/pdf"
-          onChange={(e) => onUpload(e, name)}
-          className="hidden"
-          id={`file-${name}`}
-        />
-        <label
-          htmlFor={`file-${name}`}
-          className={`flex items-center justify-between p-3 bg-gray-50 border-2 border-dashed rounded-xl cursor-pointer transition-all ${value ? 'border-emerald-200 bg-emerald-50/30' : 'border-gray-500 group-hover:border-blue-300'}`}
-        >
-          <div className="flex items-center gap-2">
-            {uploading ? (
-              <FaSpinner className="animate-spin text-blue-500" />
-            ) : value ? (
-              <FaCheckCircle className="text-emerald-500" />
-            ) : (
-              <FaCloudUploadAlt className="text-gray-400 group-hover:text-blue-500" />
-            )}
-            <span className={`text-xs font-bold ${value ? 'text-emerald-700' : 'text-gray-400'}`}>
-              {uploading ? 'Uploading...' : value ? 'Change File' : 'Choose File'}
-            </span>
-          </div>
-          {value && (
-            <div className="flex items-center gap-2">
-              {value.match(/\.(jpeg|jpg|gif|png|webp)$/i) && (
-                <div className="w-8 h-8 rounded-lg overflow-hidden border border-emerald-200 shadow-sm transition-transform hover:scale-150 cursor-pointer">
-                  <img src={getImageUrl(value)} alt="Preview" className="w-full h-full object-cover" />
-                </div>
-              )}
-              <span className="text-[10px] text-emerald-600 bg-emerald-100 px-2 py-1 rounded-md font-black">EXISTING</span>
-            </div>
-          )}
-        </label>
-      </div>
+    <div>
+      <p className="text-xs text-gray-500 mb-1.5">{label}</p>
+      <input type="file" accept="image/*,application/pdf" onChange={(e) => onUpload(e, name)} className="hidden" id={`efile-${name}`} />
+      <label
+        htmlFor={`efile-${name}`}
+        className={`flex items-center justify-between p-3 border border-dashed rounded-lg cursor-pointer transition-colors ${
+          value ? 'border-emerald-300 bg-emerald-50/50' : 'border-gray-200 hover:border-gray-400'
+        }`}
+      >
+        <div className="flex items-center gap-2 text-xs">
+          {uploading ? <FaSpinner className="animate-spin text-gray-400" />
+            : value ? <FaCheckCircle className="text-emerald-500" />
+            : <FaCloudUploadAlt className="text-gray-300" />}
+          <span className={value ? 'text-emerald-700 font-medium' : 'text-gray-400'}>
+            {uploading ? 'Uploading...' : value ? 'Change file' : 'Choose file'}
+          </span>
+        </div>
+        {value && value.match(/\.(jpeg|jpg|png|webp)$/i) && (
+          <img src={getUrl(value)} alt="" className="w-8 h-8 rounded object-cover border" />
+        )}
+      </label>
     </div>
   );
 };
 
+/* ═══════ STEPS CONFIG ═══════ */
+const STEPS = [
+  { id: 'personal', label: 'Personal', icon: <FaUser /> },
+  { id: 'employment', label: 'Employment', icon: <FaBriefcase /> },
+  { id: 'documents', label: 'Documents', icon: <FaFileAlt /> },
+];
+
+/* ═══════ MAIN COMPONENT ═══════ */
 const EditStaffPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [spaName, setSpaName] = useState('');
   const [loading, setLoading] = useState(true);
-
-  // Form State from former EditStaffForm
-  const [activeTab, setActiveTab] = useState('personal');
+  const [step, setStep] = useState(0);
   const [uploading, setUploading] = useState({});
   const [formData, setFormData] = useState(null);
+  const storageKey = `${STORAGE_PREFIX}${id}`;
 
+  useEffect(() => { fetchStaffDetails(); }, [id]);
+
+  // Auto-save to localStorage
   useEffect(() => {
-    fetchStaffDetails();
-  }, [id]);
+    if (!formData) return;
+    const timer = setTimeout(() => {
+      localStorage.setItem(storageKey, JSON.stringify(formData));
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [formData]);
 
   const fetchStaffDetails = async () => {
     try {
@@ -158,23 +154,31 @@ const EditStaffPage = () => {
       const res = await staffApi.getStaff(id);
       const staffData = res.data;
 
-      // Format joining date for input
       if (staffData.joining_date) {
         staffData.joining_date = new Date(staffData.joining_date).toISOString().split('T')[0];
       }
 
-      setFormData(staffData);
+      // Restore draft if exists, otherwise use server data
+      try {
+        const draft = localStorage.getItem(storageKey);
+        if (draft) {
+          const parsed = JSON.parse(draft);
+          setFormData({ ...staffData, ...parsed });
+        } else {
+          setFormData(staffData);
+        }
+      } catch {
+        setFormData(staffData);
+      }
 
       if (staffData.spa_id) {
         try {
           const spaRes = await adminApi.forms.getSpa(staffData.spa_id);
           setSpaName(spaRes.data.name);
-        } catch (err) {
-          console.error("Failed to fetch branch info", err);
-        }
+        } catch {}
       }
-    } catch (err) {
-      toast.error('Failed to load staff details');
+    } catch {
+      toast.error('Failed to load staff');
       navigate('/manager/staff');
     } finally {
       setLoading(false);
@@ -189,142 +193,186 @@ const EditStaffPage = () => {
   const handleFileUpload = async (e, fieldName) => {
     const file = e.target.files[0];
     if (!file) return;
-
     setUploading(prev => ({ ...prev, [fieldName]: true }));
     try {
-      const response = await staffApi.uploadStaffFile(file);
-      setFormData(prev => ({ ...prev, [fieldName]: response.data.url }));
-    } catch (error) {
-      console.error('Upload failed:', error);
-      toast.error('Failed to upload file');
-    } finally {
-      setUploading(prev => ({ ...prev, [fieldName]: false }));
-    }
+      const res = await staffApi.uploadStaffFile(file);
+      setFormData(prev => ({ ...prev, [fieldName]: res.data.url }));
+    } catch { toast.error('Upload failed'); }
+    finally { setUploading(prev => ({ ...prev, [fieldName]: false })); }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       await staffApi.updateStaff(id, formData);
-      toast.success('Staff profile updated successfully');
+      localStorage.removeItem(storageKey);
+      toast.success('Profile updated');
       navigate('/manager/staff');
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Failed to update profile');
+      toast.error(err.response?.data?.detail || 'Update failed');
     }
   };
 
+  const clearDraft = () => {
+    localStorage.removeItem(storageKey);
+    fetchStaffDetails();
+    toast.success('Draft discarded');
+  };
+
+  const goBack = () => navigate('/manager/staff');
+  const canGoNext = step < STEPS.length - 1;
+  const canGoPrev = step > 0;
+  const isLastStep = step === STEPS.length - 1;
+
   if (loading || !formData) return <div className="p-8"><FormSkeleton /></div>;
 
-  const tabs = [
-    { id: 'personal', label: 'Personal', icon: <FaUser /> },
-    { id: 'employment', label: 'Work', icon: <FaBriefcase /> },
-    { id: 'docs', label: 'Documents', icon: <FaFileAlt /> },
-  ];
-
-  const onClose = () => navigate('/manager/staff');
-
   return (
-    <div className="min-h-screen bg-gray-50/50 p-4 md:p-8 flex items-center justify-center">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden flex flex-col border border-white/20">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+      <div className="max-w-2xl mx-auto">
+
         {/* Header */}
-        <div className="px-6 py-6 border-b border-gray-500 bg-gradient-to-br from-indigo-900 to-black relative">
-          <button type="button" onClick={onClose} className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors text-white flex items-center gap-2 text-xs font-bold">
-            <FaArrowLeft /> <span className="hidden sm:inline">Back</span>
+        <div className="flex items-center justify-between mb-6">
+          <button onClick={goBack} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700">
+            <FaArrowLeft /> Back
           </button>
-          <div className="text-center">
-            <h3 className="font-black text-2xl text-white tracking-tight">Edit Profile</h3>
-            <div className="flex items-center justify-center gap-2 mt-1">
-              <p className="text-indigo-400 text-[10px]  font-bold tracking-widest">{formData.name}</p>
-              {spaName && (
-                <span className="bg-indigo-600/30 text-indigo-300 px-2 py-0.5 rounded text-[10px] font-black  tracking-tighter border border-indigo-500/30">
-                  {spaName}
-                </span>
-              )}
+          <button onClick={clearDraft} className="text-xs text-red-400 hover:text-red-600">
+            Discard Changes
+          </button>
+        </div>
+
+        <div className="bg-white border rounded-lg overflow-hidden">
+          {/* Title */}
+          <div className="px-6 pt-6 pb-4">
+            <h1 className="text-xl font-bold text-gray-900">Edit Profile</h1>
+            <p className="text-sm text-gray-400 mt-1">
+              {formData.name} {spaName && `· ${spaName}`}
+            </p>
+          </div>
+
+          {/* ─── Stepper ─── */}
+          <div className="px-6 pb-4">
+            <div className="flex items-center">
+              {STEPS.map((s, i) => (
+                <React.Fragment key={s.id}>
+                  <button
+                    type="button"
+                    onClick={() => setStep(i)}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                      i === step
+                        ? 'bg-gray-900 text-white'
+                        : i < step
+                        ? 'bg-emerald-50 text-emerald-600'
+                        : 'bg-gray-50 text-gray-400'
+                    }`}
+                  >
+                    {i < step ? <FaCheck size={10} /> : s.icon}
+                    <span className="hidden sm:inline">{s.label}</span>
+                    <span className="sm:hidden">{i + 1}</span>
+                  </button>
+                  {i < STEPS.length - 1 && (
+                    <div className={`flex-1 h-px mx-2 ${i < step ? 'bg-emerald-300' : 'bg-gray-200'}`} />
+                  )}
+                </React.Fragment>
+              ))}
             </div>
           </div>
-          <button type="button" onClick={onClose} className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors text-white text-xs">
-            <FaTimes />
-          </button>
-        </div>
 
-        <div className="flex bg-gray-50 p-1 border-b border-gray-500">
-          {tabs.map(tab => (
-            <TabButton key={tab.id} id={tab.id} icon={tab.icon} label={tab.label} active={activeTab} onClick={setActiveTab} />
-          ))}
-        </div>
+          {/* ─── Form Steps ─── */}
+          <form onSubmit={handleSubmit}>
+            <div className="px-6 pb-6">
 
-        <form onSubmit={handleSubmit} className="flex-grow overflow-y-auto p-6 scrollbar-hide">
-          {activeTab === 'personal' && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <Section title="Basic Information" icon={<FaUser />}>
-                <FormInput label="Full Name" name="name" value={formData.name} onChange={handleChange} required />
-                <FormInput label="Phone Number" name="phone" value={formData.phone} onChange={handleChange} required />
-                <FormSelect label="Gender" name="gender" value={formData.gender} onChange={handleChange} options={[
-                  { label: 'Male', value: 'male' },
-                  { label: 'Female', value: 'female' },
-                  { label: 'Other', value: 'other' }
-                ]} />
-                <div className="sm:col-span-2">
-                  <FormTextarea label="Full Address" name="address" value={formData.address} onChange={handleChange} />
-                </div>
-              </Section>
+              {/* Step 1: Personal */}
+              {step === 0 && (
+                <div className="space-y-4">
+                  <p className="text-xs text-gray-400 font-medium mb-2">Basic Information</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FloatingInput label="Full Name" name="name" value={formData.name} onChange={handleChange} required />
+                    <FloatingInput label="Phone" name="phone" value={formData.phone} onChange={handleChange} required />
+                    <FloatingSelect label="Gender" name="gender" value={formData.gender} onChange={handleChange} options={[
+                      { label: 'Male', value: 'male' },
+                      { label: 'Female', value: 'female' },
+                      { label: 'Other', value: 'other' }
+                    ]} />
+                    <FloatingInput label="City" name="city" value={formData.city} onChange={handleChange} />
+                  </div>
+                  <FloatingTextarea label="Full Address" name="address" value={formData.address} onChange={handleChange} />
 
-              <Section title="Emergency Contact" icon={<FaHeartbeat />}>
-                <FormInput label="Contact Name" name="emergency_contact_name" value={formData.emergency_contact_name} onChange={handleChange} />
-                <FormInput label="Contact Number" name="emergency_contact_number" value={formData.emergency_contact_number} onChange={handleChange} />
-              </Section>
-            </div>
-          )}
-
-          {activeTab === 'employment' && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <Section title="Employment Details" icon={<FaBriefcase />}>
-                <FormInput label="Designation" name="designation" value={formData.designation} onChange={handleChange} required />
-                <FormInput label="Joining Date" name="joining_date" value={formData.joining_date} onChange={handleChange} type="date" required />
-                <FormSelect label="Current Status" name="current_status" value={formData.current_status} onChange={handleChange} options={[
-                  { label: 'Active', value: 'active' },
-                  { label: 'Inactive', value: 'inactive' },
-                  { label: 'Left', value: 'left' }
-                ]} />
-                <div className="sm:col-span-2">
-                  <label className="block text-[10px] font-bold text-gray-400  tracking-widest ml-1 mb-1">Current Branch / SPA</label>
-                  <div className="w-full p-4 bg-indigo-50/50 border border-indigo-100 rounded-xl text-indigo-700 font-extrabold text-sm flex items-center gap-2">
-                    <FaMapMarkerAlt className="text-indigo-500" />
-                    {spaName || 'Branch Assignment Loading...'}
+                  <p className="text-xs text-gray-400 font-medium mt-6 mb-2">Emergency Contact</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FloatingInput label="Contact Name" name="emergency_contact_name" value={formData.emergency_contact_name} onChange={handleChange} />
+                    <FloatingInput label="Contact Number" name="emergency_contact_number" value={formData.emergency_contact_number} onChange={handleChange} />
                   </div>
                 </div>
-              </Section>
+              )}
+
+              {/* Step 2: Employment */}
+              {step === 1 && (
+                <div className="space-y-4">
+                  <p className="text-xs text-gray-400 font-medium mb-2">Work Details</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FloatingInput label="Designation" name="designation" value={formData.designation} onChange={handleChange} required />
+                    <FloatingInput label="Joining Date" name="joining_date" value={formData.joining_date} onChange={handleChange} type="date" required />
+                    <FloatingSelect label="Status" name="current_status" value={formData.current_status} onChange={handleChange} options={[
+                      { label: 'Active', value: 'active' },
+                      { label: 'Inactive', value: 'inactive' },
+                      { label: 'Left', value: 'left' }
+                    ]} />
+                  </div>
+                  <div className="p-3 bg-gray-50 border rounded-lg flex items-center gap-2 text-sm text-gray-600">
+                    <FaMapMarkerAlt className="text-gray-400" />
+                    <span className="font-medium">{spaName || 'Branch loading...'}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 3: Documents */}
+              {step === 2 && (
+                <div className="space-y-4">
+                  <p className="text-xs text-gray-400 font-medium mb-2">ID Numbers</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FloatingInput label="Aadhar Number" name="adhar_card" value={formData.adhar_card} onChange={handleChange} />
+                    <FloatingInput label="PAN Number" name="pan_card" value={formData.pan_card} onChange={handleChange} />
+                  </div>
+
+                  <p className="text-xs text-gray-400 font-medium mt-6 mb-2">Uploads</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FileUpload label="Passport Photo" name="passport_photo" value={formData.passport_photo} uploading={uploading.passport_photo} onUpload={handleFileUpload} />
+                    <FileUpload label="Aadhar Photo" name="adhar_card_photo" value={formData.adhar_card_photo} uploading={uploading.adhar_card_photo} onUpload={handleFileUpload} />
+                    <FileUpload label="PAN Photo" name="pan_card_photo" value={formData.pan_card_photo} uploading={uploading.pan_card_photo} onUpload={handleFileUpload} />
+                  </div>
+                </div>
+              )}
             </div>
-          )}
 
-          {activeTab === 'docs' && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <Section title="ID Documents" icon={<FaFileAlt />}>
-                <FormInput label="Aadhar Card" name="adhar_card" value={formData.adhar_card} onChange={handleChange} />
-                <FormInput label="PAN Card" name="pan_card" value={formData.pan_card} onChange={handleChange} />
-              </Section>
-
-              <Section title="Photos & Documents" icon={<FaFileAlt />}>
-                <FileInput label="Passport Photo" name="passport_photo" value={formData.passport_photo} uploading={uploading.passport_photo} onUpload={handleFileUpload} />
-                <FileInput label="Aadhar Photo" name="adhar_card_photo" value={formData.adhar_card_photo} uploading={uploading.adhar_card_photo} onUpload={handleFileUpload} />
-                <FileInput label="PAN Photo" name="pan_card_photo" value={formData.pan_card_photo} uploading={uploading.pan_card_photo} onUpload={handleFileUpload} />
-              </Section>
+            {/* ─── Footer Navigation ─── */}
+            <div className="px-6 py-4 border-t bg-gray-50 flex items-center justify-between">
+              <div className="text-xs text-gray-300">
+                {localStorage.getItem(storageKey) && '● Draft saved'}
+              </div>
+              <div className="flex items-center gap-2">
+                {canGoPrev && (
+                  <button type="button" onClick={() => setStep(s => s - 1)} className="px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 rounded-lg transition-colors">
+                    Back
+                  </button>
+                )}
+                {canGoNext && (
+                  <button type="button" onClick={() => setStep(s => s + 1)} className="flex items-center gap-1.5 px-5 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors">
+                    Next <FaArrowRight size={10} />
+                  </button>
+                )}
+                {isLastStep && (
+                  <button
+                    type="submit"
+                    disabled={Object.values(uploading).some(v => v)}
+                    className="flex items-center gap-1.5 px-5 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-50"
+                  >
+                    {Object.values(uploading).some(v => v) ? <FaSpinner className="animate-spin" /> : <FaSave />}
+                    Update
+                  </button>
+                )}
+              </div>
             </div>
-          )}
-        </form>
-
-        {/* Footer */}
-        <div className="p-4 bg-gray-50 border-t border-gray-500 flex justify-end gap-3">
-          <button type="button" onClick={onClose} className="px-6 py-3 text-gray-500 font-bold text-xs hover:bg-gray-100 rounded-xl transition-all">Discard Changes</button>
-          <button
-            type="submit"
-            onClick={handleSubmit}
-            disabled={Object.values(uploading).some(v => v)}
-            className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold text-xs shadow-lg shadow-indigo-100 flex items-center gap-2 hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {Object.values(uploading).some(v => v) ? <FaSpinner className="animate-spin" /> : <FaSave />}
-            {Object.values(uploading).some(v => v) ? 'Saving...' : 'Update Profile'}
-          </button>
+          </form>
         </div>
       </div>
     </div>

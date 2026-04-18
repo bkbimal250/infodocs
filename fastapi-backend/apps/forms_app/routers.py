@@ -235,6 +235,7 @@ async def create_spa_location(
     pincode: str | None = Form(None),
     phone_number: str | None = Form(None),
     alternate_number: str | None = Form(None),
+    gst_number:str | None = Form(None),
     email: str | None = Form(None),
     website: str | None = Form(None),
     is_active: str | None = Form("true"),
@@ -288,6 +289,7 @@ async def create_spa_location(
             pincode=to_none_if_empty(pincode),
             phone_number=to_none_if_empty(phone_number),
             alternate_number=to_none_if_empty(alternate_number),
+            gst_number=to_none_if_empty(gst_number),
             email=email_clean,
             website=website_clean,
             logo=logo_path,
@@ -317,11 +319,17 @@ async def create_spa_location(
 
 @forms_router.get("/spas/all", response_model=List[SPAResponse])
 async def list_all_spas(
+    search: Optional[str] = None,
+    city: Optional[str] = None,
+    state: Optional[str] = None,
+    status: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_role("admin", "super_admin", "spa_manager", "hr"))
 ):
-    """List all SPAs including inactive ones (Admin/Super Admin/SPA Manager/HR only)"""
-    spas = await get_all_spas(db, active_only=False)
+    """List all SPAs with optional filtering (Admin/Super Admin/SPA Manager/HR only)"""
+    spas = await get_all_spas(
+        db, active_only=False, search=search, city=city, state=state, status=status
+    )
     return spas
 
 
@@ -351,6 +359,7 @@ async def update_spa_location(
     pincode: str | None = Form(None),
     phone_number: str | None = Form(None),
     alternate_number: str | None = Form(None),
+    gst_number:str | None = Form(None),
     email: str | None = Form(None),
     website: str | None = Form(None),
     is_active: bool | None = Form(None),

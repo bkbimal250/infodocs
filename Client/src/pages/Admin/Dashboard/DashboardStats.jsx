@@ -23,6 +23,8 @@ const DashboardStats = () => {
     totalForms: 0,
     totalSpas: 0,
     totalHiringForms: 0,
+    totalStaff: 0,
+    activeStaff: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -32,96 +34,21 @@ const DashboardStats = () => {
 
   const loadStats = async () => {
     try {
-      // Load all data in parallel
-      const [usersRes, certificatesStatsRes, templatesRes, spasRes, hiringFormsRes, analyticsRes] = await Promise.allSettled([
-        adminApi.users.getUsers(),
-        adminApi.certificates.getStatistics(), // Use statistics endpoint for accurate count
-        adminApi.certificates.getTemplates(),
-        adminApi.forms.getAllSpas(),
-        adminApi.forms.getHiringForms(0, 1),
-        adminApi.analytics.getAnalytics(),
-      ]);
-
-      const newStats = {
-        totalUsers: 0,
-        activeUsers: 0,
-        totalCertificates: 0,
-        totalTemplates: 0,
-        totalForms: 0,
-        totalSpas: 0,
-        totalHiringForms: 0,
-      };
-
-      // Process users
-      if (usersRes.status === 'fulfilled') {
-        const users = usersRes.value.data || [];
-        newStats.totalUsers = users.length;
-        newStats.activeUsers = users.filter((u) => u.is_active).length;
-      }
-
-      // Process certificates - use statistics endpoint for accurate count
-      if (certificatesStatsRes.status === 'fulfilled') {
-        const stats = certificatesStatsRes.value.data || {};
-        const count = stats.total_certificates || 0;
-        newStats.totalCertificates = count;
-        console.log('Certificate statistics:', stats);
-        console.log('Total certificates count:', count);
-      } else {
-        // Fallback: try to get count from certificates list if stats fails
-        console.warn('Statistics endpoint failed, trying fallback:', certificatesStatsRes.reason);
-        try {
-          const certsRes = await adminApi.certificates.getAllCertificates({ skip: 0, limit: 1000 });
-          const certificates = certsRes.data || [];
-          const count = Array.isArray(certificates) ? certificates.length : 0;
-          newStats.totalCertificates = count;
-          console.log('Fallback: Certificates count from list:', count);
-        } catch (e) {
-          console.error('Failed to fetch certificates count:', e);
-          // Set to 0 if both methods fail
-          newStats.totalCertificates = 0;
-        }
-      }
-
-      // Process templates
-      if (templatesRes.status === 'fulfilled') {
-        const templates = templatesRes.value.data?.results || templatesRes.value.data || [];
-        newStats.totalTemplates = Array.isArray(templates) ? templates.length : 0;
-      }
-
-
-      // Process SPAs
-      if (spasRes.status === 'fulfilled') {
-        const spas = spasRes.value.data || [];
-        newStats.totalSpas = Array.isArray(spas) ? spas.length : 0;
-      }
-
-      // Process hiring forms
-      if (hiringFormsRes.status === 'fulfilled') {
-        const hiringForms = hiringFormsRes.value.data || [];
-        newStats.totalHiringForms = Array.isArray(hiringForms) ? hiringForms.length : 0;
-        // If we got limited results, try to get a better count
-        if (hiringForms.length === 1) {
-          try {
-            const allHiringFormsRes = await adminApi.forms.getHiringForms(0, 1000);
-            const allHiringForms = allHiringFormsRes.data || [];
-            newStats.totalHiringForms = Array.isArray(allHiringForms) ? allHiringForms.length : 0;
-          } catch (e) {
-            // Use the count we have
-          }
-        }
-      }
-
-      // Use analytics if available (but don't override certificate count from statistics endpoint)
-      if (analyticsRes.status === 'fulfilled' && analyticsRes.value.data) {
-        const analytics = analyticsRes.value.data;
-        if (analytics.total_forms !== undefined) newStats.totalForms = analytics.total_forms;
-        // Don't override certificate count - use statistics endpoint value
-        // if (analytics.total_certificates !== undefined)
-        //   newStats.totalCertificates = analytics.total_certificates;
-        if (analytics.active_users !== undefined) newStats.activeUsers = analytics.active_users;
-      }
-
-      setStats(newStats);
+      setLoading(true);
+      const res = await adminApi.analytics.getOverview();
+      const data = res.data?.overall || {};
+      
+      setStats({
+        totalUsers: data.total_users || 0,
+        activeUsers: data.active_users || 0,
+        totalCertificates: data.total_certificates || 0,
+        totalTemplates: data.total_templates || 0,
+        totalForms: data.total_forms || 0, 
+        totalSpas: data.total_spas || 0,
+        totalHiringForms: data.total_hiring_forms || 0,
+        totalStaff: data.total_staff || 0,
+        activeStaff: data.active_staff || 0,
+      });
     } catch (error) {
       console.error('Error loading stats:', error);
     } finally {
@@ -136,6 +63,14 @@ const DashboardStats = () => {
       subtitle: `${stats.activeUsers} active`,
       icon: HiOutlineUsers,
       color: 'blue',
+    },
+    {
+      title: 'Total Staff',
+      value: stats.totalStaff,
+      subtitle: `${stats.activeStaff} active`,
+      icon: HiOutlineUsers, // Using standard users icon for now
+      color: 'orange',
+      link: '/admin/staff',
     },
     {
       title: 'Certificates',

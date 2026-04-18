@@ -22,6 +22,12 @@ pnpm-debug.log*
 *.swp
 *.swo
 *~
+# Scratch and Test files from the AI
+scratch/
+tests/
+test_*.py
+check_db*.py
+bench_*.py
 
 # Editor / IDE
 .vscode/
@@ -74,6 +80,9 @@ htmlcov/
 fastapi-backend/scripts_archived/
 fastapi-backend/media/
 fastapi-backend/uploads/
+fastapi-backend\benchmark_endpoints.py
+fastapi-backend\check_db_simple.py
+fastapi-backend\check_db.py
 
 
 ############################
@@ -89,10 +98,7 @@ build/
 coverage/
 
 
-############################
 # Developer Notes & Fix Logs
-############################
-
 # Ignore session-specific fix summaries and guides to keep root clean
 *_FIX.md
 *_SUMMARY.md
@@ -100,7 +106,65 @@ coverage/
 *_EXPLANATION.md
 *_RESULTS.md
 *_CHECKLIST.md
+*_IMPLEMENTATION.md
+*_WALKTHROUGH.md
+*_SETUP.md
+*_AUDIT.md
+*_COMPARISON.md
+*_MIGRATION.md
+*_USAGE.md
+*_START_*.md
+*_PLAN.md
+*_SCHEMA.md
 IMPLEMENTATION_PLAN.md
 ANALYTICS_500_ERROR_FIX.md
 WEASYPRINT_PDF_ERROR_FIX.md
 STAFF_REQUIRED_SQL.md
+FASTAPI_MAIL_MIGRATION.md
+
+# Testing
+.pytest_cache/
+.tox/
+.nox/
+.hypothesis/
+.coverage
+htmlcov/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.performance_results/
+
+# Scratch & Internal
+.gemini/
+scratch/
+temp_test/
+debug/
+
+# Python Build / Distribution
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# IDEs
+.history/
+.ipynb_checkpoints
+.python-version
+.pyre/
+.pytype/
+.pdm-python
+.pdm-build/

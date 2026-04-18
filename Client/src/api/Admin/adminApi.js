@@ -265,6 +265,14 @@ export const adminApi = {
     getCertificateAnalytics: () => {
       return apiClient.get('/analytics/certificates');
     },
+    
+    /**
+     * Get consolidated dashboard overview
+     * @returns {Promise}
+     */
+    getOverview: () => {
+      return apiClient.get('/analytics/overview');
+    },
   },
 
   /**
@@ -275,8 +283,8 @@ export const adminApi = {
      * Get all SPAs (including inactive)
      * @returns {Promise}
      */
-    getAllSpas: () => {
-      return apiClient.get('/forms/spas/all');
+    getAllSpas: (params = {}) => {
+      return apiClient.get('/forms/spas/all', { params });
     },
 
     /**

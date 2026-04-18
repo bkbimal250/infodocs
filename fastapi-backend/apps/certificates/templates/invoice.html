@@ -156,8 +156,9 @@
             <div class="business-left">
                 <h2>{{ spa_name }}</h2>
                 <p>Address: {{ spa_address }}</p>
-              
-                
+                {{#if spa_gst_number}}
+                <p>GSTIN: {{ spa_gst_number }}</p>
+                {{/if}}
             </div>
 
             <!-- RIGHT SIDE: LOGO -->

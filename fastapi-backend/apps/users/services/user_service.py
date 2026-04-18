@@ -131,12 +131,12 @@ async def get_user_by_email(db: AsyncSession, email: str) -> Optional[User]:
 
 
 async def authenticate_user(db: AsyncSession, username_or_email: str, password: str) -> Optional[User]:
-    """Authenticate user with username/email and password"""
-    # Try username first
-    user = await get_user_by_username(db, username_or_email)
-    if not user:
-        # Try email
-        user = await get_user_by_email(db, username_or_email)
+    """Authenticate user with username/email and password (Optimized to single query)"""
+    stmt = select(User).where(
+        or_(User.username == username_or_email, User.email == username_or_email)
+    )
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
     
     if not user:
         return None

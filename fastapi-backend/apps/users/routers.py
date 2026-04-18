@@ -32,6 +32,7 @@ from apps.users.services.otp_service import generate_otp, verify_otp
 from core.dependencies import get_current_user, get_current_active_user, require_role
 from apps.users.models import User
 from core.exceptions import AuthenticationError, ValidationError, NotFoundError
+from config.settings import settings
 
 auth_router = APIRouter()
 users_router = APIRouter()
@@ -158,9 +159,10 @@ async def login(
             key="access_token",
             value=access_token,
             httponly=True,
-            secure=True,
-            samesite="none",
+            secure=not settings.DEBUG,
+            samesite="lax" if settings.DEBUG else "none",
             max_age=30 * 24 * 60 * 60,  # 30 days
+            path="/",
         )
         
         # Create and return token response (this is the critical operation)
@@ -256,9 +258,10 @@ async def login_with_email(
             key="access_token",
             value=access_token,
             httponly=True,
-            secure=True,
-            samesite="none",
+            secure=not settings.DEBUG,
+            samesite="lax" if settings.DEBUG else "none",
             max_age=30 * 24 * 60 * 60,
+            path="/",
         )
         
         # Create and return token response (critical operation)
@@ -404,9 +407,10 @@ async def login_with_otp(
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=True,
-        samesite="none",
+        secure=not settings.DEBUG,
+        samesite="lax" if settings.DEBUG else "none",
         max_age=30 * 24 * 60 * 60,
+        path="/",
     )
     
     return create_token_response(user)
@@ -588,8 +592,9 @@ async def logout(response: Response):
     response.delete_cookie(
         key="access_token",
         httponly=True,
-        secure=True,
-        samesite="none"
+        secure=not settings.DEBUG,
+        samesite="lax" if settings.DEBUG else "none",
+        path="/",
     )
     return MessageResponseSchema(message="Successfully logged out")
 

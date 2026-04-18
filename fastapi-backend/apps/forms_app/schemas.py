@@ -18,6 +18,7 @@ class SPABase(BaseModel):
     pincode: Optional[str] = None
     phone_number: Optional[str] = None
     alternate_number: Optional[str] = None
+    gst_number:Optional[str] = None
 
     email: Optional[str] = None
     website: Optional[str] = None  # Accept local file paths or URLs
@@ -41,6 +42,7 @@ class SPAUpdate(BaseModel):
     pincode: Optional[str] = None
     phone_number: Optional[str] = None
     alternate_number: Optional[str] = None
+    gst_number:Optional[str] = None
 
     email: Optional[str] = None
     website: Optional[str] = None

@@ -344,6 +344,7 @@ async def preview_certificate(
                     "email": spa_obj.email or "",
                     "website": spa_obj.website or "",
                     "logo": spa_obj.logo or "",
+                    "gst_number": spa_obj.gst_number or "",
                 }
             cert_data["spa_id"] = spa_obj.id
     
@@ -458,6 +459,7 @@ async def generate_certificate_async(
                         "name": spa_obj.name or "",
                         "address": spa_obj.address or "",
                         "logo": spa_obj.logo or "",
+                        "gst_number": spa_obj.gst_number or "",
                         # Add other fields as needed
                     }
                 cert_data["spa_id"] = spa_obj.id
@@ -556,6 +558,7 @@ async def generate_certificate(
                         "email": spa_obj.email or "",
                         "website": spa_obj.website or "",
                         "logo": spa_obj.logo or "",
+                        "gst_number": spa_obj.gst_number or "",
                     }
                 cert_data["spa_id"] = spa_obj.id
         

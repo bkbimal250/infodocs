@@ -2,39 +2,58 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { adminApi } from '../../../api/Admin/adminApi';
 import SpaTable from './SpaTable';
-
-/**
- * Admin SPA Management Page
- * View, create, edit, and manage SPA locations
- */
+import SpasFilter from './SpasFilter';
 const Spas = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [spas, setSpas] = useState([]);
-  const [allSpas, setAllSpas] = useState([]);
+  const [spas, setSpas] = useState([]); // Filtered SPAs for current view
+  const [allSpas, setAllSpas] = useState([]); // All SPAs for stats and filter options
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filter, setFilter] = useState({
-    search: '',
-    activeOnly: false,
-  });
-  // Get page from URL query params, default to 1
+
+  // Sync filters with URL search params
+  const filters = {
+    search: searchParams.get('search') || '',
+    city: searchParams.get('city') || '',
+    state: searchParams.get('state') || '',
+    status: searchParams.get('status') || '',
+  };
+
   const currentPage = parseInt(searchParams.get('page') || '1', 10);
-  const itemsPerPage = 15;
+  const itemsPerPage = 8; // Smaller page size for better UI with more filters
 
   useEffect(() => {
-    loadSpas();
+    // Initial load to get all data (for stats and filter options)
+    loadAllSpas();
   }, []);
 
-  const loadSpas = async () => {
+  useEffect(() => {
+    // Fetch filtered data whenever filters change
+    loadFilteredSpas();
+  }, [searchParams]);
+
+  const loadAllSpas = async () => {
+    try {
+      const response = await adminApi.forms.getAllSpas();
+      setAllSpas(response.data || []);
+    } catch (err) {
+      console.error('Failed to load all SPAs for metadata:', err);
+    }
+  };
+
+  const loadFilteredSpas = async () => {
     try {
       setLoading(true);
-      const response = await adminApi.forms.getAllSpas();
-      const all = response.data || [];
-      setAllSpas(all);
+      const response = await adminApi.forms.getAllSpas({
+        search: filters.search,
+        city: filters.city,
+        state: filters.state,
+        status: filters.status
+      });
+      setSpas(response.data || []);
       setError(null);
     } catch (err) {
-      setError('Failed to load SPAs');
+      setError('Failed to load filtered SPAs');
       console.error(err);
     } finally {
       setLoading(false);
@@ -52,67 +71,43 @@ const Spas = () => {
 
     try {
       await adminApi.forms.deleteSpa(id);
-      loadSpas();
+      loadFilteredSpas();
+      loadAllSpas();
     } catch (err) {
       setError('Failed to delete SPA');
       console.error(err);
     }
   };
 
-  const handlePageChange = (newPage) => {
-    // Update URL query parameter when page changes
-    setSearchParams({ page: newPage.toString() });
+  const handleFilterChange = (newFilters) => {
+    const params = new URLSearchParams();
+    if (newFilters.search) params.set('search', newFilters.search);
+    if (newFilters.city) params.set('city', newFilters.city);
+    if (newFilters.state) params.set('state', newFilters.state);
+    if (newFilters.status) params.set('status', newFilters.status);
+    params.set('page', '1'); // Reset to page 1 on filter change
+    setSearchParams(params);
   };
 
-  useEffect(() => {
-    // Apply filters and pagination
-    let filtered = allSpas.filter((spa) => {
-      if (filter.activeOnly && !spa.is_active) return false;
-      if (filter.search) {
-        const searchLower = filter.search.toLowerCase();
-        return (
-          spa.name?.toLowerCase().includes(searchLower) ||
-          (spa.code !== null && spa.code !== undefined && String(spa.code).toLowerCase().includes(searchLower)) ||
-          spa.address?.toLowerCase().includes(searchLower) ||
-          spa.city?.toLowerCase().includes(searchLower) ||
-          spa.state?.toLowerCase().includes(searchLower) ||
-          spa.country?.toLowerCase().includes(searchLower) ||
-          spa.pincode?.toString().includes(searchLower) ||
-          spa.phone_number?.toString().includes(searchLower) ||
-          spa.alternate_number?.toString().includes(searchLower) ||
-          spa.email?.toLowerCase().includes(searchLower) ||
-          spa.website?.toLowerCase().includes(searchLower)
-        );
-      }
-      return true;
-    });
+  const handleClearFilters = () => {
+    setSearchParams({});
+  };
 
-    // Apply pagination
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    setSpas(filtered.slice(startIndex, endIndex));
-  }, [allSpas, filter, currentPage]);
+  const handlePageChange = (newPage) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('page', newPage.toString());
+    setSearchParams(params);
+  };
 
-  const filteredSpas = allSpas.filter((spa) => {
-    if (filter.activeOnly && !spa.is_active) return false;
-    if (filter.search) {
-      const searchLower = filter.search.toLowerCase();
-      return (
-        spa.name?.toLowerCase().includes(searchLower) ||
-        (spa.code !== null && spa.code !== undefined && String(spa.code).toLowerCase().includes(searchLower)) ||
-        spa.address?.toLowerCase().includes(searchLower) ||
-        spa.city?.toLowerCase().includes(searchLower) ||
-        spa.state?.toLowerCase().includes(searchLower) ||
-        spa.country?.toLowerCase().includes(searchLower) ||
-        spa.pincode?.toString().includes(searchLower) ||
-        spa.phone_number?.toString().includes(searchLower) ||
-        spa.alternate_number?.toString().includes(searchLower) ||
-        spa.email?.toLowerCase().includes(searchLower) ||
-        spa.website?.toLowerCase().includes(searchLower)
-      );
-    }
-    return true;
-  });
+  // Extract unique cities and states from allSpas for the filter dropdowns
+  const uniqueCities = [...new Set(allSpas.map(s => s.city).filter(Boolean))].sort();
+  const uniqueStates = [...new Set(allSpas.map(s => s.state).filter(Boolean))].sort();
+
+  // Paginated view of filtered SPAs
+  const paginatedSpas = spas.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   if (loading && spas.length === 0) {
     return (
@@ -129,19 +124,20 @@ const Spas = () => {
     <div className="min-h-screen bg-gradient-to-br from-[var(--color-bg-secondary)] to-[var(--color-gray-100)] py-8 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-[var(--color-text-primary)] mb-2">SPA Management</h1>
-            <p className="text-[var(--color-text-secondary)]">Manage SPA locations and their details</p>
+            <h1 className="text-3xl font-bold text-gray-800 mb-1">SPA Management</h1>
+            <p className="text-gray-500 font-medium tracking-tight">Manage and filter your global SPA locations</p>
           </div>
           <button
             onClick={handleAdd}
-            className="px-6 py-3 bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-dark)] text-[var(--color-text-inverse)] rounded-lg hover:from-[var(--color-primary-dark)] hover:to-[var(--color-primary-dark)] font-semibold shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2"
+            className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold shadow-md active:scale-95 transition-all flex items-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            Add New SPA
+            Add SPA
           </button>
         </div>
 
@@ -156,44 +152,44 @@ const Spas = () => {
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <div className="bg-[var(--color-bg-primary)] rounded-xl shadow-md p-6 border-l-4 border-[var(--color-primary)] hover:shadow-lg transition-shadow">
+          <div className="bg-white rounded-xl shadow-sm p-4 border-l-4 border-blue-500">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-[var(--color-text-secondary)]  tracking-wide">Total SPAs</p>
-                <p className="text-3xl font-bold text-[var(--color-text-primary)] mt-2">{filteredSpas.length}</p>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Total SPAs</p>
+                <p className="text-2xl font-black text-gray-800 mt-1">{allSpas.length}</p>
               </div>
-              <div className="bg-[var(--color-primary-light)] rounded-full p-3">
-                <svg className="w-6 h-6 text-[var(--color-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="bg-blue-50 rounded-lg p-3">
+                <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
               </div>
             </div>
           </div>
-          <div className="bg-[var(--color-bg-primary)] rounded-xl shadow-md p-6 border-l-4 border-[var(--color-success)] hover:shadow-lg transition-shadow">
+          <div className="bg-white rounded-xl shadow-sm p-4 border-l-4 border-green-500">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-[var(--color-text-secondary)]  tracking-wide">Active SPAs</p>
-                <p className="text-3xl font-bold text-[var(--color-success)] mt-2">
-                  {filteredSpas.filter((s) => s.is_active).length}
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Active Result</p>
+                <p className="text-2xl font-black text-green-600 mt-1">
+                  {spas.filter((s) => s.is_active).length}
                 </p>
               </div>
-              <div className="bg-[var(--color-success-light)] rounded-full p-3">
-                <svg className="w-6 h-6 text-[var(--color-success)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="bg-green-50 rounded-lg p-3">
+                <svg className="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
             </div>
           </div>
-          <div className="bg-[var(--color-bg-primary)] rounded-xl shadow-md p-6 border-l-4 border-[var(--color-gray-400)] hover:shadow-lg transition-shadow">
+          <div className="bg-white rounded-xl shadow-sm p-4 border-l-4 border-orange-500">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-[var(--color-text-secondary)]  tracking-wide">Inactive SPAs</p>
-                <p className="text-3xl font-bold text-[var(--color-gray-500)] mt-2">
-                  {filteredSpas.filter((s) => !s.is_active).length}
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Matching Filters</p>
+                <p className="text-2xl font-black text-orange-600 mt-1">
+                  {spas.length}
                 </p>
               </div>
-              <div className="bg-[var(--color-gray-100)] rounded-full p-3">
-                <svg className="w-6 h-6 text-[var(--color-gray-500)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="bg-orange-50 rounded-lg p-3">
+                <svg className="w-6 h-6 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
@@ -201,62 +197,25 @@ const Spas = () => {
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="bg-[var(--color-bg-primary)] rounded-xl shadow-md p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">Search</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg className="h-5 w-5 text-[var(--color-text-tertiary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
-                <input
-                  type="text"
-                  value={filter.search}
-                  onChange={(e) => {
-                    setFilter({ ...filter, search: e.target.value });
-                    // Reset to page 1 when search changes
-                    if (currentPage !== 1) {
-                      setSearchParams({ page: '1' });
-                    }
-                  }}
-                  placeholder="Search by name, address, city, state..."
-                  className="w-full pl-10 pr-4 py-2 border border-[var(--color-border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] transition"
-                />
-              </div>
-            </div>
-            <div className="flex items-end">
-              <label className="flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={filter.activeOnly}
-                  onChange={(e) => {
-                    setFilter({ ...filter, activeOnly: e.target.checked });
-                    // Reset to page 1 when filter changes
-                    if (currentPage !== 1) {
-                      setSearchParams({ page: '1' });
-                    }
-                  }}
-                  className="w-4 h-4 rounded border-[var(--color-border-primary)] text-[var(--color-primary)] focus:ring-[var(--color-primary)] cursor-pointer"
-                />
-                <span className="ml-2 text-sm text-[var(--color-text-primary)]">Show active SPAs only</span>
-              </label>
-            </div>
-          </div>
-        </div>
+        {/* New Filters Component */}
+        <SpasFilter
+          filters={filters}
+          onFilterChange={handleFilterChange}
+          cities={uniqueCities}
+          states={uniqueStates}
+          onClear={handleClearFilters}
+        />
 
         {/* SPAs Table */}
-        <div className="bg-[var(--color-bg-primary)] rounded-xl shadow-md overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
           <SpaTable
-            spas={spas}
+            spas={paginatedSpas}
             onDelete={handleDelete}
             loading={loading}
             currentPage={currentPage}
-            totalPages={Math.ceil(filteredSpas.length / itemsPerPage)}
+            totalPages={Math.ceil(spas.length / itemsPerPage)}
             onPageChange={handlePageChange}
-            totalItems={filteredSpas.length}
+            totalItems={spas.length}
             itemsPerPage={itemsPerPage}
           />
         </div>

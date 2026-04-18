@@ -87,6 +87,7 @@ const ViewSpaDetails = () => {
           <Detail label="Pincode" value={spa.pincode ?? '-'} />
           <Detail label="Phone" value={spa.phone_number ?? '-'} />
           <Detail label="Alternate" value={spa.alternate_number ?? '-'} />
+          <Detail label="GST Number" value={spa.gst_number ?? '-'} />
           <Detail label="Email" value={spa.email ?? '-'} />
           <Detail label="Website" value={spa.website ?? '-'} />
           <Detail label="Status" value={spa.is_active ? 'Active' : 'Inactive'} isStatus />

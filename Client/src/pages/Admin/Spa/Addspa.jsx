@@ -13,6 +13,7 @@ const AddSpa = ({ isOpen, onCancel, onSuccess }) => {
     pincode: "",
     phone_number: "",
     alternate_number: "",
+    gst_number: "",
     email: "",
     website: "",
     logo: "",
@@ -262,6 +263,20 @@ const AddSpa = ({ isOpen, onCancel, onSuccess }) => {
                 onChange={handleChange}
                 className="input-field"
                 placeholder="Enter alternate number"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">GST Number</label>
+              <input
+                type="text"
+                name="gst_number"
+                value={formData.gst_number}
+                onChange={handleChange}
+                className="input-field"
+                placeholder="Enter GST number"
               />
             </div>
           </div>

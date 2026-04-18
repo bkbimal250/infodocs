@@ -15,6 +15,14 @@ export const staffApi = {
   },
 
   /**
+   * Get unique cities of staff
+   * @returns {Promise}
+   */
+  getCities: () => {
+    return apiClient.get('/staff/cities');
+  },
+
+  /**
    * Get a single staff member
    * @param {number} id - Staff ID
    * @returns {Promise}
@@ -91,6 +99,10 @@ export const staffApi = {
 
   getOverallAnalytics: (params = {}) => {
     return apiClient.get('/staff/analytics/overall', { params });
+  },
+
+  getConsolidatedAnalytics: (params = {}) => {
+    return apiClient.get('/staff/analytics/consolidated', { params });
   },
 
   /**

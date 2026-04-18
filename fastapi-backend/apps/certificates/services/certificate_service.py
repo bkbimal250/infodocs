@@ -520,6 +520,7 @@ async def prepare_certificate_data(template: CertificateTemplate, certificate_da
         "spa_email": spa.get("email", ""),
         "spa_website": spa.get("website", ""),
         "spa_logo": spa_logo,
+        "spa_gst_number": spa.get("gst_number", ""),
         
         # Static image paths
         "certificate_background_image": background_image,
@@ -1198,7 +1199,11 @@ async def create_generated_certificate(
 # -------------------------
 
 async def get_generated_certificate_by_id(db: AsyncSession, certificate_id: int):
-    """Get a certificate by ID from any certificate table"""
+    """
+    Get a certificate by ID from any certificate table.
+    🚀 Optimized: Parallelized searching across all certificate models.
+    """
+    import asyncio
     models = [
         SpaTherapistCertificate,
         ManagerSalaryCertificate,
@@ -1212,17 +1217,23 @@ async def get_generated_certificate_by_id(db: AsyncSession, certificate_id: int)
         JobformSheet
     ]
     
-    # Search all certificate tables
-    for model in models:
+    async def check_model(model):
         try:
-            stmt = select(model).where(model.id == certificate_id)
+            # Eager load SPA details as it's almost always needed in the frontend
+            stmt = select(model).options(joinedload(model.spa)).where(model.id == certificate_id)
             result = await db.execute(stmt)
-            certificate = result.scalar_one_or_none()
-            if certificate:
-                return certificate
+            return result.scalar_one_or_none()
         except Exception as e:
             logger.warning(f"Error searching {model.__tablename__} for certificate {certificate_id}: {e}")
-            continue
+            return None
+
+    # Search all certificate tables in parallel
+    results = await asyncio.gather(*[check_model(m) for m in models])
+    
+    # Return the first one found
+    for certificate in results:
+        if certificate:
+            return certificate
     
     return None
 

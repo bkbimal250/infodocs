@@ -156,8 +156,12 @@ class Query(Base):
     spa = relationship("SPA", backref="queries", lazy="select")
     query_type = relationship("QueryType", lazy="select")
     
-    # Note: User relationships are not defined here as we manually enrich
-    # user data in the service layer via enrich_query_with_relations()
+    # Relationships for creators/editors (used for eager loading)
+    creator = relationship("User", foreign_keys=[created_by], lazy="select")
+    editor = relationship("User", foreign_keys=[updated_by], lazy="select")
+    
+    # Note: User relationships are defined here to support efficient 
+    # eager loading in the service layer via joinedload.
 
     # -----------------------------
     # Indexes

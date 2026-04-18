@@ -5,7 +5,7 @@ Business logic for query/support ticket operations
 from typing import Optional, List, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_, func, desc, delete
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, joinedload
 
 from apps.Query.models import Query, QueryType
 from apps.Query.schemas import QueryCreate, QueryUpdate, QueryTypeCreate, QueryTypeUpdate
@@ -88,15 +88,24 @@ async def get_query_by_id(
     user_id: Optional[int] = None,
     user_role: Optional[str] = None
 ) -> Optional[Query]:
-    """Get a query by ID with access control"""
-    stmt = select(Query).where(
-        and_(
-            Query.id == query_id,
-            Query.is_deleted == False
+    """Get a query by ID with access control and eager loading"""
+    stmt = (
+        select(Query)
+        .options(
+            joinedload(Query.spa),
+            joinedload(Query.query_type),
+            joinedload(Query.creator),
+            joinedload(Query.editor)
+        )
+        .where(
+            and_(
+                Query.id == query_id,
+                Query.is_deleted == False
+            )
         )
     )
     result = await db.execute(stmt)
-    query = result.scalar_one_or_none()
+    query = result.unique().scalar_one_or_none()
     
     if not query:
         return None
@@ -143,6 +152,12 @@ async def get_queries(
     # Get queries
     stmt = (
         select(Query)
+        .options(
+            joinedload(Query.spa),
+            joinedload(Query.query_type),
+            joinedload(Query.creator),
+            joinedload(Query.editor)
+        )
         .where(and_(*conditions))
         .order_by(desc(Query.created_at))
         .offset(skip)
@@ -150,9 +165,45 @@ async def get_queries(
     )
     
     result = await db.execute(stmt)
-    queries = result.scalars().all()
+    queries = result.unique().scalars().all()
     
-    return list(queries), total
+    # Enrich queries with relations
+    enriched_queries = [enrich_query_with_relations(q) for q in queries]
+    
+    return enriched_queries, total
+
+
+def enrich_query_with_relations(
+    query: Query
+) -> dict:
+    """
+    Enrich query with related data for response using pre-loaded attributes.
+    🚀 Optimized: Uses already loaded relationship objects to avoid N+1 queries.
+    Synchronous because all relationships should be pre-loaded via joinedload().
+    """
+    return {
+        'id': query.id,
+        'spa_id': query.spa_id,
+        'query_type_id': query.query_type_id,
+        'query': query.query,
+        'contact_number': query.contact_number,
+        'status': query.status,
+        'admin_remark': query.admin_remark,
+        'created_at': query.created_at,
+        'updated_at': query.updated_at,
+        'created_by': query.created_by,
+        'updated_by': query.updated_by,
+        'is_active': query.is_active,
+        'is_deleted': query.is_deleted,
+        'spa_name': query.spa.name if query.spa else None,
+        'spa_address': query.spa.address if query.spa else None,
+        'spa_city': query.spa.city if query.spa else None,
+        'spa_area': query.spa.area if query.spa else None,
+        'spa_state': query.spa.state if query.spa else None,
+        'query_type_name': query.query_type.name if query.query_type else None,
+        'created_by_name': f"{query.creator.first_name} {query.creator.last_name}" if query.creator else None,
+        'updated_by_name': f"{query.editor.first_name} {query.editor.last_name}" if query.editor else None,
+    }
 
 
 async def update_query(
@@ -355,69 +406,3 @@ async def delete_query_type(
     return True
 
 
-async def enrich_query_with_relations(
-    db: AsyncSession,
-    query: Query
-) -> dict:
-    """Enrich query with related data for response"""
-    result = {
-        'id': query.id,
-        'spa_id': query.spa_id,
-        'query_type_id': query.query_type_id,
-        'query': query.query,
-        'contact_number': query.contact_number,
-        'status': query.status,
-        'admin_remark': query.admin_remark,
-        'created_at': query.created_at,
-        'updated_at': query.updated_at,
-        'created_by': query.created_by,
-        'updated_by': query.updated_by,
-        'is_active': query.is_active,
-        'is_deleted': query.is_deleted,
-        'spa_name': None,
-        'spa_address': None,
-        'spa_city': None,
-        'spa_area': None,
-        'spa_state': None,
-        'query_type_name': None,
-        'created_by_name': None,
-        'updated_by_name': None,
-    }
-    
-    # Get SPA details
-    if query.spa_id:
-        spa_stmt = select(SPA).where(SPA.id == query.spa_id)
-        spa_result = await db.execute(spa_stmt)
-        spa = spa_result.scalar_one_or_none()
-        if spa:
-            result['spa_name'] = spa.name
-            result['spa_address'] = spa.address
-            result['spa_city'] = spa.city
-            result['spa_area'] = spa.area
-            result['spa_state'] = spa.state
-    
-    # Get query type name
-    if query.query_type_id:
-        type_stmt = select(QueryType).where(QueryType.id == query.query_type_id)
-        type_result = await db.execute(type_stmt)
-        query_type = type_result.scalar_one_or_none()
-        if query_type:
-            result['query_type_name'] = query_type.name
-    
-    # Get created by name
-    if query.created_by:
-        user_stmt = select(User).where(User.id == query.created_by)
-        user_result = await db.execute(user_stmt)
-        user = user_result.scalar_one_or_none()
-        if user:
-            result['created_by_name'] = user.full_name
-    
-    # Get updated by name
-    if query.updated_by:
-        user_stmt = select(User).where(User.id == query.updated_by)
-        user_result = await db.execute(user_stmt)
-        user = user_result.scalar_one_or_none()
-        if user:
-            result['updated_by_name'] = user.full_name
-    
-    return result

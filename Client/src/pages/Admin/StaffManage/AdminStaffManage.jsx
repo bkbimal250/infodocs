@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { staffApi, adminApi } from '../../../api';
 import { toast } from 'react-hot-toast';
 import {
-  FaUserPlus, FaUsers, FaUserCheck, FaUserMinus, FaExchangeAlt, FaSignOutAlt, FaSyncAlt
+  FaUserPlus, FaUsers, FaUserCheck, FaSignOutAlt, FaExchangeAlt, FaSyncAlt
 } from 'react-icons/fa';
 
 // Components
@@ -13,10 +13,14 @@ import { HistoryModal, TransferModal, LeaveModal } from './components/AdminStaff
 
 const AdminStaffManage = () => {
   const navigate = useNavigate();
+
   const [staff, setStaff] = useState([]);
   const [allSpas, setAllSpas] = useState([]);
   const [allSpasMap, setAllSpasMap] = useState({});
   const [loading, setLoading] = useState(true);
+  const [totalItems, setTotalItems] = useState(0);
+  const [availableCities, setAvailableCities] = useState([]);
+
   const [stats, setStats] = useState({
     total_active: 0,
     total_left: 0,
@@ -30,15 +34,14 @@ const AdminStaffManage = () => {
 
   const [filters, setFilters] = useState({
     spa_id: '',
+    city: '',
     status: '',
     search: ''
   });
 
-  // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // Workflow states
   const [showHistory, setShowHistory] = useState(null);
   const [showTransfer, setShowTransfer] = useState(null);
   const [showLeave, setShowLeave] = useState(null);
@@ -51,14 +54,15 @@ const AdminStaffManage = () => {
   useEffect(() => {
     fetchStaff();
     fetchStats();
-    setCurrentPage(1); // Reset to first page on filter change
-  }, [filters.spa_id, filters.status, filters.search]);
+  }, [filters, currentPage]);
 
-  // Derived paginated staff
-  const paginatedStaff = staff.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters]);
+
+  // With server-side pagination, 'staff' already contains the current page
+  const paginatedStaff = staff;
 
   const fetchInitialData = async () => {
     try {
@@ -67,23 +71,38 @@ const AdminStaffManage = () => {
       setAllSpas(spaData);
 
       const mapping = {};
-      spaData.forEach(s => mapping[s.id] = s.name);
+      spaData.forEach(s => mapping[s.id] = s); // store full spa object
       setAllSpasMap(mapping);
-    } catch (err) {
+    } catch {
       toast.error('Failed to load SPAs');
+    }
+
+    try {
+      const cityRes = await staffApi.getCities();
+      setAvailableCities(cityRes.data || []);
+    } catch {
+      console.warn('Failed to load cities');
     }
   };
 
   const fetchStaff = async () => {
     try {
       setLoading(true);
+      const cleanFilters = Object.fromEntries(
+        Object.entries(filters).filter(([_, v]) => v !== '')
+      );
+      
+      const skip = (currentPage - 1) * itemsPerPage;
       const res = await staffApi.getAllStaff({
-        spa_id: filters.spa_id || undefined,
-        status: filters.status || undefined,
-        search: filters.search || undefined
+        ...cleanFilters,
+        skip,
+        limit: itemsPerPage
       });
-      setStaff(res.data || []);
-    } catch (err) {
+      
+      // Backend returns { items, total, skip, limit }
+      setStaff(res.data.items || []);
+      setTotalItems(res.data.total || 0);
+    } catch {
       toast.error('Failed to load staff');
     } finally {
       setLoading(false);
@@ -93,14 +112,10 @@ const AdminStaffManage = () => {
   const fetchStats = async () => {
     try {
       const spaId = filters.spa_id || undefined;
-      const todayRes = await staffApi.getTodayAnalytics({ spa_id: spaId });
-      const overallRes = await staffApi.getOverallAnalytics({ spa_id: spaId });
-      setStats({
-        ...overallRes.data,
-        today: todayRes.data
-      });
+      const res = await staffApi.getConsolidatedAnalytics({ spa_id: spaId });
+      setStats(res.data);
     } catch (err) {
-      console.error('Stats error', err);
+      console.error(err);
     }
   };
 
@@ -109,128 +124,110 @@ const AdminStaffManage = () => {
       const res = await staffApi.getHistory(member.id);
       setHistoryData(res.data || []);
       setShowHistory(member);
-    } catch (err) {
+    } catch {
       toast.error('Failed to load history');
     }
   };
 
   const executeDeleteStaff = async (member) => {
-    if (!window.confirm(`Are you sure you want to PERMANENTLY delete ${member.name}? This action is irreversible.`)) {
-      return;
-    }
+    if (!window.confirm(`Delete ${member.name}?`)) return;
+
     try {
       await staffApi.deleteStaff(member.id);
-      toast.success('Staff record purged successfully');
+      toast.success('Deleted successfully');
       fetchStaff();
       fetchStats();
-    } catch (err) {
-      toast.error('Failed to delete staff record');
+    } catch {
+      toast.error('Delete failed');
     }
   };
 
   const executeTransfer = async (data) => {
     try {
       await staffApi.transferStaff(showTransfer.id, data);
-      toast.success('Staff transferred successfully');
+      toast.success('Transferred');
       setShowTransfer(null);
       fetchStaff();
       fetchStats();
-    } catch (err) {
-      toast.error(err.response?.data?.detail || 'Transfer failed');
+    } catch {
+      toast.error('Transfer failed');
     }
   };
 
   const executeLeave = async (data) => {
     try {
       await staffApi.markLeft(showLeave.id, data);
-      toast.success('Separation finalized successfully');
+      toast.success('Marked as left');
       setShowLeave(null);
       fetchStaff();
       fetchStats();
-    } catch (err) {
-      toast.error(err.response?.data?.detail || 'Action failed');
+    } catch {
+      toast.error('Action failed');
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+      <div className="max-w-7xl mx-auto space-y-5">
 
-        {/* Header Section */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-          <div className="space-y-2">
-            <h1 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tighter">
-              Staff <span className="text-blue-600">Governance</span>
+        {/* Header */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900">
+              Staff Management
             </h1>
-            <div className="flex items-center gap-3">
-              <span className="w-12 h-1.5 bg-gray-900 rounded-full"></span>
-              <p className="text-[10px] font-black text-gray-400  tracking-[0.3em]">Administrator Command Center</p>
-            </div>
+            <p className="text-sm text-gray-500">
+              Manage staff, transfers, and activity
+            </p>
           </div>
 
-          <div className="flex items-center gap-3 w-full md:w-auto">
+          <div className="flex gap-2">
             <button
               onClick={() => { fetchStaff(); fetchStats(); }}
-              className="p-4 bg-white border border-gray-100 rounded-2xl text-gray-400 hover:text-gray-900 hover:shadow-xl transition-all active:scale-90"
-              title="Synchronize Data"
+              className="p-2 border rounded-md bg-white hover:bg-gray-100"
             >
               <FaSyncAlt className={loading ? 'animate-spin' : ''} />
             </button>
+
             <button
               onClick={() => navigate('/admin/staff/add')}
-              className="flex-grow md:flex-none flex items-center justify-center gap-3 px-8 py-4 bg-gray-900 text-white rounded-2xl font-black shadow-2xl shadow-gray-200 hover:bg-black transition-all active:scale-95 text-xs  tracking-widest"
+              className="px-4 py-2 bg-gray-900 text-white rounded-md text-sm"
             >
-              <FaUserPlus size={14} /> <span>Enroll New Staff</span>
+              <FaUserPlus className="inline mr-2" />
+              Add Staff
             </button>
           </div>
         </div>
 
-        {/* Intelligence Grid (Stats) */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-          <StatCard
-            label="Live Workforce"
-            value={stats.total_active}
-            subtitle="Active members"
-            icon={<FaUsers />}
-            color="blue"
-          />
-          <StatCard
-            label="Inbound Sync"
-            value={stats.today.today_new_join + stats.today.today_re_join}
-            subtitle="Joined today"
-            icon={<FaUserCheck />}
-            color="emerald"
-          />
-          <StatCard
-            label="Departures"
-            value={stats.today.today_leave}
-            subtitle="Finalized today"
-            icon={<FaSignOutAlt />}
-            color="rose"
-          />
-          <StatCard
-            label="Transfer Flux"
-            value={stats.today.today_transfer_out}
-            subtitle="In motion"
-            icon={<FaExchangeAlt />}
-            color="orange"
-          />
+        {/* Stats */}
+        <div>
+          <h2 className="text-sm font-medium text-gray-600 mb-2">
+            Overview
+          </h2>
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard label="Active" value={stats.total_active} icon={<FaUsers />} />
+            <StatCard label="Joined Today" value={stats.today.today_new_join + stats.today.today_re_join} icon={<FaUserCheck />} />
+            <StatCard label="Left Today" value={stats.today.today_leave} icon={<FaSignOutAlt />} />
+            <StatCard label="Transfers" value={stats.today.today_transfer_out} icon={<FaExchangeAlt />} />
+          </div>
         </div>
 
-        {/* Governance Controls (Filters) */}
+        {/* Filters */}
         <StaffManageFilter
           filters={filters}
           setFilters={setFilters}
           onRefresh={fetchStaff}
           spas={allSpas}
+          cities={availableCities}
         />
 
-        {/* Workforce Registry (Main Table/Cards) */}
-        <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-gray-200/50 border border-gray-50 overflow-hidden min-h-[400px]">
+        {/* Table */}
+        <div className="bg-white border rounded-lg">
           <AdminStaffTable
             loading={loading}
             staff={paginatedStaff}
-            totalItems={staff.length}
+            totalItems={totalItems}
             currentPage={currentPage}
             itemsPerPage={itemsPerPage}
             onPageChange={setCurrentPage}
@@ -244,7 +241,7 @@ const AdminStaffManage = () => {
         </div>
       </div>
 
-      {/* Workforce Workflows (Modals) */}
+      {/* Modals */}
       {showHistory && (
         <HistoryModal
           staff={showHistory}
@@ -274,30 +271,16 @@ const AdminStaffManage = () => {
   );
 };
 
-// Sub-components
-const StatCard = ({ icon, label, value, color, subtitle }) => {
-  const colorMap = {
-    blue: 'text-blue-600 bg-blue-50 border-blue-100 shadow-blue-100',
-    emerald: 'text-emerald-600 bg-emerald-50 border-emerald-100 shadow-emerald-100',
-    rose: 'text-rose-600 bg-rose-50 border-rose-100 shadow-rose-100',
-    orange: 'text-orange-600 bg-orange-50 border-orange-100 shadow-orange-100'
-  };
-
+const StatCard = ({ icon, label, value }) => {
   return (
-    <div className={`p-5 md:p-6 rounded-[2rem] border-2 bg-white transition-all hover:scale-[1.02] cursor-default group relative overflow-hidden flex flex-col items-start gap-4 ${colorMap[color].split(' ').slice(0, 3).join(' ')}`}>
-      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 shadow-lg ${colorMap[color]}`}>
-        {icon}
-      </div>
+    <div className="bg-white border rounded-lg p-4 flex items-center gap-3">
+      <div className="text-gray-500">{icon}</div>
       <div>
-        <p className="text-[9px] font-black text-gray-400  tracking-[0.2em] mb-1">{label}</p>
-        <div className="flex items-baseline gap-2">
-          <p className="text-2xl md:text-3xl font-black text-gray-900 tracking-tighter">{value}</p>
-          <p className="text-[10px] font-black text-gray-400  tracking-tighter whitespace-nowrap">{subtitle}</p>
-        </div>
+        <p className="text-sm text-gray-500">{label}</p>
+        <p className="text-lg font-semibold text-gray-900">{value}</p>
       </div>
     </div>
   );
 };
 
 export default AdminStaffManage;
-

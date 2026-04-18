@@ -60,6 +60,7 @@ class Staff(Base):
     # 📍 ADDRESS & CONTACT
     # ==========================
     address = Column(Text, nullable=True)
+    city=Column(String(255), nullable=True, index=True)
     emergency_contact_name = Column(String(255), nullable=True)
     emergency_contact_number = Column(String(20), nullable=True)
 
@@ -71,7 +72,7 @@ class Staff(Base):
     # ==========================
     # 📊 CURRENT STATE
     # ==========================
-    current_status = Column(Enum(StaffStatusEnum, native_enum=False, length=20), default=StaffStatusEnum.inactive)
+    current_status = Column(Enum(StaffStatusEnum, native_enum=False, length=20), default=StaffStatusEnum.inactive, index=True)
     
     # Linked to current SPA branch
     spa_id = Column(Integer, ForeignKey("spas.id", ondelete="SET NULL"), nullable=True, index=True)
@@ -79,14 +80,14 @@ class Staff(Base):
     # ==========================
     # 📅 QUICK DATES (OPTIONAL)
     # ==========================
-    joining_date = Column(DateTime, nullable=True)
+    joining_date = Column(DateTime, nullable=True, index=True)
     leave_date = Column(DateTime, nullable=True)
     transfer_date = Column(DateTime, nullable=True)
 
     # ==========================
     # 🧾 METADATA
     # ==========================
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # ==========================

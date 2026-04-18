@@ -22,7 +22,7 @@ from apps.Query.routers import query_router
 from apps.tutorials.routers import tutorials_router
 from apps.StaffManagement.routers import router as staff_router
 from core.exceptions import CustomException, ValidationError, NotFoundError, AuthenticationError, AuthorizationError
-from core.middleware import ErrorHandlerMiddleware
+from core.middleware import ErrorHandlerMiddleware, PerformanceMiddleware
 from core.rate_limiter import RateLimitMiddleware
 
 
@@ -105,6 +105,9 @@ app.add_middleware(
 # Add rate limiting middleware (before error handler)
 if settings.RATE_LIMIT_ENABLED:
     app.add_middleware(RateLimitMiddleware)
+
+# Performance monitoring middleware (outermost custom middleware to catch full time)
+app.add_middleware(PerformanceMiddleware)
 
 # Add custom error handler middleware
 app.add_middleware(ErrorHandlerMiddleware)

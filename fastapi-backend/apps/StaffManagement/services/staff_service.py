@@ -34,6 +34,7 @@ async def create_staff(db: AsyncSession, staff_data: schemas.StaffCreate, create
             phone=staff_data.phone,
             gender=staff_data.gender,
             address=staff_data.address,
+            city=staff_data.city,
             emergency_contact_name=staff_data.emergency_contact_name,
             emergency_contact_number=staff_data.emergency_contact_number,
             designation=staff_data.designation,
@@ -49,16 +50,16 @@ async def create_staff(db: AsyncSession, staff_data: schemas.StaffCreate, create
         db.add(staff)
         await db.flush() # Get ID
 
-    # 1. Close any existing active work history records to prevent duplicates
-    stmt_close = select(models.WorkHistory).where(
+    # 1. Close any existing active work history records to prevent duplicates - Optimized with bulk update
+    from sqlalchemy import update
+    stmt_close = update(models.WorkHistory).where(
         models.WorkHistory.staff_id == staff.id,
         models.WorkHistory.status == models.WorkStatusEnum.active
+    ).values(
+        status=models.WorkStatusEnum.completed,
+        leave_date=staff_data.joining_date or datetime.utcnow()
     )
-    res_close = await db.execute(stmt_close)
-    active_histories = res_close.scalars().all()
-    for h in active_histories:
-        h.status = models.WorkStatusEnum.completed
-        h.leave_date = staff_data.joining_date or datetime.utcnow()
+    await db.execute(stmt_close)
 
     # 2. Add Event
     event = models.StaffEvent(
@@ -109,14 +110,74 @@ async def get_staff_by_phone(db: AsyncSession, phone: str):
 # -----------------------------
 # GET ALL STAFF (WITH OPTIONAL SPA FILTER)
 # -----------------------------
-async def get_all_staff(db: AsyncSession, spa_id: Optional[int] = None, status: Optional[schemas.StaffStatusEnum] = None):
-    stmt = select(models.Staff).options(joinedload(models.Staff.spa))
+async def get_all_staff(
+    db: AsyncSession,
+    spa_id: Optional[int] = None,
+    status: Optional[schemas.StaffStatusEnum] = None,
+    city: Optional[str] = None,
+    search: Optional[str] = None,
+    from_date: Optional[date] = None,
+    to_date: Optional[date] = None,
+    skip: int = 0,
+    limit: int = 100
+):
+    from sqlalchemy.orm import load_only
+    from sqlalchemy import or_
+
+    # Base query for items
+    stmt = select(models.Staff).options(
+        joinedload(models.Staff.spa)
+    )
+
+    # Base query for count
+    count_stmt = select(func.count(models.Staff.id))
+
+    # Apply filters to both
+    filters = []
     if spa_id:
-        stmt = stmt.where(models.Staff.spa_id == spa_id)
+        filters.append(models.Staff.spa_id == spa_id)
     if status:
-        stmt = stmt.where(models.Staff.current_status == status)
+        filters.append(models.Staff.current_status == status)
+    if city:
+        filters.append(models.Staff.city.ilike(city))
+    if search:
+        term = f"%{search}%"
+        filters.append(
+            or_(
+                models.Staff.name.ilike(term),
+                models.Staff.phone.ilike(term)
+            )
+        )
+    
+    # 📅 Date Filtering
+    if from_date:
+        from_dt = datetime.combine(from_date, datetime.min.time())
+        filters.append(models.Staff.joining_date >= from_dt)
+    if to_date:
+        to_dt = datetime.combine(to_date, datetime.max.time())
+        filters.append(models.Staff.joining_date <= to_dt)
+
+    for f in filters:
+        stmt = stmt.where(f)
+        count_stmt = count_stmt.where(f)
+
+    # Total count
+    total_result = await db.execute(count_stmt)
+    total_count = total_result.scalar()
+
+    # Pagination & Ordering
+    stmt = stmt.order_by(models.Staff.id.desc()).offset(skip).limit(limit)
+
+    # Execute search
     result = await db.execute(stmt)
-    return result.scalars().all()
+    items = result.scalars().all()
+
+    return {
+        "items": items,
+        "total": total_count,
+        "skip": skip,
+        "limit": limit
+    }
 
 
 # -----------------------------
@@ -151,18 +212,17 @@ async def mark_staff_left(db: AsyncSession, staff_id: int, leave_data: schemas.S
     staff.leave_date = leave_data.leave_date
     staff.spa_id = None # No longer at any branch
 
-    # Update active work history (Handles duplicates gracefully)
-    stmt = select(models.WorkHistory).where(
+    # Update active work history - Optimized with bulk update
+    from sqlalchemy import update
+    stmt_upd = update(models.WorkHistory).where(
         models.WorkHistory.staff_id == staff_id,
         models.WorkHistory.spa_id == old_spa_id,
         models.WorkHistory.status == models.WorkStatusEnum.active
+    ).values(
+        leave_date=leave_data.leave_date,
+        status=models.WorkStatusEnum.completed
     )
-    result = await db.execute(stmt)
-    active_histories = result.scalars().all()
-    
-    for work_history in active_histories:
-        work_history.leave_date = leave_data.leave_date
-        work_history.status = models.WorkStatusEnum.completed
+    await db.execute(stmt_upd)
 
     # Add Event
     event = models.StaffEvent(
@@ -197,19 +257,18 @@ async def transfer_staff(
     to_spa_id = transfer_data.to_spa_id
     transfer_date = transfer_data.transfer_date
 
-    # 1. Close current work history (Handles duplicates gracefully)
-    stmt = select(models.WorkHistory).where(
+    # 1. Close current work history - Optimized with bulk update
+    from sqlalchemy import update
+    stmt_upd = update(models.WorkHistory).where(
         models.WorkHistory.staff_id == staff_id,
         models.WorkHistory.spa_id == old_spa_id,
         models.WorkHistory.status == models.WorkStatusEnum.active
+    ).values(
+        leave_date=transfer_date,
+        status=models.WorkStatusEnum.completed,
+        is_transferred=True
     )
-    result = await db.execute(stmt)
-    active_histories = result.scalars().all()
-
-    for work_history in active_histories:
-        work_history.leave_date = transfer_date
-        work_history.status = models.WorkStatusEnum.completed
-        work_history.is_transferred = True
+    await db.execute(stmt_upd)
 
     # 2. Update staff branch and status
     staff.spa_id = to_spa_id
@@ -257,21 +316,24 @@ async def get_staff_history(db: AsyncSession, staff_id: int):
 async def today_analytics(db: AsyncSession, spa_id: Optional[int] = None):
     today = date.today()
 
-    stmt = select(models.StaffEvent).where(
+    # Optimized with SQL grouping and counting
+    stmt = select(models.StaffEvent.type, func.count(models.StaffEvent.id)).where(
         func.date(models.StaffEvent.event_date) == today
     )
     
     if spa_id:
         stmt = stmt.where(models.StaffEvent.spa_id == spa_id)
+    
+    stmt = stmt.group_by(models.StaffEvent.type)
 
     result = await db.execute(stmt)
-    events = result.scalars().all()
+    counts = dict(result.all())
 
     return {
-        "today_new_join": len([e for e in events if e.type == models.StaffEventTypeEnum.new_join]),
-        "today_re_join": len([e for e in events if e.type == models.StaffEventTypeEnum.re_join]),
-        "today_transfer_out": len([e for e in events if e.type == models.StaffEventTypeEnum.transfer_out]),
-        "today_leave": len([e for e in events if e.type == models.StaffEventTypeEnum.leave]),
+        "today_new_join": counts.get(models.StaffEventTypeEnum.new_join, 0),
+        "today_re_join": counts.get(models.StaffEventTypeEnum.re_join, 0),
+        "today_transfer_out": counts.get(models.StaffEventTypeEnum.transfer_out, 0),
+        "today_leave": counts.get(models.StaffEventTypeEnum.leave, 0),
     }
 
 
@@ -279,13 +341,14 @@ async def today_analytics(db: AsyncSession, spa_id: Optional[int] = None):
 # GLOBAL ANALYTICS
 # -----------------------------
 async def overall_analytics(db: AsyncSession, spa_id: Optional[int] = None):
+    import asyncio
+    
     # Total Active
     stmt_active = select(func.count(models.Staff.id)).where(models.Staff.current_status == models.StaffStatusEnum.active)
     if spa_id:
         stmt_active = stmt_active.where(models.Staff.spa_id == spa_id)
     
     # Total Left
-    stmt_left = select(func.count(models.Staff.id)).where(models.Staff.current_status == models.StaffStatusEnum.left)
     if spa_id:
         # Complex join for specific SPA left count
         stmt_left = select(func.count(models.Staff.id)).join(models.WorkHistory).where(
@@ -293,38 +356,37 @@ async def overall_analytics(db: AsyncSession, spa_id: Optional[int] = None):
             models.WorkHistory.status == models.WorkStatusEnum.completed,
             models.WorkHistory.is_transferred == False
         )
+    else:
+        stmt_left = select(func.count(models.Staff.id)).where(models.Staff.current_status == models.StaffStatusEnum.left)
 
+    # Execute sequentially for session stability
     res_active = await db.execute(stmt_active)
+    active_count = res_active.scalar()
+    
     res_left = await db.execute(stmt_left)
+    left_count = res_left.scalar()
 
     return {
-        "total_active": res_active.scalar(),
-        "total_left": res_left.scalar(),
+        "total_active": active_count,
+        "total_left": left_count,
     }
 
 # -----------------------------
 # DELETE STAFF (PERMANENT)
 # -----------------------------
 async def delete_staff(db: AsyncSession, staff_id: int):
-    staff = await get_staff(db, staff_id)
-    if not staff:
-        return False
+    from sqlalchemy import delete
     
-    # 1. Manually clean up children to be 100% safe
-    stmt_ev = select(models.StaffEvent).where(models.StaffEvent.staff_id == staff_id)
-    res_ev = await db.execute(stmt_ev)
-    for ev in res_ev.scalars().all():
-        await db.delete(ev)
-        
-    stmt_wh = select(models.WorkHistory).where(models.WorkHistory.staff_id == staff_id)
-    res_wh = await db.execute(stmt_wh)
-    for wh in res_wh.scalars().all():
-        await db.delete(wh)
+    # 1. Bulk delete children
+    await db.execute(delete(models.StaffEvent).where(models.StaffEvent.staff_id == staff_id))
+    await db.execute(delete(models.WorkHistory).where(models.WorkHistory.staff_id == staff_id))
 
     # 2. Delete staff
-    await db.delete(staff)
+    stmt_del = delete(models.Staff).where(models.Staff.id == staff_id)
+    result = await db.execute(stmt_del)
+    
     await db.commit()
-    return True
+    return result.rowcount > 0
 
 async def save_staff_file(file: UploadFile) -> str:
     """
@@ -346,4 +408,13 @@ async def save_staff_file(file: UploadFile) -> str:
     
     # Return relative path for URL building
     return f"staff/{unique_filename}"
-
+
+
+# -----------------------------
+# GET UNIQUE CITIES
+# -----------------------------
+async def get_unique_cities(db: AsyncSession):
+    stmt = select(models.Staff.city).distinct().where(models.Staff.city != None, models.Staff.city != "")
+    result = await db.execute(stmt)
+    return [c for (c,) in result.all()]
+

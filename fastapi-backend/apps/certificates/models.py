@@ -50,7 +50,7 @@ class CertificateTemplate(Base):
     banner_image = Column(String(500), nullable=True)
     # Use native_enum=False to store enum values (e.g., 'id_card') instead of enum names (e.g., 'ID_CARD')
     # create_constraint=False prevents SQLAlchemy from creating a CHECK constraint
-    category = Column(SQLEnum(CertificateCategory, native_enum=False, length=50, create_constraint=False), nullable=False)
+    category = Column(SQLEnum(CertificateCategory, native_enum=False, length=50, create_constraint=False), nullable=False, index=True)
 
     template_type = Column(SQLEnum(TemplateType, native_enum=False, length=20, create_constraint=False), default=TemplateType.IMAGE, nullable=False)
     template_variant = Column(String(100), nullable=True, default=None, index=True)  # UI template variant/type (e.g., "modern", "classic", "minimal", "v1", "v2")
@@ -60,7 +60,7 @@ class CertificateTemplate(Base):
 
     created_by = Column(Integer, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
-    is_public = Column(Boolean, default=False, nullable=False)  # Certificates are private by default
+    is_public = Column(Boolean, default=False, nullable=False, index=True)  # Certificates are private by default
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
@@ -120,7 +120,7 @@ class CertificateBase(Base):
     certificate_pdf = Column(Text, nullable=True)
     certificate_data = Column(JSON, default=dict, nullable=False)
 
-    is_public = Column(Boolean, default=False, nullable=False)  # Certificates are private by default
+    is_public = Column(Boolean, default=False, nullable=False, index=True)  # Certificates are private by default
     generated_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 

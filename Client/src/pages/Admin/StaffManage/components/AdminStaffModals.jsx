@@ -80,16 +80,16 @@ export const HistoryModal = ({ staff, history, allSpasMap, onClose }) => (
                                 <div className="space-y-3">
                                     {isTransfer ? (
                                         <div className="flex items-center gap-2 flex-wrap text-sm font-black">
-                                            <span className="text-gray-900">{allSpasMap[event.spa_id] || `Branch #${event.spa_id}`}</span>
+                                            <span className="text-gray-900">{allSpasMap[event.spa_id]?.name || `Branch #${event.spa_id}`}</span>
                                             <FaArrowRight className="text-gray-300 animate-pulse" size={10} />
                                             <span className="text-blue-600 bg-blue-50 px-2.5 py-1 rounded-xl border border-blue-100/30">
-                                                {allSpasMap[event.to_spa_id] || `Branch #${event.to_spa_id}`}
+                                                {allSpasMap[event.to_spa_id]?.name || `Branch #${event.to_spa_id}`}
                                             </span>
                                         </div>
                                     ) : (
                                         <div className="text-sm font-black text-gray-900 flex items-center gap-2">
                                             <span className="w-1.5 h-1.5 bg-gray-300 rounded-full"></span>
-                                            {allSpasMap[event.spa_id] || `Branch #${event.spa_id}`}
+                                            {allSpasMap[event.spa_id]?.name || `Branch #${event.spa_id}`}
                                         </div>
                                     )}
 

@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 import logging
 import traceback
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -57,3 +58,28 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
             
             return response
 
+
+class PerformanceMiddleware(BaseHTTPMiddleware):
+    """Middleware to track and log request processing time"""
+    
+    async def dispatch(self, request: Request, call_next):
+        start_time = time.perf_counter()
+        
+        response = await call_next(request)
+        
+        process_time = time.perf_counter() - start_time
+        ms = process_time * 1000
+        
+        # Add processing time to response headers
+        response.headers["X-Process-Time"] = f"{ms:.2f}ms"
+        
+        # Log slow requests or all requests based on threshold
+        # Using 500ms as a threshold for "Slow" warning, but logging all for now to help optimization
+        log_msg = f"{request.method} {request.url.path} - Time: {ms:.2f}ms - Status: {response.status_code}"
+        
+        if ms > 200:
+            logger.warning(f"SLOW REQUEST: {log_msg}")
+        else:
+            logger.info(log_msg)
+            
+        return response

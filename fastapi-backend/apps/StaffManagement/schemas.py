@@ -38,6 +38,7 @@ class StaffBase(BaseModel):
     passport_photo: Optional[str] = None
 
     address: Optional[str] = None
+    city:Optional[str] =None
     gender: Optional[str] = None
 
     # Emergency Contact
@@ -62,6 +63,7 @@ class StaffUpdate(BaseModel):
     phone: Optional[str] = None
     gender: Optional[str] = None
     address: Optional[str] = None
+    city:Optional[str] = None
     emergency_contact_name: Optional[str] = None
     emergency_contact_number: Optional[str] = None
     designation: Optional[str] = None
@@ -197,4 +199,15 @@ class StaffAnalyticsResponse(BaseModel):
     today_new_join: int
     today_re_join: int
     today_transfer_out: int
-    today_leave: int
+    today_leave: int
+
+
+# ==============================
+# 📄 PAGINATED RESPONSE
+# ==============================
+
+class PaginatedStaffResponse(BaseModel):
+    items: List[StaffResponse]
+    total: int
+    skip: int
+    limit: int

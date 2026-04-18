@@ -183,7 +183,7 @@ async def create_query_endpoint(
     """Create a new query"""
     try:
         query = await create_query(db, query_data, current_user.id)
-        enriched = await enrich_query_with_relations(db, query)
+        enriched = enrich_query_with_relations(query)
         return QueryResponse(**enriched)
     except NotFoundError as e:
         raise HTTPException(
@@ -232,14 +232,8 @@ async def get_queries_endpoint(
             limit=page_size
         )
         
-        # Enrich queries with relations
-        enriched_queries = []
-        for query in queries:
-            enriched = await enrich_query_with_relations(db, query)
-            enriched_queries.append(QueryResponse(**enriched))
-        
         return QueryListResponse(
-            queries=enriched_queries,
+            queries=queries,  # Already enriched list of dicts
             total=total,
             page=page,
             page_size=page_size
@@ -274,7 +268,7 @@ async def get_query_endpoint(
                 detail=f"Query with id {query_id} not found or access denied"
             )
         
-        enriched = await enrich_query_with_relations(db, query)
+        enriched = enrich_query_with_relations(query)
         return QueryResponse(**enriched)
     except HTTPException:
         raise
@@ -302,7 +296,7 @@ async def update_query_endpoint(
     try:
         user_role = current_user.role.value if hasattr(current_user.role, 'value') else str(current_user.role)
         query = await update_query(db, query_id, query_data, current_user.id, user_role)
-        enriched = await enrich_query_with_relations(db, query)
+        enriched = enrich_query_with_relations(query)
         return QueryResponse(**enriched)
     except NotFoundError as e:
         raise HTTPException(
