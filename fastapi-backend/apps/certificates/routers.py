@@ -105,6 +105,18 @@ async def remove_background_endpoint(
                 detail="File must be an image. Supported formats: JPEG, PNG, WEBP, etc."
             )
         
+        # Check file size
+        from config.settings import settings
+        file.file.seek(0, 2)  # Seek to end
+        file_size = file.file.tell()
+        await file.seek(0)    # Reset to start
+        
+        if file_size > settings.MAX_UPLOAD_SIZE:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Image too large. Maximum size allowed is {settings.MAX_UPLOAD_SIZE / (1024 * 1024)} MB"
+            )
+            
         # Read file content
         image_data = await file.read()
         

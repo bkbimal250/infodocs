@@ -402,9 +402,22 @@ async def save_staff_file(file: UploadFile) -> str:
     unique_filename = f"staff_{uuid.uuid4()}{extension}"
     file_path = upload_dir / unique_filename
     
-    # Write file asynchronously
+    # Check file size without reading into memory
+    from fastapi import HTTPException, status
+    file.file.seek(0, os.SEEK_END)
+    file_size = file.file.tell()
+    await file.seek(0)  # Reset file pointer to beginning
+    
+    if file_size > settings.MAX_UPLOAD_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"File too large. Maximum size allowed is {settings.MAX_UPLOAD_SIZE / (1024 * 1024)} MB"
+        )
+        
+    # Write file asynchronously in chunks
     async with aiofiles.open(file_path, "wb") as buffer:
-        await buffer.write(await file.read())
+        while content := await file.read(1024 * 1024):  # Read in 1MB chunks
+            await buffer.write(content)
     
     # Return relative path for URL building
     return f"staff/{unique_filename}"

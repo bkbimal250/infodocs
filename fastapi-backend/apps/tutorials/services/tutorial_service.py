@@ -10,11 +10,13 @@ from fastapi import HTTPException, status, UploadFile
 from pathlib import Path
 import uuid
 import os
+import aiofiles
 from datetime import datetime
 
 from apps.tutorials.models import Tutorial
 from apps.tutorials.schemas import TutorialCreate, TutorialUpdate
 from core.exceptions import NotFoundError
+from config.settings import settings
 
 
 # Video upload directory
@@ -24,10 +26,10 @@ TUTORIAL_VIDEOS_DIR.mkdir(parents=True, exist_ok=True)
 
 # Allowed video formats
 ALLOWED_VIDEO_FORMATS = {'.mp4', '.webm', '.ogg', '.mov', '.avi', '.mkv'}
-MAX_VIDEO_SIZE = 1024 * 1024 * 1024  # 1 GB
+MAX_VIDEO_SIZE = settings.MAX_UPLOAD_SIZE  # Use global max upload size (500 MB)
 
 
-def save_video_file(file: UploadFile) -> dict:
+async def save_video_file(file: UploadFile) -> dict:
     """
     Save uploaded video file and return file information
     Returns: dict with 'file_path', 'file_size', 'format'
@@ -44,20 +46,22 @@ def save_video_file(file: UploadFile) -> dict:
     unique_filename = f"{uuid.uuid4()}{file_ext}"
     file_path = TUTORIAL_VIDEOS_DIR / unique_filename
     
-    # Read and save file
-    content = file.file.read()
-    file_size = len(content)
+    # Check file size without reading into memory
+    file.file.seek(0, os.SEEK_END)
+    file_size = file.file.tell()
+    await file.seek(0)  # Reset file pointer to beginning
     
     # Check file size
     if file_size > MAX_VIDEO_SIZE:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Video file too large. Maximum size: {MAX_VIDEO_SIZE / (1024 * 1024 * 1024)} GB"
+            detail=f"Video file too large. Maximum size: {MAX_VIDEO_SIZE / (1024 * 1024)} MB"
         )
     
-    # Write file
-    with open(file_path, "wb") as buffer:
-        buffer.write(content)
+    # Write file asynchronously in chunks
+    async with aiofiles.open(file_path, "wb") as buffer:
+        while content := await file.read(1024 * 1024):  # Read in 1MB chunks
+            await buffer.write(content)
     
     # Return relative path from uploads directory
     relative_path = file_path.relative_to(UPLOAD_DIR)
@@ -101,7 +105,7 @@ async def create_tutorial(
     
     # Handle video file upload
     if video_file:
-        video_info = save_video_file(video_file)
+        video_info = await save_video_file(video_file)
         tutorial_dict['video_file_path'] = video_info['file_path']
         tutorial_dict['video_file_size'] = video_info['file_size']
         tutorial_dict['video_format'] = video_info['format']
@@ -193,7 +197,7 @@ async def update_tutorial(
             delete_video_file(tutorial.video_file_path)
         
         # Save new video file
-        video_info = save_video_file(video_file)
+        video_info = await save_video_file(video_file)
         update_data['video_file_path'] = video_info['file_path']
         update_data['video_file_size'] = video_info['file_size']
         update_data['video_format'] = video_info['format']

@@ -63,9 +63,21 @@ async def save_uploaded_file(file: UploadFile, subdirectory: str = "") -> str:
     save_dir.mkdir(parents=True, exist_ok=True)
     file_path = save_dir / unique_filename
     
+    # Check file size without reading into memory
+    from config.settings import settings
+    file.file.seek(0, os.SEEK_END)
+    file_size = file.file.tell()
+    await file.seek(0)  # Reset file pointer to beginning
+    
+    if file_size > settings.MAX_UPLOAD_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"File too large. Maximum size allowed is {settings.MAX_UPLOAD_SIZE / (1024 * 1024)} MB"
+        )
+        
     async with aiofiles.open(file_path, "wb") as buffer:
-        content = await file.read()
-        await buffer.write(content)
+        while content := await file.read(1024 * 1024):  # Read in 1MB chunks
+            await buffer.write(content)
     
     # Return relative path from UPLOAD_DIR for easier serving
     relative_path = file_path.relative_to(UPLOAD_DIR)
