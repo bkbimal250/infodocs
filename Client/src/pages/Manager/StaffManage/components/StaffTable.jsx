@@ -13,7 +13,7 @@ const StaffTable = ({
   executeDeleteStaff,
   setShowLeave,
   currentPage = 1,
-  itemsPerPage = 10,
+  itemsPerPage = 50,
   totalItems = 0,
   onPageChange
 }) => {

@@ -202,8 +202,8 @@ export const adminApi = {
      * Get all users
      * @returns {Promise}
      */
-    getUsers: () => {
-      return apiClient.get('/users');
+    getUsers: (params = {}) => {
+      return apiClient.get('/users', { params });
     },
 
     /**

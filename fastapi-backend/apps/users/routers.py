@@ -650,7 +650,7 @@ async def update_current_user_profile(
 @users_router.get("", response_model=list[UserResponseSchema])
 async def list_users(
     skip: int = 0,
-    limit: int = 100,
+    limit: int = 1000,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_role("admin", "super_admin"))
 ):

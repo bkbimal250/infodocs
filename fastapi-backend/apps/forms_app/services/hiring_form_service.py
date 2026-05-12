@@ -52,7 +52,7 @@ async def get_hiring_form_by_id(db: AsyncSession, form_id: int) -> Optional[Hiri
 async def get_all_hiring_forms(
     db: AsyncSession,
     skip: int = 0,
-    limit: int = 100,
+    limit: int = 1000,
     created_by: Optional[int] = None,
     exclude_hr_admin: bool = False
 ) -> list[Hiring_Form]:
@@ -142,7 +142,7 @@ async def delete_hiring_form(db: AsyncSession, form_id: int) -> bool:
     return True
 
 
-async def get_all_hiring_forms_with_users(db: AsyncSession, skip: int = 0, limit: int = 100):
+async def get_all_hiring_forms_with_users(db: AsyncSession, skip: int = 0, limit: int = 1000):
     """Get all hiring forms with user and SPA information"""
     from apps.users.models import User
     from sqlalchemy.orm import selectinload

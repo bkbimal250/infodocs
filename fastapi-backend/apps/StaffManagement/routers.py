@@ -35,7 +35,7 @@ async def get_all_staff(
     from_date: Optional[date] = Query(None, description="Filter from joining date"),
     to_date: Optional[date] = Query(None, description="Filter to joining date"),
     skip: int = Query(0, description="Records to skip"),
-    limit: int = Query(100, description="Maximum records to return"),
+    limit: int = Query(1000, description="Maximum records to return"),
     current_user: User = Depends(require_role("admin", "hr", "spa_manager", "super_admin")),
     db: AsyncSession = Depends(get_db)
 ):

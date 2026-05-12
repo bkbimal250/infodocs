@@ -195,7 +195,7 @@ async def update_user(db: AsyncSession, user_id: int, update_data: dict) -> User
     return user
 
 
-async def get_all_users(db: AsyncSession, skip: int = 0, limit: int = 100) -> List[User]:
+async def get_all_users(db: AsyncSession, skip: int = 0, limit: int = 1000) -> List[User]:
     """Get all users with pagination"""
     stmt = select(User).offset(skip).limit(limit)
     result = await db.execute(stmt)

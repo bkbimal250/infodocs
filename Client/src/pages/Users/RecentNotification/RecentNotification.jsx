@@ -16,7 +16,7 @@ const RecentNotification = () => {
   const [filter, setFilter] = useState('all'); // 'all', 'unread', 'read'
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const itemsPerPage = 15;
+  const itemsPerPage = 50;
 
   useEffect(() => {
     loadNotifications();

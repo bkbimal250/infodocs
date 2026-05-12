@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { adminApi } from '../../../api/Admin/adminApi';
 import UsersTable from './Userstable';
 import UserFilter from './UserFilter';
+import UsersStats from './Usersstats';
 import Pagination from '../../common/Pagination';
 
 /**
@@ -20,7 +21,7 @@ const AdminUsers = () => {
     role: '',
     status: '',
   });
-  const itemsPerPage = 15;
+  const itemsPerPage = 50;
 
   useEffect(() => {
     loadUsers();
@@ -29,7 +30,7 @@ const AdminUsers = () => {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const response = await adminApi.users.getUsers();
+      const response = await adminApi.users.getUsers({ limit: 1000 });
       const usersData = response.data || [];
       setAllUsers(usersData);
       setError(null);
@@ -147,6 +148,9 @@ const AdminUsers = () => {
             {error}
           </div>
         )}
+
+        {/* Statistics */}
+        <UsersStats users={allUsers} />
 
         {/* Filters */}
         <UserFilter

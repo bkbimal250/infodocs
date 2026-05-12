@@ -35,6 +35,7 @@ from apps.certificates.services.pdf_generator import (
     save_certificate_file,
     save_base64_image
 )
+from apps.forms_app.services.spa_service import get_spa_by_id
 from core.exceptions import NotFoundError, ValidationError
 from config.settings import settings
 
@@ -170,7 +171,7 @@ async def get_template_by_id(db: AsyncSession, template_id: int, use_cache: bool
     return template
 
 
-async def get_all_templates(db: AsyncSession, skip: int = 0, limit: int = 100) -> List[CertificateTemplate]:
+async def get_all_templates(db: AsyncSession, skip: int = 0, limit: int = 1000) -> List[CertificateTemplate]:
     """Get all certificate templates (admin only)"""
     stmt = select(CertificateTemplate).order_by(CertificateTemplate.created_at.desc()).offset(skip).limit(limit)
     result = await db.execute(stmt)
@@ -935,6 +936,33 @@ async def create_generated_certificate(
 
     spa_payload = certificate_payload.get("spa") or {}
     spa_id = certificate_payload.get("spa_id") or spa_payload.get("id")
+
+    # If spa_id is provided, fetch the full SPA details from the database
+    # to ensure fields like gst_number, address, and logo are available for template rendering
+    if spa_id:
+        spa_obj = await get_spa_by_id(db, spa_id)
+        if spa_obj:
+            # Create a dict from SPA object to merge into payload
+            spa_db_data = {
+                "id": spa_obj.id,
+                "name": spa_obj.name,
+                "code": spa_obj.code,
+                "address": spa_obj.address,
+                "city": spa_obj.city,
+                "area": spa_obj.area,
+                "state": spa_obj.state,
+                "pincode": spa_obj.pincode,
+                "phone_number": spa_obj.phone_number,
+                "alternate_number": spa_obj.alternate_number,
+                "email": spa_obj.email,
+                "website": spa_obj.website,
+                "logo": spa_obj.logo,
+                "gst_number": spa_obj.gst_number
+            }
+            # Merge DB data with payload (payload takes precedence if it has specific values)
+            merged_spa = {**spa_db_data, **spa_payload}
+            certificate_payload["spa"] = merged_spa
+            logger.info(f"Populated certificate payload with SPA details for SPA ID: {spa_id}, GST: {spa_db_data.get('gst_number')}")
 
     if template.category in SPA_REQUIRED_CATEGORIES and not spa_id:
         raise ValidationError("SPA selection is required for this certificate")

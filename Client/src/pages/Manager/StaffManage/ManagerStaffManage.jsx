@@ -27,7 +27,7 @@ const ManagerStaffManage = () => {
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 50;
 
   // Modals
   const [showHistory, setShowHistory] = useState(null);

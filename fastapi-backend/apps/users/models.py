@@ -2,11 +2,14 @@
 User Models for MySQL (SQLAlchemy ORM)
 """
 from datetime import datetime
+# pyrefly: ignore [missing-import]
 from sqlalchemy import (
     Column, Integer, String, Boolean, DateTime,
     Enum as SQLEnum, ForeignKey, Text, JSON, Table
 )
+# pyrefly: ignore [missing-import]
 from sqlalchemy.orm import relationship
+# pyrefly: ignore [missing-import]
 from sqlalchemy.sql import func
 from enum import Enum as PyEnum
 from config.database import Base

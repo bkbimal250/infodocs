@@ -16,7 +16,7 @@ const RecentActivity = () => {
   const [activeTab, setActiveTab] = useState('activities'); // 'activities' or 'login'
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const itemsPerPage = 15;
+  const itemsPerPage = 50;
 
   useEffect(() => {
     if (activeTab === 'activities') {

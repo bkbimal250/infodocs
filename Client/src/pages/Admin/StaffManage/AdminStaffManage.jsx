@@ -40,7 +40,7 @@ const AdminStaffManage = () => {
   });
 
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 50;
 
   const [showHistory, setShowHistory] = useState(null);
   const [showTransfer, setShowTransfer] = useState(null);

@@ -10,7 +10,7 @@ const Pagination = ({
   totalPages = 1,
   onPageChange,
   totalItems = 0,
-  itemsPerPage = 10,
+  itemsPerPage = 50,
   showInfo = true
 }) => {
   const startItem = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
@@ -67,8 +67,8 @@ const Pagination = ({
           <div className="flex items-center -space-x-1">
             <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>
           </div>
-          <p className="text-[10px] font-black text-gray-400  tracking-[0.2em]">
-            Displaying <span className="text-gray-900">{startItem} — {endItem}</span> of <span className="text-gray-900">{totalItems}</span> personnel
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+            Displaying <span className="text-gray-900 font-black">{startItem} — {endItem}</span> of <span className="text-gray-900 font-black">{totalItems}</span> records
           </p>
         </div>
       )}
@@ -94,10 +94,10 @@ const Pagination = ({
                   onClick={() => typeof page === 'number' && handlePageChange(page)}
                   disabled={page === '...'}
                   className={`min-w-[40px] h-[40px] flex items-center justify-center rounded-xl text-[10px] font-black transition-all ${page === currentPage
-                      ? 'bg-gray-900 text-white shadow-xl shadow-gray-200 scale-105 z-10'
-                      : page === '...'
-                        ? 'text-gray-300 cursor-default'
-                        : 'text-gray-400 hover:text-gray-900 hover:bg-gray-50'
+                    ? 'bg-gray-900 text-white shadow-xl shadow-gray-200 scale-105 z-10'
+                    : page === '...'
+                      ? 'text-gray-300 cursor-default'
+                      : 'text-gray-400 hover:text-gray-900 hover:bg-gray-50'
                     }`}
                 >
                   {page}

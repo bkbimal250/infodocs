@@ -20,7 +20,7 @@ const Spas = () => {
   };
 
   const currentPage = parseInt(searchParams.get('page') || '1', 10);
-  const itemsPerPage = 8; // Smaller page size for better UI with more filters
+  const itemsPerPage = 50;
 
   useEffect(() => {
     // Initial load to get all data (for stats and filter options)

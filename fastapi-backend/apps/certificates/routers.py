@@ -340,6 +340,7 @@ async def preview_certificate(
                 cert_data["spa"]["id"] = spa_obj.id
                 cert_data["spa"]["name"] = spa_obj.name or cert_data["spa"].get("name", "")
                 cert_data["spa"]["address"] = spa_obj.address or cert_data["spa"].get("address", "")
+                cert_data["spa"]["gst_number"] = spa_obj.gst_number or cert_data["spa"].get("gst_number", "")
             else:
                 # Create full spa object from database
                 cert_data["spa"] = {
@@ -465,6 +466,7 @@ async def generate_certificate_async(
                      cert_data["spa"]["id"] = spa_obj.id
                      cert_data["spa"]["name"] = spa_obj.name or ""
                      cert_data["spa"]["address"] = spa_obj.address or ""
+                     cert_data["spa"]["gst_number"] = spa_obj.gst_number or ""
                 else:
                     cert_data["spa"] = {
                         "id": spa_obj.id,
@@ -554,6 +556,7 @@ async def generate_certificate(
                     cert_data["spa"]["id"] = spa_obj.id
                     cert_data["spa"]["name"] = spa_obj.name or cert_data["spa"].get("name", "")
                     cert_data["spa"]["address"] = spa_obj.address or cert_data["spa"].get("address", "")
+                    cert_data["spa"]["gst_number"] = spa_obj.gst_number or cert_data["spa"].get("gst_number", "")
                 else:
                     # Create full spa object from database
                     cert_data["spa"] = {
@@ -619,7 +622,7 @@ async def generate_certificate(
 @certificates_router.get("/generated/public", response_model=List[GeneratedCertificateResponse])
 async def list_public_certificates(
     skip: int = 0,
-    limit: int = 100,
+    limit: int = 1000,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
@@ -708,7 +711,7 @@ def convert_certificate_to_response(certificate):
 @certificates_router.get("/generated/my-certificates", response_model=List[GeneratedCertificateResponse])
 async def list_my_certificates(
     skip: int = 0,
-    limit: int = 100,
+    limit: int = 1000,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
@@ -850,6 +853,7 @@ async def download_certificate_pdf(
                 cert_data["spa"]["id"] = spa_obj.id
                 cert_data["spa"]["name"] = spa_obj.name or cert_data["spa"].get("name", "")
                 cert_data["spa"]["address"] = spa_obj.address or cert_data["spa"].get("address", "")
+                cert_data["spa"]["gst_number"] = spa_obj.gst_number or cert_data["spa"].get("gst_number", "")
             else:
                 # Create full spa object from database
                 cert_data["spa"] = {
@@ -866,6 +870,7 @@ async def download_certificate_pdf(
                     "email": spa_obj.email or "",
                     "website": spa_obj.website or "",
                     "logo": spa_obj.logo or "",
+                    "gst_number": spa_obj.gst_number or "",
                 }
             cert_data["spa_id"] = spa_obj.id
     

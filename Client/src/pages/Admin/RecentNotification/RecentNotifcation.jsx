@@ -27,7 +27,7 @@ const RecentNotification = () => {
   const [filter, setFilter] = useState('all'); // all, unread, login, otp, password_reset, certificate
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
-  const itemsPerPage = 20;
+  const itemsPerPage = 50;
 
   useEffect(() => {
     loadNotifications();

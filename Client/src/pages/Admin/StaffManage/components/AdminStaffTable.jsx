@@ -15,7 +15,7 @@ const AdminStaffTable = ({
     setShowLeave,
     // Pagination Props
     currentPage = 1,
-    itemsPerPage = 10,
+    itemsPerPage = 50,
     totalItems = 0,
     onPageChange
 }) => {

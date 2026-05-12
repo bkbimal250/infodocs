@@ -16,22 +16,31 @@ import React from 'react';
 
 const getRoleBadgeColor = (role) => {
   switch (role?.toLowerCase()) {
+    case 'super_admin':
+      return 'bg-indigo-100 text-indigo-700 border border-indigo-200';
     case 'admin':
-      return 'bg-purple-100 text-purple-800';
-    case 'manager':
-      return 'bg-blue-100 text-blue-800';
+      return 'bg-purple-100 text-purple-700 border border-purple-200';
+    case 'spa_manager':
+      return 'bg-blue-100 text-blue-700 border border-blue-200';
     case 'hr':
-      return 'bg-pink-100 text-pink-800';
-    case 'employee':
-      return 'bg-green-100 text-green-800';
+      return 'bg-amber-100 text-amber-700 border border-amber-200';
+    case 'user':
+      return 'bg-emerald-100 text-emerald-700 border border-emerald-200';
     default:
-      return 'bg-gray-100 text-gray-800';
+      return 'bg-gray-100 text-gray-700 border border-gray-200';
   }
 };
 
 const getRoleDisplay = (role) => {
   if (!role) return 'Unknown';
-  return role.charAt(0).toUpperCase() + role.slice(1);
+  const roleMap = {
+    'super_admin': 'Super Admin',
+    'admin': 'Administrator',
+    'spa_manager': 'SPA Manager',
+    'hr': 'HR Manager',
+    'user': 'Staff User'
+  };
+  return roleMap[role.toLowerCase()] || role.charAt(0).toUpperCase() + role.slice(1);
 };
 
 const UsersTable = React.memo(({ users, onEdit, onDelete, loading = false }) => {

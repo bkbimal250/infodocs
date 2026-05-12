@@ -14,7 +14,7 @@ const SpaTable = ({
   totalPages = 1,
   onPageChange,
   totalItems = 0,
-  itemsPerPage = 15
+  itemsPerPage = 50
 }) => {
   if (loading) {
     return (

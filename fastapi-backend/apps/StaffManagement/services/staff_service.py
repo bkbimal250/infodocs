@@ -119,7 +119,7 @@ async def get_all_staff(
     from_date: Optional[date] = None,
     to_date: Optional[date] = None,
     skip: int = 0,
-    limit: int = 100
+    limit: int = 1000
 ):
     from sqlalchemy.orm import load_only
     from sqlalchemy import or_

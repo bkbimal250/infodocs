@@ -557,7 +557,7 @@ async def serve_file(file_path: str, request: Request):
 @forms_router.get("/hiring-forms", response_model=List[HiringFormResponse])
 async def list_hiring_forms(
     skip: int = 0,
-    limit: int = 100,
+    limit: int = 1000,
     created_by: Optional[int] = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_role("admin", "super_admin", "spa_manager", "hr", "user"))
@@ -689,7 +689,7 @@ async def get_forms_statistics_endpoint(
 @forms_router.get("/admin/hiring-forms")
 async def get_all_hiring_forms_admin(
     skip: int = 0,
-    limit: int = 100,
+    limit: int = 1000,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_role("admin", "super_admin"))
 ):
