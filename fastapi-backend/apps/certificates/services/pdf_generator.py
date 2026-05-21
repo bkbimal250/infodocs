@@ -205,147 +205,241 @@ async def _html_to_pdf_xhtml2pdf(html_content: str, output_path: Optional[str] =
         raise
 
 
-
 # ============================================================
 # TEMPLATE RENDERING ENGINE
 # ============================================================
 
-async def render_html_template(template_html: str, data: Dict[str, Any]) -> str:
+async def render_html_template(
+    template_html: str,
+    data: Dict[str, Any]
+) -> str:
     """
     Enhanced HTML template rendering with nested data support
-    
+
     Supports:
-    - {{variable}} - Simple variables
-    - {{object.property}} - Nested objects
-    - {{#if variable}}...{{/if}} - Conditional rendering
-    - {{#each items}}...{{/each}} - Loop rendering
-    
-    Args:
-        template_html: HTML template string with placeholders
-        data: Dictionary of data to fill in template
-    
-    Returns:
-        Rendered HTML string
+    - {{variable}}
+    - {{object.property}}
+    - {{#if variable}}...{{/if}}
+    - {{#each items}}...{{/each}}
     """
+
     if not template_html:
         raise ValueError("Template HTML cannot be empty")
-    
+
     try:
         rendered = template_html
-        
-        # Step 1: Handle conditionals {{#if variable}}...{{/if}}
+
+        # Step 1: Handle conditionals
         rendered = _render_conditionals(rendered, data)
-        
-        # Step 2: Handle loops {{#each items}}...{{/each}}
+
+        # Step 2: Handle loops
         rendered = _render_loops(rendered, data)
-        
-        # Step 3: Replace simple variables {{variable}}
+
+        # Step 3: Replace variables
         rendered = _render_variables(rendered, data)
-        
-        # Step 4: Clean up any remaining unmatched placeholders
-        rendered = re.sub(r'\{\{[^}]+\}\}', '', rendered)
-        
+
+        # Step 4: Cleanup unused placeholders
+        rendered = re.sub(r"\{\{[^}]+\}\}", "", rendered)
+
         return rendered
-        
+
     except Exception as e:
-        logger.error(f"Template rendering error: {str(e)}", exc_info=True)
-        raise RuntimeError(f"Template rendering failed: {str(e)}") from e
+        logger.error(
+            f"Template rendering error: {str(e)}",
+            exc_info=True
+        )
+
+        raise RuntimeError(
+            f"Template rendering failed: {str(e)}"
+        ) from e
 
 
-async def _render_variables(template: str, data: Dict[str, Any]) -> str:
-    """Replace {{variable}} and {{object.property}} placeholders"""
-    
-    async def replace_placeholder(match):
+# ============================================================
+# VARIABLE RENDERING
+# ============================================================
+
+def _render_variables(
+    template: str,
+    data: Dict[str, Any]
+) -> str:
+    """
+    Replace:
+    {{variable}}
+    {{object.property}}
+    """
+
+    def replace_placeholder(match):
+
         key_path = match.group(1).strip()
-        
-        # Handle nested keys (e.g., spa.name)
-        keys = key_path.split('.')
+
+        keys = key_path.split(".")
+
         value = data
-        
+
         try:
+
             for key in keys:
+
                 if isinstance(value, dict):
-                    value = value.get(key, '')
+                    value = value.get(key, "")
                 else:
-                    value = getattr(value, key, '')
-            
-            # Convert to string, handle None
-            return str(value) if value is not None else ''
-        except Exception as e:
-            logger.warning(f"Could not resolve placeholder: {key_path}")
-            return ''
-    
-    # Replace all {{...}} placeholders
-    return re.sub(r'\{\{([^#/][^}]*)\}\}', replace_placeholder, template)
+                    value = getattr(value, key, "")
+
+            if value is None:
+                return ""
+
+            return str(value)
+
+        except Exception:
+            logger.warning(
+                f"Could not resolve placeholder: {key_path}"
+            )
+
+            return ""
+
+    return re.sub(
+        r"\{\{([^#/][^}]*)\}\}",
+        replace_placeholder,
+        template
+    )
 
 
-async def _render_conditionals(template: str, data: Dict[str, Any]) -> str:
-    """Handle {{#if variable}}...{{else}}...{{/if}} blocks"""
-    
-    async def replace_conditional(match):
+# ============================================================
+# CONDITIONAL RENDERING
+# ============================================================
+
+def _render_conditionals(
+    template: str,
+    data: Dict[str, Any]
+) -> str:
+    """
+    Handle:
+    {{#if variable}}...{{/if}}
+    {{#if variable}}...{{else}}...{{/if}}
+    """
+
+    def replace_conditional(match):
+
         var_name = match.group(1).strip()
+
         content = match.group(2)
-        
-        # Get variable value
-        value = _get_nested_value(data, var_name)
-        
-        # Check if content has {{else}} clause
-        if '{{else}}' in content:
-            if_content, else_content = content.split('{{else}}', 1)
-            # Render if content if value is truthy, else render else content
+
+        value = _get_nested_value(
+            data,
+            var_name
+        )
+
+        if "{{else}}" in content:
+
+            if_content, else_content = content.split(
+                "{{else}}",
+                1
+            )
+
             return if_content if value else else_content
-        else:
-            # Render content if value is truthy
-            return content if value else ''
-    
-    # Match {{#if variable}}...{{/if}} (with optional {{else}})
-    pattern = r'\{\{#if\s+([^}]+)\}\}(.*?)\{\{/if\}\}'
-    return re.sub(pattern, replace_conditional, template, flags=re.DOTALL)
+
+        return content if value else ""
+
+    pattern = r"\{\{#if\s+([^}]+)\}\}(.*?)\{\{/if\}\}"
+
+    return re.sub(
+        pattern,
+        replace_conditional,
+        template,
+        flags=re.DOTALL
+    )
 
 
-async def _render_loops(template: str, data: Dict[str, Any]) -> str:
-    """Handle {{#each items}}...{{/each}} blocks"""
-    
-    async def replace_loop(match):
+# ============================================================
+# LOOP RENDERING
+# ============================================================
+
+def _render_loops(
+    template: str,
+    data: Dict[str, Any]
+) -> str:
+    """
+    Handle:
+    {{#each items}}...{{/each}}
+    """
+
+    def replace_loop(match):
+
         var_name = match.group(1).strip()
+
         loop_template = match.group(2)
-        
-        # Get array value
-        items = _get_nested_value(data, var_name)
-        
+
+        items = _get_nested_value(
+            data,
+            var_name
+        )
+
         if not items or not isinstance(items, (list, tuple)):
-            return ''
-        
-        # Render template for each item
+            return ""
+
         result = []
+
         for item in items:
-            # Create context with item data
+
             if isinstance(item, dict):
-                item_rendered = _render_variables(loop_template, item)
+
+                item_rendered = _render_variables(
+                    loop_template,
+                    item
+                )
+
             else:
-                item_rendered = loop_template.replace('{{this}}', str(item))
+
+                item_rendered = loop_template.replace(
+                    "{{this}}",
+                    str(item)
+                )
+
             result.append(item_rendered)
-        
-        return ''.join(result)
-    
-    # Match {{#each items}}...{{/each}}
-    pattern = r'\{\{#each\s+([^}]+)\}\}(.*?)\{\{/each\}\}'
-    return re.sub(pattern, replace_loop, template, flags=re.DOTALL)
+
+        return "".join(result)
+
+    pattern = r"\{\{#each\s+([^}]+)\}\}(.*?)\{\{/each\}\}"
+
+    return re.sub(
+        pattern,
+        replace_loop,
+        template,
+        flags=re.DOTALL
+    )
 
 
-async def _get_nested_value(data: Dict[str, Any], key_path: str) -> Any:
-    """Get value from nested dictionary using dot notation"""
-    keys = key_path.split('.')
+# ============================================================
+# NESTED VALUE GETTER
+# ============================================================
+
+def _get_nested_value(
+    data: Dict[str, Any],
+    key_path: str
+) -> Any:
+    """
+    Get nested dictionary/object value using dot notation
+    Example:
+    spa.name
+    user.profile.email
+    """
+
+    keys = key_path.split(".")
+
     value = data
-    
+
     try:
+
         for key in keys:
+
             if isinstance(value, dict):
                 value = value.get(key)
             else:
                 value = getattr(value, key, None)
+
         return value
-    except:
+
+    except Exception:
         return None
 
 

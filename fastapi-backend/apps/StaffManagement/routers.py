@@ -3,7 +3,7 @@ Staff Management Routers
 Exposes secure RESTful routes mapping API calls to backend services.
 """
 from typing import Optional, List
-from fastapi import APIRouter, Query, Path, status, UploadFile, File
+from fastapi import APIRouter, HTTPException, Query, Path, status, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession as Session
 
 from apps.StaffManagement.dependencies import (
@@ -149,18 +149,31 @@ async def update_staff_endpoint(
 
 @router.delete(
     "/{staff_uuid}",
-    response_model=StaffResponse,
-    summary="Soft-delete a staff record from current registries"
+    summary="Delete a staff record"
 )
-async def soft_delete_staff_endpoint(
+async def delete_staff_endpoint(
     staff_uuid: str = Path(..., description="Unique staff UUID identifier"),
     db: Session = db_dependency,
     current_user: User = current_user_dependency
 ):
     """
-    Performs a safe soft-delete.
-    Sets employment status to inactive, closes current spa branch work histories, and logs a resignation event.
+    Super Admin permanently deletes the staff record and child records.
+    Admin/HR/Manager keep the existing soft-delete audit behavior.
     """
+    role = current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role)
+
+    if role == "super_admin":
+        return await StaffService.hard_delete_staff(
+            db=db,
+            staff_uuid=staff_uuid
+        )
+
+    if role not in {"admin", "spa_manager", "hr"}:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to delete staff records."
+        )
+
     return await StaffService.soft_delete_staff(
         db=db,
         staff_uuid=staff_uuid,

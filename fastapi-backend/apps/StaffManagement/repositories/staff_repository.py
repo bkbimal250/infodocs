@@ -43,6 +43,19 @@ class StaffRepository:
         return result.scalar_one_or_none()
 
     @staticmethod
+    async def get_by_uuid_any_status(
+        db: Session,
+        staff_uuid: str,
+        include_relations: bool = True
+    ) -> Optional[Staff]:
+        """Fetches staff by UUID, including soft-deleted records."""
+        query = select(Staff).where(Staff.staff_uuid == staff_uuid)
+        if include_relations:
+            query = query.options(*StaffRepository.relation_loaders())
+        result = await db.execute(query)
+        return result.scalar_one_or_none()
+
+    @staticmethod
     async def get_by_id_for_response(db: Session, staff_id: int) -> Optional[Staff]:
         """Fetches staff by ID with response relationships, including just-mutated rows."""
         query = (
@@ -142,6 +155,12 @@ class StaffRepository:
         staff.employment_status = EmploymentStatusEnum.inactive
         await db.flush()
         return staff
+
+    @staticmethod
+    async def hard_delete(db: Session, staff: Staff) -> None:
+        """Permanently deletes staff and ORM-managed child rows."""
+        await db.delete(staff)
+        await db.flush()
 
     @staticmethod
     async def query_paginated(

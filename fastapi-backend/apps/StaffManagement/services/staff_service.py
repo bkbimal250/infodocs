@@ -5,6 +5,7 @@ Handles core registration, updates, soft deletion, and query routing for Staff m
 from datetime import datetime
 from typing import List, Optional, Tuple
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession as Session
 
 from apps.StaffManagement.models import Staff, EmploymentStatusEnum, StaffEventTypeEnum
@@ -29,49 +30,59 @@ class StaffService:
         Creates a new staff member and records joining events.
         Keeps staff entry lightweight and opens work history.
         """
-        # 1. Check duplicate phone
-        if data.phone:
-            existing_phone = await StaffRepository.get_by_phone(db, data.phone, include_relations=False)
-            if existing_phone:
-                raise DuplicateStaffError("phone", data.phone)
+        try:
+            # 1. Check duplicate phone
+            if data.phone:
+                existing_phone = await StaffRepository.get_by_phone(db, data.phone, include_relations=False)
+                if existing_phone:
+                    raise DuplicateStaffError("phone", data.phone)
 
 
-        # 4. Validate SPA ID if provided
-        if data.current_spa_id:
-            spa_stmt = select(SPA).where(SPA.id == data.current_spa_id)
-            spa_res = await db.execute(spa_stmt)
-            if not spa_res.scalar_one_or_none():
-                raise SpaNotFoundError(data.current_spa_id)
+            # 4. Validate SPA ID if provided
+            if data.current_spa_id:
+                spa_stmt = select(SPA).where(SPA.id == data.current_spa_id)
+                spa_res = await db.execute(spa_stmt)
+                if not spa_res.scalar_one_or_none():
+                    raise SpaNotFoundError(data.current_spa_id)
 
-        # 5. Save staff record
-        staff = await StaffRepository.create(
-            db=db,
-            data=data,
-            creator_id=creator_id
-        )
-
-        # 7. Add staff joining event
-        await VerificationRepository.create_event(
-            db=db,
-            staff_id=staff.id,
-            event_type=StaffEventTypeEnum.joined,
-            spa_id=staff.current_spa_id,
-            notes="Staff registered in system.",
-            created_by=creator_id
-        )
-
-        # 8. Open initial work history if a current SPA is assigned
-        if staff.current_spa_id:
-            await WorkHistoryRepository.create(
+            # 5. Save staff record
+            staff = await StaffRepository.create(
                 db=db,
-                staff_id=staff.id,
-                spa_id=staff.current_spa_id,
-                join_date=staff.joining_date or datetime.utcnow(),
-                notes="Initial assignment during registration."
+                data=data,
+                creator_id=creator_id
             )
 
-        # 9. Commit transaction and refresh with all relations loaded
-        return await StaffRepository.refresh_with_relations(db, staff)
+            # 7. Add staff joining event
+            await VerificationRepository.create_event(
+                db=db,
+                staff_id=staff.id,
+                event_type=StaffEventTypeEnum.joined,
+                spa_id=staff.current_spa_id,
+                notes="Staff registered in system.",
+                created_by=creator_id
+            )
+
+            # 8. Open initial work history if a current SPA is assigned
+            if staff.current_spa_id:
+                await WorkHistoryRepository.create(
+                    db=db,
+                    staff_id=staff.id,
+                    spa_id=staff.current_spa_id,
+                    join_date=staff.joining_date or datetime.utcnow(),
+                    notes="Initial assignment during registration."
+                )
+
+            # 9. Commit transaction and refresh with all relations loaded
+            return await StaffRepository.refresh_with_relations(db, staff)
+
+        except IntegrityError as exc:
+            await db.rollback()
+            if "phone" in str(exc.orig).lower():
+                raise DuplicateStaffError("phone", data.phone or "provided phone")
+            raise
+        except Exception:
+            await db.rollback()
+            raise
 
     @staticmethod
     async def update_staff(
@@ -217,35 +228,66 @@ class StaffService:
         Soft deletes the employee. Sets employment status to inactive, closes any open branch history,
         and logs a resigned audit event.
         """
-        staff = await StaffRepository.get_by_uuid(db, staff_uuid)
-        if not staff:
-            raise StaffNotFoundError(staff_uuid=staff_uuid)
+        try:
+            staff = await StaffRepository.get_by_uuid(db, staff_uuid)
+            if not staff:
+                raise StaffNotFoundError(staff_uuid=staff_uuid)
 
-        # 1. Close open work history sessions
-        active_hist = await WorkHistoryRepository.get_active_history(db, staff.id)
-        if active_hist:
-            await WorkHistoryRepository.close_history(
+            # 1. Close open work history sessions
+            active_hist = await WorkHistoryRepository.get_active_history(db, staff.id)
+            if active_hist:
+                await WorkHistoryRepository.close_history(
+                    db=db,
+                    history=active_hist,
+                    leave_date=datetime.utcnow(),
+                    is_transferred=False,
+                    notes="Terminated due to staff soft deletion."
+                )
+
+            # 2. Record resignation event
+            await VerificationRepository.create_event(
                 db=db,
-                history=active_hist,
-                leave_date=datetime.utcnow(),
-                is_transferred=False,
-                notes="Terminated due to staff soft deletion."
+                staff_id=staff.id,
+                event_type=StaffEventTypeEnum.resigned,
+                spa_id=staff.current_spa_id,
+                notes="Soft deleted from management index.",
+                created_by=deleter_id
             )
 
-        # 2. Record resignation event
-        await VerificationRepository.create_event(
-            db=db,
-            staff_id=staff.id,
-            event_type=StaffEventTypeEnum.resigned,
-            spa_id=staff.current_spa_id,
-            notes="Soft deleted from management index.",
-            created_by=deleter_id
-        )
+            # 3. Soft delete staff
+            staff.current_spa_id = None
+            updated_staff = await StaffRepository.soft_delete(db, staff)
+            return await StaffRepository.refresh_with_relations(db, updated_staff)
 
-        # 3. Soft delete staff
-        staff.current_spa_id = None
-        updated_staff = await StaffRepository.soft_delete(db, staff)
-        return await StaffRepository.refresh_with_relations(db, updated_staff)
+        except Exception:
+            await db.rollback()
+            raise
+
+    @staticmethod
+    async def hard_delete_staff(db: Session, staff_uuid: str) -> dict:
+        """
+        Permanently deletes a staff record and ORM-managed children.
+        Intended only for super admin operations to free unique fields such as phone.
+        """
+        try:
+            staff = await StaffRepository.get_by_uuid_any_status(db, staff_uuid, include_relations=True)
+            if not staff:
+                raise StaffNotFoundError(staff_uuid=staff_uuid)
+
+            deleted_staff = {
+                "success": True,
+                "message": "Staff permanently deleted",
+                "staff_uuid": staff.staff_uuid,
+                "phone": staff.phone,
+            }
+
+            await StaffRepository.hard_delete(db, staff)
+            await db.commit()
+            return deleted_staff
+
+        except Exception:
+            await db.rollback()
+            raise
 
     @staticmethod
     async def mark_staff_left(
