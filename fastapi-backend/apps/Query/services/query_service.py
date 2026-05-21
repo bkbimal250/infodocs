@@ -3,7 +3,7 @@ Query Service
 Business logic for query/support ticket operations
 """
 from typing import Optional, List, Tuple
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession as Session
 from sqlalchemy import select, and_, or_, func, desc, delete
 from sqlalchemy.orm import selectinload, joinedload
 
@@ -14,8 +14,8 @@ from apps.users.models import User
 from core.exceptions import NotFoundError, ValidationError
 
 
-async def create_query(
-    db: AsyncSession,
+async def  create_query(
+    db: Session,
     query_data: QueryCreate,
     created_by: int
 ) -> Query:
@@ -83,7 +83,7 @@ async def create_query(
 
 
 async def get_query_by_id(
-    db: AsyncSession,
+    db: Session,
     query_id: int,
     user_id: Optional[int] = None,
     user_role: Optional[str] = None
@@ -119,7 +119,7 @@ async def get_query_by_id(
 
 
 async def get_queries(
-    db: AsyncSession,
+    db: Session,
     user_id: Optional[int] = None,
     user_role: Optional[str] = None,
     status: Optional[str] = None,
@@ -176,10 +176,11 @@ async def get_queries(
 def enrich_query_with_relations(
     query: Query
 ) -> dict:
-    """
-    Enrich query with related data for response using pre-loaded attributes.
-    🚀 Optimized: Uses already loaded relationship objects to avoid N+1 queries.
-    Synchronous because all relationships should be pre-loaded via joinedload().
+    """Enrich query with related data for response using pre-loaded attributes.
+
+    Uses already loaded relationship objects to avoid N+1 queries. This
+    function is synchronous because it operates on relationship attributes
+    that should be pre-loaded via `joinedload` in the query service.
     """
     return {
         'id': query.id,
@@ -207,7 +208,7 @@ def enrich_query_with_relations(
 
 
 async def update_query(
-    db: AsyncSession,
+    db: Session,
     query_id: int,
     query_data: QueryUpdate,
     updated_by: int,
@@ -252,7 +253,7 @@ async def update_query(
 
 
 async def delete_query(
-    db: AsyncSession,
+    db: Session,
     query_id: int,
     deleted_by: int,
     user_role: Optional[str] = None,
@@ -295,7 +296,7 @@ async def delete_query(
 # =====================================================
 
 async def get_query_types(
-    db: AsyncSession,
+    db: Session,
     active_only: bool = True
 ) -> List[QueryType]:
     """Get all query types"""
@@ -309,7 +310,7 @@ async def get_query_types(
 
 
 async def get_query_type_by_id(
-    db: AsyncSession,
+    db: Session,
     query_type_id: int
 ) -> Optional[QueryType]:
     """Get query type by ID"""
@@ -318,8 +319,8 @@ async def get_query_type_by_id(
     return result.scalar_one_or_none()
 
 
-async def create_query_type(
-    db: AsyncSession,
+async def  create_query_type(
+    db: Session,
     query_type_data: QueryTypeCreate
 ) -> QueryType:
     """Create a new query type"""
@@ -341,7 +342,7 @@ async def create_query_type(
 
 
 async def update_query_type(
-    db: AsyncSession,
+    db: Session,
     query_type_id: int,
     query_type_data: QueryTypeUpdate
 ) -> QueryType:
@@ -381,7 +382,7 @@ async def update_query_type(
 
 
 async def delete_query_type(
-    db: AsyncSession,
+    db: Session,
     query_type_id: int,
     permanent: bool = False
 ) -> bool:
@@ -404,5 +405,3 @@ async def delete_query_type(
     
     await db.commit()
     return True
-
-

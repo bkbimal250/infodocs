@@ -4,7 +4,7 @@ Handles HTTP requests for tutorials
 """
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from fastapi.responses import FileResponse, StreamingResponse
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession as Session
 from typing import Optional, List
 from pathlib import Path
 import os
@@ -25,7 +25,7 @@ tutorials_router = APIRouter(prefix="/tutorials", tags=["Tutorials"])
 
 
 @tutorials_router.post("", response_model=TutorialResponse, status_code=status.HTTP_201_CREATED)
-async def create_tutorial_endpoint(
+async def  create_tutorial_endpoint(
     title: str = Form(...),
     description: Optional[str] = Form(None),
     thumbnail_url: Optional[str] = Form(None),
@@ -33,7 +33,7 @@ async def create_tutorial_endpoint(
     is_active: bool = Form(True),
     is_public: bool = Form(True),
     video_file: Optional[UploadFile] = File(None),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin", "super_admin"))
 ):
     """
@@ -65,7 +65,7 @@ async def list_tutorials(
     limit: int = 100,
     is_active: Optional[bool] = None,
     is_public: Optional[bool] = None,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_optional_current_user)
 ):
     """
@@ -92,7 +92,7 @@ async def list_tutorials(
 @tutorials_router.get("/{tutorial_id}", response_model=TutorialResponse)
 async def get_tutorial(
     tutorial_id: int,
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ):
     """
     Get tutorial by ID (Public endpoint)
@@ -124,7 +124,7 @@ async def update_tutorial_endpoint(
     is_active: Optional[bool] = Form(None),
     is_public: Optional[bool] = Form(None),
     video_file: Optional[UploadFile] = File(None),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin", "super_admin"))
 ):
     """
@@ -154,7 +154,7 @@ async def update_tutorial_endpoint(
 async def delete_tutorial_endpoint(
     tutorial_id: int,
     permanent: bool = False,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin", "super_admin"))
 ):
     """
@@ -174,7 +174,7 @@ async def delete_tutorial_endpoint(
 @tutorials_router.get("/{tutorial_id}/video")
 async def download_tutorial_video(
     tutorial_id: int,
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ):
     """
     Download tutorial video file (Public endpoint)
@@ -227,7 +227,7 @@ async def download_tutorial_video(
 @tutorials_router.get("/{tutorial_id}/video/stream")
 async def stream_tutorial_video(
     tutorial_id: int,
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ):
     """
     Stream tutorial video (Public endpoint)

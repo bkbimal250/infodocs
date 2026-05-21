@@ -318,15 +318,15 @@ class ApiUser(HttpUser):
     wait_time = between(1, 3)
     
     @task(3)
-    def get_templates(self):
+    async def get_templates(self):
         self.client.get("/api/certificates/templates")
     
     @task(2)
-    def get_public_certificates(self):
+    async def get_public_certificates(self):
         self.client.get("/api/certificates/public")
     
     @task(1)
-    def health_check(self):
+    async def health_check(self):
         self.client.get("/health")
 ```
 

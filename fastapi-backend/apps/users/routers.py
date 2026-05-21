@@ -3,9 +3,11 @@ User Routers
 API endpoints for user management and authentication
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Response, BackgroundTasks
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession as Session
 from config.database import get_db
 from apps.users.schemas import (
+    AdminUserCreateSchema,
+    CredentialResponseSchema,
     UserRegistrationSchema,
     UserLoginSchema,
     EmailLoginSchema,
@@ -25,6 +27,7 @@ from apps.users.services.user_service import (
     get_user_by_id,
     update_user,
     get_all_users,
+    generate_secure_password,
 )
 from apps.users.services.auth_service import create_token_response, create_access_token
 from apps.notifications.services.notification_service import handle_login_tracking_task
@@ -39,7 +42,7 @@ users_router = APIRouter()
 
 
 @auth_router.post("/register", response_model=MessageResponseSchema, status_code=status.HTTP_201_CREATED)
-async def register(user_data: UserRegistrationSchema, db: AsyncSession = Depends(get_db)):
+async def register(user_data: UserRegistrationSchema, db: Session = Depends(get_db)):
     """User registration"""
     try:
         user = await create_user(
@@ -84,7 +87,7 @@ async def login(
     request: Request,
     response: Response,
     background_tasks: BackgroundTasks,
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ):
     """Login with username/email and password"""
     import logging
@@ -152,7 +155,7 @@ async def login(
         
         # Create access token and set cookie
         user_id = str(user.id)
-        access_token = create_access_token(data={"sub": user_id})
+        access_token = await create_access_token(data={"sub": user_id})
         
         # Set HTTP-only cookie
         response.set_cookie(
@@ -166,7 +169,7 @@ async def login(
         )
         
         # Create and return token response (this is the critical operation)
-        return create_token_response(user)
+        return await create_token_response(user)
         
     except AuthenticationError:
         # Re-raise authentication errors
@@ -192,7 +195,7 @@ async def login_with_email(
     request: Request,
     response: Response,
     background_tasks: BackgroundTasks,
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ):
     """Login with email and password"""
     import logging
@@ -252,7 +255,7 @@ async def login_with_email(
         
         # Create access token and set cookie
         user_id = str(user.id)
-        access_token = create_access_token(data={"sub": user_id})
+        access_token = await create_access_token(data={"sub": user_id})
         
         response.set_cookie(
             key="access_token",
@@ -265,7 +268,7 @@ async def login_with_email(
         )
         
         # Create and return token response (critical operation)
-        return create_token_response(user)
+        return await create_token_response(user)
         
     except AuthenticationError:
         # Re-raise authentication errors
@@ -289,7 +292,7 @@ async def login_with_email(
 async def request_login_otp(
     otp_request: OTPRequestSchema, 
     request: Request,
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ):
     """Request OTP for login"""
     user = await get_user_by_email(db, otp_request.email)
@@ -332,7 +335,7 @@ async def login_with_otp(
     request: Request,
     response: Response,
     background_tasks: BackgroundTasks,
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ):
     """Login with email and OTP"""
     user = await get_user_by_email(db, otp_data.email)
@@ -401,7 +404,7 @@ async def login_with_otp(
     
     # Create access token and set cookie
     user_id = str(user.id)
-    access_token = create_access_token(data={"sub": user_id})
+    access_token = await create_access_token(data={"sub": user_id})
     
     response.set_cookie(
         key="access_token",
@@ -413,14 +416,14 @@ async def login_with_otp(
         path="/",
     )
     
-    return create_token_response(user)
+    return await create_token_response(user)
 
 
 @auth_router.post("/request_password_reset", response_model=MessageResponseSchema)
 async def request_password_reset(
     payload: PasswordResetRequestSchema,
     request: Request,
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ):
     """
     Start password reset flow.
@@ -505,7 +508,7 @@ async def request_password_reset(
 async def reset_password(
     payload: PasswordResetConfirmSchema,
     request: Request,
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ):
     """
     Complete password reset using email, OTP, and new password.
@@ -621,7 +624,7 @@ async def get_current_user_info(current_user: User = Depends(get_current_active_
 @auth_router.put("/user", response_model=UserResponseSchema)
 async def update_current_user_profile(
     user_data: UserUpdateSchema,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
     """Update current user's own profile (any authenticated user can update their own profile)"""
@@ -651,7 +654,7 @@ async def update_current_user_profile(
 async def list_users(
     skip: int = 0,
     limit: int = 1000,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin", "super_admin"))
 ):
     """List all users (Admin/Super Admin only)"""
@@ -664,24 +667,42 @@ async def list_users(
         raise HTTPException(status_code=500, detail=f"Failed to retrieve users: {str(e)}")
 
 
-@users_router.post("", response_model=UserResponseSchema, status_code=status.HTTP_201_CREATED)
-async def create_user_by_admin(
-    user_data: UserRegistrationSchema,
-    db: AsyncSession = Depends(get_db),
+@users_router.post("", response_model=CredentialResponseSchema, status_code=status.HTTP_201_CREATED)
+async def  create_user_by_admin(
+    user_data: AdminUserCreateSchema,
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin", "super_admin"))
 ):
-    """Create a new user (Admin/Super Admin only)"""
+    """Create a new user with one-time generated credentials (Admin/Super Admin only)."""
     try:
-        return await create_user(
+        generated_password = await generate_secure_password()
+        user = await create_user(
             db=db,
             username=user_data.username,
             email=user_data.email,
-            password=user_data.password,
+            password=generated_password,
             first_name=user_data.first_name,
             last_name=user_data.last_name,
             role=user_data.role,
             phone_number=user_data.phone_number,
             spa_id=user_data.spa_id,
+        )
+
+        update_fields = {}
+        if user.is_active != user_data.is_active:
+            update_fields["is_active"] = user_data.is_active
+        if user.is_verified != user_data.is_verified:
+            update_fields["is_verified"] = user_data.is_verified
+        if update_fields:
+            user = await update_user(db, user.id, update_fields)
+
+        return CredentialResponseSchema(
+            message="User created successfully",
+            credentials={
+                "email": user.email,
+                "username": user.username,
+                "password": generated_password,
+            },
         )
     except ValidationError as e:
         error_detail = getattr(e, 'message', str(e))
@@ -691,7 +712,7 @@ async def create_user_by_admin(
 @users_router.get("/{user_id}", response_model=UserResponseSchema)
 async def get_user(
     user_id: int,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin", "super_admin"))
 ):
     """Get user by ID"""
@@ -705,7 +726,7 @@ async def get_user(
 async def update_user_info(
     user_id: int,
     user_data: UserUpdateSchema,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin", "super_admin"))
 ):
     """Update user (Admin/Super Admin only)"""
@@ -713,10 +734,29 @@ async def update_user_info(
     return await update_user(db, user_id, update_dict)
 
 
+@users_router.post("/{user_id}/regenerate-password", response_model=CredentialResponseSchema)
+async def regenerate_user_password(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "super_admin"))
+):
+    """Regenerate a user's password and return it once."""
+    generated_password = await generate_secure_password()
+    user = await update_user(db, user_id, {"password": generated_password})
+    return CredentialResponseSchema(
+        message="Password regenerated successfully",
+        credentials={
+            "email": user.email,
+            "username": user.username,
+            "password": generated_password,
+        },
+    )
+
+
 @users_router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user(
     user_id: int,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_role("super_admin"))
 ):
     """Delete user (Super Admin only)"""

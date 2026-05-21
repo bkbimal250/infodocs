@@ -27,10 +27,28 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30 * 24 * 60  # 30 days
 
+    # ------------------------------------------------------------------
+    # Internal API Integration
+    # ------------------------------------------------------------------
+    INTERNAL_API_KEYS: Union[str, List[str]] = ""
+    INTERNAL_RATE_LIMIT_PER_MINUTE: int = 120
+
+    @field_validator("INTERNAL_API_KEYS", mode="before")
+    @classmethod
+    def parse_internal_api_keys(cls, value):
+        """Parse comma-separated internal integration API keys."""
+        if isinstance(value, list):
+            return [key.strip() for key in value if isinstance(key, str) and key.strip()]
+        if isinstance(value, str):
+            if not value:
+                return []
+            return [key.strip() for key in value.split(",") if key.strip()]
+        return []
+
     def DATABASE_URL(self) -> str:
         """Return SQLAlchemy MySQL connection string."""
         return (
-            f"mysql+pymysql://{self.DB_USER}:{self.DB_PASSWORD}"
+            f"mysql+aiomysql://{self.DB_USER}:{self.DB_PASSWORD}"
             f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
         )
 

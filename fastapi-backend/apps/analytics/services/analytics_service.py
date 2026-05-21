@@ -7,10 +7,10 @@ import logging
 from typing import Dict, Any, List
 from sqlalchemy.future import select
 from sqlalchemy import func
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession as Session
 
 from apps.forms_app.models import Hiring_Form, SPA
-from apps.StaffManagement.models import Staff, StaffStatusEnum
+from apps.StaffManagement.models import Staff, EmploymentStatusEnum
 from apps.users.models import User
 from apps.Query.models import Query
 from apps.certificates.models import (
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 class AnalyticsService:
     @staticmethod
-    async def get_overall_analytics(db: AsyncSession) -> Dict[str, Any]:
+    async def get_overall_analytics(db: Session) -> Dict[str, Any]:
         """
         Get aggregated counts across the system.
         Uses asyncio.gather for parallel database execution to minimize latency.
@@ -35,7 +35,7 @@ class AnalyticsService:
             stmts = [
                 select(func.count(Hiring_Form.id)),         # 0
                 select(func.count(Staff.id)),               # 1
-                select(func.count(Staff.id)).where(Staff.current_status == StaffStatusEnum.active), # 2
+                select(func.count(Staff.id)).where(Staff.employment_status == EmploymentStatusEnum.active), # 2
                 select(func.count(User.id)),                # 3
                 select(func.count(User.id)).where(User.is_active == True), # 4
                 select(func.count(Query.id)),               # 5
@@ -86,7 +86,7 @@ class AnalyticsService:
             raise
 
     @staticmethod
-    async def get_candidate_analytics(db: AsyncSession) -> Dict[str, Any]:
+    async def get_candidate_analytics(db: Session) -> Dict[str, Any]:
         """
         Analytics focused on hiring forms and candidate pipeline.
         """
@@ -101,7 +101,7 @@ class AnalyticsService:
         }
 
     @staticmethod
-    async def get_certificate_analytics(db: AsyncSession) -> Dict[str, Any]:
+    async def get_certificate_analytics(db: Session) -> Dict[str, Any]:
         """
         Breakdown of generated certificates by type.
         """
@@ -133,7 +133,7 @@ class AnalyticsService:
         }
 
     @staticmethod
-    async def get_consolidated_overview(db: AsyncSession) -> Dict[str, Any]:
+    async def get_consolidated_overview(db: Session) -> Dict[str, Any]:
         """
         Get all analytics (overall, candidates, certificates) in a single response.
         Optimized with comprehensive parallel execution.
@@ -143,7 +143,7 @@ class AnalyticsService:
             base_stmts = [
                 select(func.count(Hiring_Form.id)),         # 0
                 select(func.count(Staff.id)),               # 1
-                select(func.count(Staff.id)).where(Staff.current_status == StaffStatusEnum.active), # 2
+                select(func.count(Staff.id)).where(Staff.employment_status == EmploymentStatusEnum.active), # 2
                 select(func.count(User.id)),                # 3
                 select(func.count(User.id)).where(User.is_active == True), # 4
                 select(func.count(Query.id)),               # 5

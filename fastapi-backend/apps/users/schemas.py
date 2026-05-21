@@ -37,6 +37,19 @@ class UserRegistrationSchema(BaseModel):
         return v
 
 
+class AdminUserCreateSchema(BaseModel):
+    """Admin user creation schema with server-generated password."""
+    username: str
+    email: EmailStr
+    first_name: str
+    last_name: str
+    phone_number: Optional[str] = None
+    role: UserRole = UserRole.USER
+    spa_id: Optional[int] = None
+    is_active: bool = True
+    is_verified: bool = False
+
+
 class UserLoginSchema(BaseModel):
     """User login schema"""
     username: Optional[str] = None
@@ -152,4 +165,18 @@ class TokenResponseSchema(BaseModel):
 class MessageResponseSchema(BaseModel):
     """Generic message response schema"""
     message: str
+
+
+class OneTimeCredentialSchema(BaseModel):
+    """One-time credential payload. Password is never persisted."""
+    email: EmailStr
+    username: str
+    password: str
+
+
+class CredentialResponseSchema(BaseModel):
+    """Admin-only response for generated credentials."""
+    success: bool = True
+    message: str
+    credentials: OneTimeCredentialSchema
 

@@ -54,7 +54,7 @@ MEDIA_DIR.mkdir(parents=True, exist_ok=True)
 # CORE PDF GENERATION
 # ============================================================
 
-def html_to_pdf(html_content: str, output_path: Optional[str] = None) -> bytes:
+async def html_to_pdf(html_content: str, output_path: Optional[str] = None) -> bytes:
     """
     Convert HTML content to PDF with automatic fallback
     
@@ -88,7 +88,7 @@ def html_to_pdf(html_content: str, output_path: Optional[str] = None) -> bytes:
         raise RuntimeError(f"PDF generation error: {str(e)}") from e
 
 
-def _html_to_pdf_weasyprint(html_content: str, output_path: Optional[str] = None) -> bytes:
+async def _html_to_pdf_weasyprint(html_content: str, output_path: Optional[str] = None) -> bytes:
     """
     Convert HTML to PDF using WeasyPrint (Best Quality)
     
@@ -165,7 +165,7 @@ def _html_to_pdf_weasyprint(html_content: str, output_path: Optional[str] = None
         raise
 
 
-def _html_to_pdf_xhtml2pdf(html_content: str, output_path: Optional[str] = None) -> bytes:
+async def _html_to_pdf_xhtml2pdf(html_content: str, output_path: Optional[str] = None) -> bytes:
     """
     Convert HTML to PDF using xhtml2pdf (Windows-friendly fallback)
     
@@ -210,7 +210,7 @@ def _html_to_pdf_xhtml2pdf(html_content: str, output_path: Optional[str] = None)
 # TEMPLATE RENDERING ENGINE
 # ============================================================
 
-def render_html_template(template_html: str, data: Dict[str, Any]) -> str:
+async def render_html_template(template_html: str, data: Dict[str, Any]) -> str:
     """
     Enhanced HTML template rendering with nested data support
     
@@ -252,10 +252,10 @@ def render_html_template(template_html: str, data: Dict[str, Any]) -> str:
         raise RuntimeError(f"Template rendering failed: {str(e)}") from e
 
 
-def _render_variables(template: str, data: Dict[str, Any]) -> str:
+async def _render_variables(template: str, data: Dict[str, Any]) -> str:
     """Replace {{variable}} and {{object.property}} placeholders"""
     
-    def replace_placeholder(match):
+    async def replace_placeholder(match):
         key_path = match.group(1).strip()
         
         # Handle nested keys (e.g., spa.name)
@@ -279,10 +279,10 @@ def _render_variables(template: str, data: Dict[str, Any]) -> str:
     return re.sub(r'\{\{([^#/][^}]*)\}\}', replace_placeholder, template)
 
 
-def _render_conditionals(template: str, data: Dict[str, Any]) -> str:
+async def _render_conditionals(template: str, data: Dict[str, Any]) -> str:
     """Handle {{#if variable}}...{{else}}...{{/if}} blocks"""
     
-    def replace_conditional(match):
+    async def replace_conditional(match):
         var_name = match.group(1).strip()
         content = match.group(2)
         
@@ -303,10 +303,10 @@ def _render_conditionals(template: str, data: Dict[str, Any]) -> str:
     return re.sub(pattern, replace_conditional, template, flags=re.DOTALL)
 
 
-def _render_loops(template: str, data: Dict[str, Any]) -> str:
+async def _render_loops(template: str, data: Dict[str, Any]) -> str:
     """Handle {{#each items}}...{{/each}} blocks"""
     
-    def replace_loop(match):
+    async def replace_loop(match):
         var_name = match.group(1).strip()
         loop_template = match.group(2)
         
@@ -333,7 +333,7 @@ def _render_loops(template: str, data: Dict[str, Any]) -> str:
     return re.sub(pattern, replace_loop, template, flags=re.DOTALL)
 
 
-def _get_nested_value(data: Dict[str, Any], key_path: str) -> Any:
+async def _get_nested_value(data: Dict[str, Any], key_path: str) -> Any:
     """Get value from nested dictionary using dot notation"""
     keys = key_path.split('.')
     value = data
@@ -476,12 +476,12 @@ async def save_certificate_file(
         raise RuntimeError(f"Failed to save certificate: {str(e)}") from e
 
 
-def get_certificate_path(relative_path: str) -> Path:
+async def get_certificate_path(relative_path: str) -> Path:
     """Convert relative path to absolute path"""
     return Path(settings.UPLOAD_DIR) / relative_path
 
 
-def delete_certificate_file(relative_path: str) -> bool:
+async def delete_certificate_file(relative_path: str) -> bool:
     """Delete certificate file"""
     try:
         file_path = get_certificate_path(relative_path)
@@ -499,7 +499,7 @@ def delete_certificate_file(relative_path: str) -> bool:
 # UTILITY FUNCTIONS
 # ============================================================
 
-def validate_html(html_content: str) -> bool:
+async def validate_html(html_content: str) -> bool:
     """Basic HTML validation"""
     if not html_content or not html_content.strip():
         return False
@@ -511,7 +511,7 @@ def validate_html(html_content: str) -> bool:
     return has_html or has_body
 
 
-def get_pdf_library_info() -> Dict[str, Any]:
+async def get_pdf_library_info() -> Dict[str, Any]:
     """Get information about available PDF libraries"""
     return {
         "weasyprint": WEASYPRINT_AVAILABLE,

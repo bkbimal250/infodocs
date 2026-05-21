@@ -4,7 +4,7 @@ Business logic for SPA operations
 """
 from typing import Optional, List
 from datetime import datetime, timezone
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession as Session
 from sqlalchemy import select, func
 from sqlalchemy.orm import load_only
 from apps.forms_app.models import SPA
@@ -16,7 +16,7 @@ import asyncio
 _SPA_CACHE = {}
 _CACHE_LOCK = asyncio.Lock()
 
-def _get_cache_key(active_only, minimal, search, city, state, status):
+async def _get_cache_key(active_only, minimal, search, city, state, status):
     return f"{active_only}:{minimal}:{search}:{city}:{state}:{status}"
 
 async def clear_spa_cache():
@@ -25,7 +25,7 @@ async def clear_spa_cache():
         _SPA_CACHE.clear()
 
 
-async def create_spa(db: AsyncSession, spa_data: SPACreate, created_by: Optional[int] = None) -> SPA:
+async def  create_spa(db: Session, spa_data: SPACreate, created_by: Optional[int] = None) -> SPA:
     """Create a new SPA location"""
 
     # Check duplicate code (code must be unique, name can be duplicate)
@@ -57,14 +57,14 @@ async def create_spa(db: AsyncSession, spa_data: SPACreate, created_by: Optional
     return spa
 
 
-async def get_spa_by_id(db: AsyncSession, spa_id: int) -> Optional[SPA]:
+async def get_spa_by_id(db: Session, spa_id: int) -> Optional[SPA]:
     stmt = select(SPA).where(SPA.id == spa_id)
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
 
 async def get_all_spas(
-    db: AsyncSession,
+    db: Session,
     active_only: bool = True,
     minimal: bool = False,
     search: Optional[str] = None,
@@ -121,7 +121,7 @@ async def get_all_spas(
     return spas
 
 
-async def update_spa(db: AsyncSession, spa_id: int, update_data: SPAUpdate) -> SPA:
+async def update_spa(db: Session, spa_id: int, update_data: SPAUpdate) -> SPA:
     spa = await get_spa_by_id(db, spa_id)
     if not spa:
         raise NotFoundError("SPA not found")
@@ -153,7 +153,7 @@ async def update_spa(db: AsyncSession, spa_id: int, update_data: SPAUpdate) -> S
     return spa
 
 
-async def delete_spa(db: AsyncSession, spa_id: int) -> bool:
+async def delete_spa(db: Session, spa_id: int) -> bool:
     """
     Soft delete SPA by marking it as inactive.
 
@@ -175,7 +175,7 @@ async def delete_spa(db: AsyncSession, spa_id: int) -> bool:
     return True
 
 
-async def hard_delete_spa(db: AsyncSession, spa_id: int) -> bool:
+async def hard_delete_spa(db: Session, spa_id: int) -> bool:
     """
     Permanently delete SPA from the database.
 

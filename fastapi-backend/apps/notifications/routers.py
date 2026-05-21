@@ -5,7 +5,7 @@ API endpoints for notifications
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession as Session
 from config.database import get_db
 from apps.users.models import User
 from core.dependencies import get_current_active_user
@@ -30,7 +30,7 @@ async def list_notifications(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     unread_only: bool = Query(False),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
     """List user notifications (admin sees all, others see only their own non-deleted)"""
@@ -64,23 +64,23 @@ async def list_notifications(
 
 @notifications_router.get("/unread-count")
 async def get_unread_notifications_count(
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
     """Get count of unread notifications"""
     is_admin = current_user.role in ["admin", "super_admin"]
-    count = await get_unread_count(db=db, user_id=current_user.id, is_admin=is_admin)
+    count =  await get_unread_count(db=db, user_id=current_user.id, is_admin=is_admin)
     return {"unread_count": count}
 
 
 @notifications_router.patch("/{notification_id}/read")
 async def mark_notification_as_read(
     notification_id: int,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
     """Mark a notification as read"""
-    success = await mark_notification_read(
+    success =  await mark_notification_read(
         db=db,
         notification_id=notification_id,
         user_id=current_user.id
@@ -92,23 +92,23 @@ async def mark_notification_as_read(
 
 @notifications_router.patch("/read-all")
 async def mark_all_notifications_as_read(
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
     """Mark all notifications as read"""
-    count = await mark_all_notifications_read(db=db, user_id=current_user.id)
+    count =  await mark_all_notifications_read(db=db, user_id=current_user.id)
     return {"message": f"{count} notifications marked as read", "count": count}
 
 
 @notifications_router.delete("/{notification_id}")
 async def delete_notification_endpoint(
     notification_id: int,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
     """Delete a notification (soft delete for non-admin, hard delete for admin)"""
     is_admin = current_user.role in ["admin", "super_admin"]
-    success = await delete_notification(
+    success =  await delete_notification(
         db=db,
         notification_id=notification_id,
         user_id=current_user.id,
@@ -123,12 +123,12 @@ async def delete_notification_endpoint(
 async def list_user_activities(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=200),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
     """List user activities (admin sees all, others see only their own non-deleted)"""
     is_admin = current_user.role in ["admin", "super_admin"]
-    activities = await get_user_activities(
+    activities =  await get_user_activities(
         db=db,
         user_id=current_user.id,
         skip=skip,
@@ -160,11 +160,11 @@ async def list_user_activities(
 async def list_login_history(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=200),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
     """List user login history"""
-    history = await get_login_history(
+    history =  await get_login_history(
         db=db,
         user_id=current_user.id,
         skip=skip,
@@ -189,12 +189,12 @@ async def list_login_history(
 @notifications_router.delete("/activities/{activity_id}")
 async def delete_activity_endpoint(
     activity_id: int,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
     """Delete an activity (soft delete for non-admin, hard delete for admin)"""
     is_admin = current_user.role in ["admin", "super_admin"]
-    success = await delete_activity(
+    success =  await delete_activity(
         db=db,
         activity_id=activity_id,
         user_id=current_user.id,
@@ -213,7 +213,7 @@ class BulkDeleteRequest(BaseModel):
 @notifications_router.post("/bulk-delete")
 async def bulk_delete_notifications(
     request: BulkDeleteRequest,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
     """Bulk delete notifications and/or activities (admin only)"""
@@ -229,7 +229,7 @@ async def bulk_delete_notifications(
     if request.notification_ids:
         for notif_id in request.notification_ids:
             try:
-                success = await delete_notification(
+                success =  await delete_notification(
                     db=db,
                     notification_id=notif_id,
                     user_id=current_user.id,
@@ -245,7 +245,7 @@ async def bulk_delete_notifications(
     if request.activity_ids:
         for activity_id in request.activity_ids:
             try:
-                success = await delete_activity(
+                success =  await delete_activity(
                     db=db,
                     activity_id=activity_id,
                     user_id=current_user.id,

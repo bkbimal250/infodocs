@@ -36,7 +36,7 @@ except ImportError as e:
     logger.warning(f"rembg not available: {e}. Install with 'pip install rembg[cpu]'")
 
 
-def get_rembg_session():
+async def get_rembg_session():
     """
     Lazy-initializes and returns the rembg session.
     This prevents startup hangs during module import.
@@ -142,7 +142,7 @@ async def remove_background_from_image(
 
 async def _convert_format(image_bytes: bytes, target_format: str) -> bytes:
     """Helper to convert image format asynchronously"""
-    def convert(data, fmt):
+    async def convert(data, fmt):
         img = Image.open(BytesIO(data))
         if fmt.upper() in ["JPEG", "JPG"]:
             # Drop alpha channel for JPEG

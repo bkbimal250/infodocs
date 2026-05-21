@@ -6,14 +6,14 @@ from datetime import datetime, timedelta, timezone
 import random
 from typing import Optional
 from pathlib import Path
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession as Session
 from sqlalchemy import select, and_
 from apps.users.models import OTP, User
 from core.exceptions import ValidationError
 from core.utils import send_email
 
 
-def _ensure_timezone_aware(dt: datetime) -> datetime:
+async def _ensure_timezone_aware(dt: datetime) -> datetime:
     """
     Ensure a datetime is timezone-aware (UTC).
     If it's timezone-naive, assume it's UTC and make it aware.
@@ -23,7 +23,7 @@ def _ensure_timezone_aware(dt: datetime) -> datetime:
     return dt
 
 
-async def generate_otp(db: AsyncSession, user_id: int, purpose: str) -> str:
+async def generate_otp(db: Session, user_id: int, purpose: str) -> str:
     """Generate and store OTP"""
     # Validate user exists
     stmt = select(User).where(User.id == user_id)
@@ -68,7 +68,7 @@ async def generate_otp(db: AsyncSession, user_id: int, purpose: str) -> str:
         return code
     
     try:
-        await send_email(subject, body, user.email, html_body=html_body)
+        send_email(subject, body, user.email, html_body=html_body)
         logger.info(f"OTP email sent successfully to {user.email}")
     except Exception as e:
         # Log the error but don't fail - OTP is still generated and stored
@@ -89,7 +89,7 @@ async def generate_otp(db: AsyncSession, user_id: int, purpose: str) -> str:
     return code
 
 
-def _get_otp_subject(purpose: str) -> str:
+async def _get_otp_subject(purpose: str) -> str:
     """Return email subject based on OTP purpose."""
     subject_map = {
         "email_verification": "Verify your email address",
@@ -99,7 +99,7 @@ def _get_otp_subject(purpose: str) -> str:
     return subject_map.get(purpose, "One Time Password (OTP)")
 
 
-def _build_otp_body(full_name: str, code: str, purpose: str) -> str:
+async def _build_otp_body(full_name: str, code: str, purpose: str) -> str:
     """Create the OTP email body (plain text)."""
     return (
         f"Hello {full_name},\n\n"
@@ -110,10 +110,10 @@ def _build_otp_body(full_name: str, code: str, purpose: str) -> str:
     )
 
 
-def _build_otp_html_template(full_name: str, code: str, purpose: str) -> str:
+async def _build_otp_html_template(full_name: str, code: str, purpose: str) -> str:
     """
     Create the OTP email HTML template.
-
+ 
     For login OTPs, uses `apps/users/templates/email_login_otp.html`.
     For other purposes, uses `apps/users/templates/otp_email.html`.
     Falls back to inline HTML if template files are missing.
@@ -232,7 +232,7 @@ def _build_otp_html_template(full_name: str, code: str, purpose: str) -> str:
     return html_template
 
 
-async def verify_otp(db: AsyncSession, user_id: int, code: str, purpose: str) -> bool:
+async def verify_otp(db: Session, user_id: int, code: str, purpose: str) -> bool:
     """Verify OTP"""
     stmt = select(OTP).where(
         and_(
@@ -260,3 +260,4 @@ async def verify_otp(db: AsyncSession, user_id: int, code: str, purpose: str) ->
     await db.commit()
     
     return True
+

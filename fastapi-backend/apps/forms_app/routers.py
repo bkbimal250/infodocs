@@ -5,7 +5,7 @@ API endpoints for form submissions and SPA management
 from typing import List, Optional, Union
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Request
 from fastapi.responses import JSONResponse
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession as Session
 from pydantic import EmailStr
 from config.database import get_db
 from apps.users.models import User
@@ -88,7 +88,7 @@ async def save_uploaded_file(file: UploadFile, subdirectory: str = "") -> str:
 
 
 @forms_router.get("/spas", response_model=List[Union[SPAResponse, SPASelectionResponse]])
-async def list_spas(minimal: bool = True, db: AsyncSession = Depends(get_db)):
+async def list_spas(minimal: bool = True, db: Session = Depends(get_db)):
     """List all active SPAs/locations (Optional minimal data for public forms)"""
     spas = await get_all_spas(db, active_only=True, minimal=minimal)
     return spas
@@ -101,7 +101,7 @@ async def list_spas(minimal: bool = True, db: AsyncSession = Depends(get_db)):
 async def submit_hiring_form(
     hiring_data: HiringFormCreate,
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     """Submit hiring form (Authentication required)"""
@@ -157,7 +157,7 @@ async def submit_hiring_form(
 
 # TEST ENDPOINT - Remove after testing
 @forms_router.post("/spas/test", response_model=SPAResponse)
-async def create_spa_test(
+async def  create_spa_test(
     name: str = Form(...),
     code: str | None = Form(None),
     address: str | None = Form(None),
@@ -172,13 +172,13 @@ async def create_spa_test(
     website: str | None = Form(None),
     is_active: str | None = Form("true"),
     logo: UploadFile | None = File(None),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
     """TEST - Create a new SPA location (no auth required)"""
     
     try:
         # Helper to convert empty strings or None to None
-        def to_none_if_empty(value):
+        async def to_none_if_empty(value):
             if value is None:
                 return None
             if isinstance(value, str) and value.strip() == "":
@@ -236,7 +236,7 @@ async def create_spa_test(
 
 
 @forms_router.post("/spas", response_model=SPAResponse)
-async def create_spa_location(
+async def  create_spa_location(
     name: str = Form(...),
     code: str | None = Form(None),
     address: str | None = Form(None),
@@ -252,14 +252,14 @@ async def create_spa_location(
     website: str | None = Form(None),
     is_active: str | None = Form("true"),
     logo: UploadFile | None = File(None),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin", "super_admin", "spa_manager")),
 ):
     """Create a new SPA location"""
     
     try:
         # Helper to convert empty strings or None to None
-        def to_none_if_empty(value):
+        async def to_none_if_empty(value):
             if value is None:
                 return None
             if isinstance(value, str) and value.strip() == "":
@@ -335,7 +335,7 @@ async def list_all_spas(
     city: Optional[str] = None,
     state: Optional[str] = None,
     status: Optional[str] = None,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin", "super_admin", "spa_manager", "hr"))
 ):
     """List all SPAs with optional filtering (Admin/Super Admin/SPA Manager/HR only)"""
@@ -348,7 +348,7 @@ async def list_all_spas(
 @forms_router.get("/spas/{spa_id}", response_model=SPAResponse)
 async def get_spa(
     spa_id: int,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin", "super_admin", "spa_manager"))
 ):
     """Get SPA by ID (Admin/Super Admin/SPA Manager only)"""
@@ -376,7 +376,7 @@ async def update_spa_location(
     website: str | None = Form(None),
     is_active: bool | None = Form(None),
     logo: UploadFile | None = File(None),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin", "super_admin", "spa_manager")),
 ):
     """Update SPA location (Admin/Super Admin/SPA Manager only)"""
@@ -429,7 +429,7 @@ async def update_spa_location(
 @forms_router.delete("/spas/{spa_id}", response_model=MessageResponseSchema)
 async def delete_spa_location(
     spa_id: int,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin", "super_admin", "spa_manager"))
 ):
     """
@@ -559,7 +559,7 @@ async def list_hiring_forms(
     skip: int = 0,
     limit: int = 1000,
     created_by: Optional[int] = None,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin", "super_admin", "spa_manager", "hr", "user"))
 ):
     """List hiring form submissions
@@ -588,7 +588,7 @@ async def list_hiring_forms(
 @forms_router.get("/hiring-forms/{form_id}", response_model=HiringFormResponse)
 async def get_hiring_form(
     form_id: int,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin", "super_admin", "spa_manager", "hr", "user"))
 ):
     """Get a single hiring form submission
@@ -612,7 +612,7 @@ async def get_hiring_form(
 async def update_hiring_form_endpoint(
     form_id: int,
     form_data: HiringFormUpdate,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin", "super_admin", "spa_manager", "hr", "user"))
 ):
     """Update a hiring form submission
@@ -648,7 +648,7 @@ async def update_hiring_form_endpoint(
 @forms_router.delete("/hiring-forms/{form_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_hiring_form_endpoint(
     form_id: int,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin", "super_admin", "spa_manager", "hr", "user"))
 ):
     """Delete a hiring form submission
@@ -676,7 +676,7 @@ async def delete_hiring_form_endpoint(
 
 @forms_router.get("/admin/statistics")
 async def get_forms_statistics_endpoint(
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin", "super_admin"))
 ):
     """Get forms statistics for admin dashboard"""
@@ -690,7 +690,7 @@ async def get_forms_statistics_endpoint(
 async def get_all_hiring_forms_admin(
     skip: int = 0,
     limit: int = 1000,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin", "super_admin"))
 ):
     """Get all hiring forms with user information (admin only)"""

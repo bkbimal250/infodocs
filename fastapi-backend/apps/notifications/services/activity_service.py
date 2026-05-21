@@ -3,7 +3,7 @@ Activity Service
 Handles user activity tracking
 """
 from typing import Optional, List, Dict, Any
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession as Session
 from sqlalchemy import select, desc, and_
 from datetime import datetime, timezone
 
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 async def log_activity(
-    db: AsyncSession,
+    db: Session,
     user_id: int,
     activity_type: str,
     activity_description: str,
@@ -42,7 +42,7 @@ async def log_activity(
 
 
 async def log_login_activity(
-    db: AsyncSession,
+    db: Session,
     user_id: int,
     ip_address: Optional[str] = None,
     user_agent: Optional[str] = None,
@@ -64,7 +64,7 @@ async def log_login_activity(
 
 
 async def get_user_activities(
-    db: AsyncSession,
+    db: Session,
     user_id: Optional[int] = None,
     skip: int = 0,
     limit: int = 100,
@@ -104,7 +104,7 @@ async def get_user_activities(
 
 
 async def delete_activity(
-    db: AsyncSession,
+    db: Session,
     activity_id: int,
     user_id: int,
     is_admin: bool = False
@@ -140,7 +140,7 @@ async def delete_activity(
 
 
 async def get_login_history(
-    db: AsyncSession,
+    db: Session,
     user_id: Optional[int] = None,
     skip: int = 0,
     limit: int = 100

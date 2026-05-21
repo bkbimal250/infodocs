@@ -22,7 +22,7 @@ class RateLimiter:
         self.cleanup_interval = 300  # Clean up old entries every 5 minutes
         self.last_cleanup = time.time()
     
-    def _cleanup_old_entries(self):
+    async def _cleanup_old_entries(self):
         """Remove old request timestamps to prevent memory leaks"""
         current_time = time.time()
         if current_time - self.last_cleanup < self.cleanup_interval:
@@ -43,7 +43,7 @@ class RateLimiter:
         
         self.last_cleanup = current_time
     
-    def is_allowed(self, ip: str) -> Tuple[bool, str]:
+    async def is_allowed(self, ip: str) -> Tuple[bool, str]:
         """
         Check if request is allowed based on rate limits
         Returns: (is_allowed, error_message)
@@ -51,7 +51,7 @@ class RateLimiter:
         if not settings.RATE_LIMIT_ENABLED:
             return True, ""
         
-        self._cleanup_old_entries()
+        await self._cleanup_old_entries()
         
         current_time = time.time()
         minute_ago = current_time - 60
@@ -75,7 +75,7 @@ class RateLimiter:
         
         return True, ""
     
-    def get_client_ip(self, request: Request) -> str:
+    async def get_client_ip(self, request: Request) -> str:
         """Extract client IP address from request"""
         # Check for forwarded IP (behind proxy/load balancer)
         forwarded = request.headers.get("X-Forwarded-For")
@@ -116,10 +116,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
         
         # Get client IP
-        client_ip = rate_limiter.get_client_ip(request)
-        
+        client_ip = await rate_limiter.get_client_ip(request)
+
         # Check rate limit
-        is_allowed, error_message = rate_limiter.is_allowed(client_ip)
+        is_allowed, error_message = await rate_limiter.is_allowed(client_ip)
         
         if not is_allowed:
             logger.warning(f"Rate limit exceeded for IP: {client_ip}, Path: {request.url.path}")

@@ -13,10 +13,10 @@ class RedisClient:
     _instance = None
 
     @classmethod
-    def get_instance(cls):
+    async def get_instance(cls):
         if cls._instance is None:
             try:
-                import redis.asyncio as redis
+                import redis
                 redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
                 cls._instance = redis.from_url(redis_url, decode_responses=True)
             except ImportError:
@@ -30,9 +30,10 @@ class RedisClient:
     @classmethod
     async def close(cls):
         if cls._instance:
-            await cls._instance.close()
+            cls._instance.close()
             cls._instance = None
 
 async def get_redis():
     return RedisClient.get_instance()
+
 

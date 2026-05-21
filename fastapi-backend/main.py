@@ -1,18 +1,28 @@
 """
 FastAPI Main Application
-Entry point for the FastAPI backend server
+Production Ready - Async SQLAlchemy Version
 """
+
+import logging
 from pathlib import Path
+
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from fastapi import HTTPException as FastAPIHTTPException
-from contextlib import asynccontextmanager
 from fastapi.staticfiles import StaticFiles
 
-from config.database import connect_to_db, close_db_connection, init_db
+from contextlib import asynccontextmanager
+import asyncio
+
+from config.database import close_db_connection, connect_to_db, init_db, engine
 from config.settings import settings
+
+# =========================================================
+# ROUTERS
+# =========================================================
+
 from apps.users.routers import auth_router, users_router
 from apps.certificates.routers import certificates_router
 from apps.forms_app.routers import forms_router
@@ -21,33 +31,90 @@ from apps.notifications.routers import notifications_router
 from apps.Query.routers import query_router
 from apps.tutorials.routers import tutorials_router
 from apps.StaffManagement.routers import router as staff_router
-from core.exceptions import CustomException, ValidationError, NotFoundError, AuthenticationError, AuthorizationError
-from core.middleware import ErrorHandlerMiddleware, PerformanceMiddleware
+from apps.integration.routers import router as integration_router
+
+# =========================================================
+# CORE
+# =========================================================
+
+from core.exceptions import (
+    CustomException,
+    ValidationError,
+    NotFoundError,
+    AuthenticationError,
+    AuthorizationError,
+)
+
+from core.middleware import (
+    ErrorHandlerMiddleware,
+    PerformanceMiddleware,
+)
+
 from core.rate_limiter import RateLimitMiddleware
+
+
+# =========================================================
+# LOGGER
+# =========================================================
+
+logger = logging.getLogger(__name__)
+
+# =========================================================
+# LIFESPAN
+# =========================================================
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Lifespan context manager for startup and shutdown events"""
-    # Startup
+
     try:
+
         await connect_to_db()
-        # Only initialize tables if connection succeeded
-        from config.database import engine
-        if engine is not None:
-            await init_db()
+
+        await init_db()
+
+        logger.info(
+            "Database initialized successfully"
+        )
+
+        yield
+
+    except asyncio.CancelledError:
+
+        logger.warning(
+            "Application reload/shutdown detected"
+        )
+
     except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.warning(f"Database initialization failed: {e}. Server will continue but database operations may fail.")
-    
-    yield
-    
-    # Shutdown
-    await close_db_connection()
+
+        logger.error(
+            f"Lifespan startup error: {e}",
+            exc_info=True
+        )
+
+        raise
+
+    finally:
+
+        try:
+
+            await close_db_connection()
+
+            logger.info(
+                "Database connection closed"
+            )
+
+        except Exception as e:
+
+            logger.warning(
+                f"Shutdown cleanup warning: {e}"
+            )
 
 
-# Create FastAPI app
+
+# =========================================================
+# FASTAPI APP
+# =========================================================
 app = FastAPI(
     title="infodocs API",
     description="FastAPI backend for certificate and document management",
@@ -55,42 +122,77 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Mount Static directory for serving images
-static_dir = Path(__file__).parent / "Static"
+
+
+# =========================================================
+# STATIC FILES
+# =========================================================
+
+BASE_DIR = Path(__file__).parent
+
+# Static
+static_dir = BASE_DIR / "Static"
+
 if static_dir.exists():
-    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+    app.mount(
+        "/static",
+        StaticFiles(directory=str(static_dir)),
+        name="static"
+    )
 
-# Mount media directory for serving uploaded files (certificates, images, etc.)
-from config.settings import settings
+# Media
 media_dir = Path(settings.UPLOAD_DIR)
+
 if media_dir.exists():
-    app.mount("/media", StaticFiles(directory=str(media_dir)), name="media")
+    app.mount(
+        "/media",
+        StaticFiles(directory=str(media_dir)),
+        name="media"
+    )
 
-# Mount uploads directory (where files are actually saved by forms_app)
-uploads_dir = Path(__file__).parent / "uploads"
+# Uploads
+uploads_dir = BASE_DIR / "uploads"
+
 if uploads_dir.exists():
-    app.mount("/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
+    app.mount(
+        "/uploads",
+        StaticFiles(directory=str(uploads_dir)),
+        name="uploads"
+    )
 
-# CORS Middleware
-# Ensure CORS_ORIGINS is a list (validator handles string to list conversion)
+
+# =========================================================
+# CORS
+# =========================================================
+
 cors_origins = settings.CORS_ORIGINS
+
 if isinstance(cors_origins, str):
-    cors_origins = [origin.strip() for origin in cors_origins.split(",") if origin.strip()]
+    cors_origins = [
+        origin.strip()
+        for origin in cors_origins.split(",")
+        if origin.strip()
+    ]
 
-# Add default localhost origins for development if not present
-default_origins = ["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173", "http://127.0.0.1:3000"]
-# Add production frontend if not present
-production_origins = ["https://docs.dishaonlinesolution.in", "https://www.docs.dishaonlinesolution.in","http://localhost:5173",]
-all_defaults = default_origins + production_origins
+default_origins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:3000",
+]
 
-for origin in all_defaults:
+production_origins = [
+    "https://docs.dishaonlinesolution.in",
+    "https://www.docs.dishaonlinesolution.in",
+]
+
+all_origins = default_origins + production_origins
+
+for origin in all_origins:
     if origin not in cors_origins:
         cors_origins.append(origin)
 
-# Log CORS origins for debugging
-import logging
-logger = logging.getLogger(__name__)
-logger.info(f"CORS allowed origins: {cors_origins}")
+logger.info(f"CORS Allowed Origins: {cors_origins}")
 
 app.add_middleware(
     CORSMiddleware,
@@ -102,191 +204,326 @@ app.add_middleware(
     max_age=3600,
 )
 
-# Add rate limiting middleware (before error handler)
+
+# =========================================================
+# MIDDLEWARES
+# =========================================================
+
 if settings.RATE_LIMIT_ENABLED:
     app.add_middleware(RateLimitMiddleware)
 
-# Performance monitoring middleware (outermost custom middleware to catch full time)
 app.add_middleware(PerformanceMiddleware)
 
-# Add custom error handler middleware
 app.add_middleware(ErrorHandlerMiddleware)
 
-# Exception handlers - Ensure all errors return proper JSON responses
+
+# =========================================================
+# EXCEPTION HANDLERS
+# =========================================================
+
 @app.exception_handler(CustomException)
-async def custom_exception_handler(request: Request, exc: CustomException):
-    """Handle custom exceptions (ValidationError, NotFoundError, etc.)"""
+async def custom_exception_handler(
+    request: Request,
+    exc: CustomException
+):
+
     return JSONResponse(
         status_code=exc.status_code,
         content={
             "error": exc.message,
             "detail": exc.detail or exc.message,
-            "status_code": exc.status_code
-        }
+            "status_code": exc.status_code,
+        },
     )
 
 
 @app.exception_handler(ValidationError)
-async def validation_exception_handler(request: Request, exc: ValidationError):
-    """Handle ValidationError exceptions"""
+async def validation_exception_handler(
+    request: Request,
+    exc: ValidationError
+):
+
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={
             "error": exc.message,
             "detail": exc.detail or exc.message,
-            "status_code": 422
-        }
+            "status_code": 422,
+        },
     )
 
 
 @app.exception_handler(NotFoundError)
-async def not_found_exception_handler(request: Request, exc: NotFoundError):
-    """Handle NotFoundError exceptions"""
+async def not_found_exception_handler(
+    request: Request,
+    exc: NotFoundError
+):
+
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND,
         content={
             "error": exc.message,
             "detail": exc.detail or exc.message,
-            "status_code": 404
-        }
+            "status_code": 404,
+        },
     )
 
 
 @app.exception_handler(AuthenticationError)
-async def authentication_exception_handler(request: Request, exc: AuthenticationError):
-    """Handle AuthenticationError exceptions"""
+async def authentication_exception_handler(
+    request: Request,
+    exc: AuthenticationError
+):
+
     return JSONResponse(
         status_code=status.HTTP_401_UNAUTHORIZED,
         content={
             "error": exc.message,
             "detail": exc.detail or exc.message,
-            "status_code": 401
-        }
+            "status_code": 401,
+        },
     )
 
 
 @app.exception_handler(AuthorizationError)
-async def authorization_exception_handler(request: Request, exc: AuthorizationError):
-    """Handle AuthorizationError exceptions"""
+async def authorization_exception_handler(
+    request: Request,
+    exc: AuthorizationError
+):
+
     return JSONResponse(
         status_code=status.HTTP_403_FORBIDDEN,
         content={
             "error": exc.message,
             "detail": exc.detail or exc.message,
-            "status_code": 403
-        }
+            "status_code": 403,
+        },
     )
 
 
 @app.exception_handler(FastAPIHTTPException)
-async def http_exception_handler(request: Request, exc: FastAPIHTTPException):
-    """Handle FastAPI HTTPException - ensure it returns JSON"""
+async def http_exception_handler(
+    request: Request,
+    exc: FastAPIHTTPException
+):
+
     return JSONResponse(
         status_code=exc.status_code,
         content={
-            "error": exc.detail if isinstance(exc.detail, str) else "An error occurred",
-            "detail": exc.detail if isinstance(exc.detail, str) else str(exc.detail),
-            "status_code": exc.status_code
-        }
+            "error": (
+                exc.detail
+                if isinstance(exc.detail, str)
+                else "An error occurred"
+            ),
+            "detail": (
+                exc.detail
+                if isinstance(exc.detail, str)
+                else str(exc.detail)
+            ),
+            "status_code": exc.status_code,
+        },
     )
 
 
 @app.exception_handler(RequestValidationError)
-async def validation_error_handler(request: Request, exc: RequestValidationError):
-    """Handle request validation errors - ensure it returns JSON"""
-    errors = exc.errors()
+async def validation_error_handler(
+    request: Request,
+    exc: RequestValidationError
+):
+
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={
             "error": "Validation error",
             "detail": "Invalid request data",
-            "errors": errors,
-            "status_code": 422
-        }
+            "errors": exc.errors(),
+            "status_code": 422,
+        },
     )
 
 
 @app.exception_handler(Exception)
-async def general_exception_handler(request: Request, exc: Exception):
-    """Handle all other exceptions - ensure it returns JSON with CORS headers"""
-    import logging
-    logger = logging.getLogger(__name__)
-    logger.error(f"Unhandled exception: {str(exc)}", exc_info=True)
-    
-    # Create response - CORS middleware will add headers automatically
+async def general_exception_handler(
+    request: Request,
+    exc: Exception
+):
+
+    logger.error(
+        f"Unhandled exception: {str(exc)}",
+        exc_info=True
+    )
+
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
             "error": "Internal server error",
-            "detail": str(exc) if settings.DEBUG else "An unexpected error occurred",
-            "status_code": 500
-        }
+            "detail": (
+                str(exc)
+                if settings.DEBUG
+                else "An unexpected error occurred"
+            ),
+            "status_code": 500,
+        },
     )
 
 
-# Include routers
-app.include_router(auth_router, prefix="/api/users/auth", tags=["Authentication"])
-app.include_router(users_router, prefix="/api/users", tags=["Users"])
-app.include_router(certificates_router, prefix="/api/certificates", tags=["Certificates"])
-app.include_router(forms_router, prefix="/api/forms", tags=["Forms"])
-app.include_router(analytics_router, prefix="/api/analytics", tags=["Analytics"])
-app.include_router(notifications_router, prefix="/api/notifications", tags=["Notifications"])
-app.include_router(query_router, prefix="/api/queries", tags=["Queries"])
-app.include_router(tutorials_router, prefix="/api", tags=["Tutorials"])
-app.include_router(staff_router, prefix="/api/staff", tags=["Staff Management"])
+# =========================================================
+# ROUTERS
+# =========================================================
 
+app.include_router(
+    auth_router,
+    prefix="/api/users/auth",
+    tags=["Authentication"]
+)
+
+app.include_router(
+    users_router,
+    prefix="/api/users",
+    tags=["Users"]
+)
+
+app.include_router(
+    certificates_router,
+    prefix="/api/certificates",
+    tags=["Certificates"]
+)
+
+app.include_router(
+    forms_router,
+    prefix="/api/forms",
+    tags=["Forms"]
+)
+
+app.include_router(
+    analytics_router,
+    prefix="/api/analytics",
+    tags=["Analytics"]
+)
+
+app.include_router(
+    notifications_router,
+    prefix="/api/notifications",
+    tags=["Notifications"]
+)
+
+app.include_router(
+    query_router,
+    prefix="/api/queries",
+    tags=["Queries"]
+)
+
+app.include_router(
+    tutorials_router,
+    prefix="/api",
+    tags=["Tutorials"]
+)
+
+app.include_router(
+    staff_router,
+    prefix="/api/staff",
+    tags=["Staff Management"]
+)
+
+app.include_router(
+    integration_router,
+    prefix="/api/integration",
+    tags=["Internal Integration"]
+)
+
+
+# =========================================================
+# ROOT
+# =========================================================
 
 @app.get("/")
 async def root():
-    """Root endpoint"""
+
     return {
         "message": "infodocs API",
         "version": "1.0.0",
-        "status": "running"
+        "status": "running",
     }
 
 
+# =========================================================
+# HEALTH CHECK
+# =========================================================
+
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
-    return {"status": "healthy"}
 
+    return {
+        "status": "healthy"
+    }
+
+
+# =========================================================
+# METRICS
+# =========================================================
 
 @app.get("/metrics")
 async def metrics():
-    """Server metrics endpoint for monitoring"""
-    from config.database import engine
-    
+
     metrics_data = {
         "status": "healthy",
         "database": {
             "connected": engine is not None,
-        }
+        },
     }
-    
-    # Add connection pool metrics if available
-    if engine and hasattr(engine, 'pool'):
-        pool = engine.pool
-        try:
+
+    try:
+
+        if engine and hasattr(engine, "pool"):
+
+            pool = engine.pool
+
             metrics_data["database"]["pool"] = {
-                "size": pool.size() if hasattr(pool, 'size') else None,
-                "checked_in": pool.checkedin() if hasattr(pool, 'checkedin') else None,
-                "checked_out": pool.checkedout() if hasattr(pool, 'checkedout') else None,
-                "overflow": pool.overflow() if hasattr(pool, 'overflow') else None,
-                "invalid": pool.invalid() if hasattr(pool, 'invalid') else None,
+                "size": (
+                    pool.size()
+                    if hasattr(pool, "size")
+                    else None
+                ),
+
+                "checked_in": (
+                    pool.checkedin()
+                    if hasattr(pool, "checkedin")
+                    else None
+                ),
+
+                "checked_out": (
+                    pool.checkedout()
+                    if hasattr(pool, "checkedout")
+                    else None
+                ),
+
+                "overflow": (
+                    pool.overflow()
+                    if hasattr(pool, "overflow")
+                    else None
+                ),
             }
-        except Exception as e:
-            logger.warning(f"Could not get pool metrics: {e}")
-    
+
+    except Exception as e:
+
+        logger.warning(
+            f"Could not get pool metrics: {e}"
+        )
+
     return metrics_data
 
 
+# =========================================================
+# MAIN
+# =========================================================
+
 if __name__ == "__main__":
+
     import uvicorn
+
     uvicorn.run(
         "main:app",
         host=settings.HOST,
         port=settings.PORT,
         reload=settings.DEBUG,
     )
-

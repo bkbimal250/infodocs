@@ -4,80 +4,20 @@ Utility Functions
 import logging
 from datetime import datetime, timezone
 from typing import Iterable, Union, Optional, Tuple, List
-from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from config.settings import settings
 
 logger = logging.getLogger(__name__)
 
-# FastAPI-Mail configuration (lazy initialization)
-_mail_config: Optional[ConnectionConfig] = None
-_fastmail: Optional[FastMail] = None
 
-
-def get_current_timestamp() -> datetime:
+async def get_current_timestamp() -> datetime:
     """Get current UTC timestamp"""
     return datetime.now(timezone.utc)
 
 
-def _get_mail_config() -> ConnectionConfig:
-    """
-    Get or create FastAPI-Mail connection configuration.
-    Uses lazy initialization to avoid creating config before settings are loaded.
-    """
-    global _mail_config
-    
-    if _mail_config is None:
-        # Validate SMTP settings first
-        is_valid, error_msg = validate_smtp_settings()
-        if not is_valid:
-            logger.error(f"SMTP configuration error: {error_msg}")
-            raise ValueError(error_msg)
-        
-        # Extract display name and email from FROM field
-        from_email = settings.SMTP_FROM_EMAIL or settings.SERVER_EMAIL
-        from_name = "SPADocs"
-        
-        # Check if FROM email contains display name format: "Display Name <email@example.com>"
-        if "<" in from_email and ">" in from_email:
-            # Extract display name and email
-            parts = from_email.split("<")
-            if len(parts) == 2:
-                from_name = parts[0].strip().strip('"').strip("'")
-                from_email = parts[1].strip().strip(">")
-        
-        _mail_config = ConnectionConfig(
-            MAIL_USERNAME=settings.SMTP_USER,
-            MAIL_PASSWORD=settings.SMTP_PASSWORD,
-            MAIL_FROM=from_email,
-            MAIL_FROM_NAME=from_name,
-            MAIL_PORT=settings.SMTP_PORT,
-            MAIL_SERVER=settings.SMTP_HOST,
-            MAIL_STARTTLS=bool(settings.SMTP_USE_TLS),
-            MAIL_SSL_TLS=False,  # Use STARTTLS instead of SSL
-            USE_CREDENTIALS=True,
-            VALIDATE_CERTS=True,
-            MAIL_DEBUG=settings.DEBUG,
-        )
-        logger.info(f"FastAPI-Mail configuration initialized for {settings.SMTP_HOST}:{settings.SMTP_PORT}")
-    
-    return _mail_config
-
-
-def _get_fastmail() -> FastMail:
-    """
-    Get or create FastMail instance.
-    Uses lazy initialization.
-    """
-    global _fastmail
-    
-    if _fastmail is None:
-        config = _get_mail_config()
-        _fastmail = FastMail(config)
-    
-    return _fastmail
-
-
-def validate_smtp_settings() -> Tuple[bool, Optional[str]]:
+async def validate_smtp_settings() -> Tuple[bool, Optional[str]]:
     """
     Validate SMTP settings are configured.
     
@@ -102,7 +42,7 @@ async def send_email(
     html_body: Optional[str] = None
 ) -> None:
     """
-    Send an email using FastAPI-Mail (native async).
+    Send an email synchronously using smtplib.
 
     Args:
         subject: Email subject line.
@@ -129,33 +69,43 @@ async def send_email(
         raise ValueError(error_msg)
     
     try:
-        # Get FastMail instance
-        fm = _get_fastmail()
+        # Extract display name and email from FROM field
+        from_email = settings.SMTP_FROM_EMAIL or settings.SERVER_EMAIL
+        from_name = "SPADocs"
         
-        # Determine message type and body
+        # Check if FROM email contains display name format: "Display Name <email@example.com>"
+        if "<" in from_email and ">" in from_email:
+            parts = from_email.split("<")
+            if len(parts) == 2:
+                from_name = parts[0].strip().strip('"').strip("'")
+                from_email = parts[1].strip().strip(">")
+        
+        # Create message container
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From'] = f"{from_name} <{from_email}>"
+        msg['To'] = ", ".join(recipient_list)
+        
         if html_body:
-            # Send as HTML email
-            message = MessageSchema(
-                subject=subject,
-                recipients=recipient_list,
-                body=html_body,
-                subtype=MessageType.html
-            )
+            msg.attach(MIMEText(html_body, 'html'))
         else:
-            # Send as plain text email
-            message = MessageSchema(
-                subject=subject,
-                recipients=recipient_list,
-                body=body,
-                subtype=MessageType.plain
-            )
-        
+            msg.attach(MIMEText(body, 'plain'))
+            
         logger.info(f"Attempting to send email to {recipient_list} via {settings.SMTP_HOST}:{settings.SMTP_PORT}")
-        await fm.send_message(message)
+        
+        # Connect to SMTP server
+        server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT)
+        if settings.SMTP_USE_TLS:
+            server.starttls()
+        server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+        server.sendmail(from_email, recipient_list, msg.as_string())
+        server.quit()
+        
         logger.info(f"Email sent successfully to {recipient_list}")
         
     except Exception as exc:
         error_msg = f"Failed to send email: {str(exc)}"
         logger.error(error_msg, exc_info=True)
         raise ValueError(error_msg)
+
 

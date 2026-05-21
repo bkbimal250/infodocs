@@ -3,7 +3,7 @@ Query / Support Ticket Routers
 API endpoints for query management
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Query as FastAPIQuery
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession as Session
 from typing import Optional
 
 from config.database import get_db
@@ -50,7 +50,7 @@ query_router = APIRouter()
 )
 async def get_query_types_endpoint(
     active_only: bool = FastAPIQuery(True, description="Return only active types"),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
     """Get all query types"""
@@ -64,9 +64,9 @@ async def get_query_types_endpoint(
     summary="Create a new query type",
     description="Admin can create new query types"
 )
-async def create_query_type_endpoint(
+async def  create_query_type_endpoint(
     query_type_data: QueryTypeCreate,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin", "super_admin"))
 ):
     """Create a new query type (Admin only)"""
@@ -102,7 +102,7 @@ async def create_query_type_endpoint(
 async def update_query_type_endpoint(
     query_type_id: int,
     query_type_data: QueryTypeUpdate,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin", "super_admin"))
 ):
     """Update a query type (Admin only)"""
@@ -143,7 +143,7 @@ async def update_query_type_endpoint(
 async def delete_query_type_endpoint(
     query_type_id: int,
     permanent: bool = FastAPIQuery(False, description="Permanent delete (default: false = deactivate)"),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin", "super_admin"))
 ):
     """Delete a query type (Admin only). Soft delete (deactivate) by default, permanent if specified."""
@@ -175,9 +175,9 @@ async def delete_query_type_endpoint(
     summary="Create a new query",
     description="Manager, HR, and Users can create queries"
 )
-async def create_query_endpoint(
+async def  create_query_endpoint(
     query_data: QueryCreate,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_role("spa_manager", "hr", "user", "admin", "super_admin"))
 ):
     """Create a new query"""
@@ -214,7 +214,7 @@ async def get_queries_endpoint(
     spa_id: Optional[int] = FastAPIQuery(None, description="Filter by SPA ID"),
     page: int = FastAPIQuery(1, ge=1, description="Page number"),
     page_size: int = FastAPIQuery(10, ge=1, le=100, description="Items per page"),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
     """Get list of queries"""
@@ -254,7 +254,7 @@ async def get_queries_endpoint(
 )
 async def get_query_endpoint(
     query_id: int,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
     """Get a query by ID"""
@@ -289,7 +289,7 @@ async def get_query_endpoint(
 async def update_query_endpoint(
     query_id: int,
     query_data: QueryUpdate,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin", "super_admin"))
 ):
     """Update a query (Admin only)"""
@@ -325,7 +325,7 @@ async def update_query_endpoint(
 async def delete_query_endpoint(
     query_id: int,
     permanent: bool = FastAPIQuery(False, description="Permanent delete (default: false = soft delete)"),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin", "super_admin"))
 ):
     """Delete a query (Admin only). Soft delete by default, permanent if specified."""

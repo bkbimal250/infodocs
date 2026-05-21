@@ -3,7 +3,7 @@ Analytics Routers
 API endpoints for analytics and statistics
 """
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession as Session
 from apps.users.models import User
 from core.dependencies import require_role
 from config.database import get_db
@@ -18,7 +18,7 @@ analytics_router = APIRouter()
 @analytics_router.get("")
 async def get_analytics(
     current_user: User = Depends(require_role("admin", "hr", "spa_manager", "super_admin")),
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ):
     """Get overall analytics"""
     try:
@@ -38,7 +38,7 @@ async def get_analytics(
 @analytics_router.get("/candidates")
 async def get_candidate_analytics(
     current_user: User = Depends(require_role("admin", "hr", "spa_manager", "super_admin")),
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ):
     """Get candidate analytics"""
     try:
@@ -56,7 +56,7 @@ async def get_candidate_analytics(
 @analytics_router.get("/certificates")
 async def get_certificate_analytics(
     current_user: User = Depends(require_role("admin", "hr", "spa_manager", "super_admin")),
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ):
     """Get certificate analytics"""
     try:
@@ -74,7 +74,7 @@ async def get_certificate_analytics(
 @analytics_router.get("/overview")
 async def get_dashboard_overview(
     current_user: User = Depends(require_role("admin", "hr", "spa_manager", "super_admin")),
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ):
     """Get consolidated dashboard overview (all stats in one request)"""
     try:

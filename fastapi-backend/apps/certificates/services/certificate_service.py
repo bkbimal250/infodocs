@@ -10,7 +10,7 @@ from urllib.parse import quote
 import logging
 from pathlib import Path
 
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession as Session
 from sqlalchemy import select, and_, delete, func
 from sqlalchemy.orm import joinedload, selectinload, defer
 
@@ -53,7 +53,7 @@ _template_cache = {}
 _template_list_cache = None
 _cache_lock = None
 
-def _get_cache_lock():
+async def _get_cache_lock():
     """Get or create cache lock for thread-safe operations"""
     global _cache_lock
     if _cache_lock is None:
@@ -61,7 +61,7 @@ def _get_cache_lock():
         _cache_lock = asyncio.Lock()
     return _cache_lock
 
-def _invalidate_template_cache(template_id: Optional[int] = None):
+async def _invalidate_template_cache(template_id: Optional[int] = None):
     """Invalidate template cache
     
     Args:
@@ -80,14 +80,14 @@ def _invalidate_template_cache(template_id: Optional[int] = None):
         _template_list_cache = None
         logger.debug("Invalidated all template caches")
 
-def _get_static_path():
+async def _get_static_path():
     """Get static file base path (cached)"""
     global _STATIC_PATH_CACHE
     if _STATIC_PATH_CACHE is None:
         _STATIC_PATH_CACHE = Path(__file__).resolve().parents[3] / "Static"
     return _STATIC_PATH_CACHE
 
-def _get_media_path():
+async def _get_media_path():
     """Get media upload path (cached)"""
     global _MEDIA_PATH_CACHE
     if _MEDIA_PATH_CACHE is None:
@@ -112,7 +112,7 @@ SPA_REQUIRED_CATEGORIES = {
 # Template CRUD Operations
 # -------------------------
 
-async def get_public_templates(db: AsyncSession, use_cache: bool = True) -> List[CertificateTemplate]:
+async def  _public_templates(db: Session, use_cache: bool = True) -> List[CertificateTemplate]:
     """Get all public and active certificate templates (with caching)
     
     Args:
@@ -144,7 +144,7 @@ async def get_public_templates(db: AsyncSession, use_cache: bool = True) -> List
     return templates
 
 
-async def get_template_by_id(db: AsyncSession, template_id: int, use_cache: bool = True) -> Optional[CertificateTemplate]:
+async def  get_template_by_id(db: Session, template_id: int, use_cache: bool = True) -> Optional[CertificateTemplate]:
     """Get certificate template by ID (with caching)
     
     Args:
@@ -164,22 +164,23 @@ async def get_template_by_id(db: AsyncSession, template_id: int, use_cache: bool
     
     # Cache the result if found
     if use_cache and template:
-        async with _get_cache_lock():
+        cache_lock = await _get_cache_lock()
+        async with cache_lock:
             _template_cache[template_id] = template
             logger.debug(f"Cached template {template_id}")
     
     return template
 
 
-async def get_all_templates(db: AsyncSession, skip: int = 0, limit: int = 1000) -> List[CertificateTemplate]:
+async def  _all_templates(db: Session, skip: int = 0, limit: int = 1000) -> List[CertificateTemplate]:
     """Get all certificate templates (admin only)"""
     stmt = select(CertificateTemplate).order_by(CertificateTemplate.created_at.desc()).offset(skip).limit(limit)
     result = await db.execute(stmt)
     return list(result.scalars().all())
 
 
-async def get_templates_by_category(
-    db: AsyncSession,
+async def  _templates_by_category(
+    db: Session,
     category: CertificateCategory,
     template_variant: Optional[str] = None,
     is_public: Optional[bool] = None,
@@ -224,8 +225,8 @@ async def get_templates_by_category(
     return list(result.scalars().all())
 
 
-async def get_template_variants_by_category(
-    db: AsyncSession,
+async def  _template_variants_by_category(
+    db: Session,
     category: CertificateCategory,
     is_public: Optional[bool] = None,
     is_active: Optional[bool] = True
@@ -256,8 +257,8 @@ async def get_template_variants_by_category(
     return variants
 
 
-async def create_template(
-    db: AsyncSession,
+async def   create_template(
+    db: Session,
     name: str,
     category: CertificateCategory,
     created_by: int,
@@ -290,7 +291,7 @@ async def create_template(
         await db.refresh(template)
         
         # Invalidate cache for new template
-        _invalidate_template_cache()
+        await _invalidate_template_cache()
         
         return template
     except Exception as e:
@@ -299,8 +300,8 @@ async def create_template(
         raise
 
 
-async def update_template(
-    db: AsyncSession,
+async def  update_template(
+    db: Session,
     template_id: int,
     name: Optional[str] = None,
     category: Optional[CertificateCategory] = None,
@@ -316,7 +317,7 @@ async def update_template(
     """Update a certificate template"""
     # Bypass cache to get a fresh template from the current session
     # This ensures the template is attached to the current session for updates
-    template = await get_template_by_id(db, template_id, use_cache=False)
+    template = await getget_template_by_id(db, template_id, use_cache=False)
     if not template:
         return None
 
@@ -341,7 +342,7 @@ async def update_template(
         await db.refresh(template)
         
         # Invalidate cache for updated template
-        _invalidate_template_cache(template_id)
+        await _invalidate_template_cache(template_id)
         
         return template
     except Exception as e:
@@ -350,10 +351,10 @@ async def update_template(
         raise
 
 
-async def delete_template(db: AsyncSession, template_id: int) -> bool:
+async def  delete_template(db: Session, template_id: int) -> bool:
     """Delete a certificate template and invalidate cache"""
     # Check if template exists (bypass cache to ensure we check database)
-    template = await get_template_by_id(db, template_id, use_cache=False)
+    template = await getget_template_by_id(db, template_id, use_cache=False)
     if not template:
         return False
 
@@ -362,8 +363,8 @@ async def delete_template(db: AsyncSession, template_id: int) -> bool:
     await db.commit()
     
     # Invalidate cache for deleted template and list cache
-    _invalidate_template_cache(template_id)
-    _invalidate_template_cache()  # Also clear list cache
+    await _invalidate_template_cache(template_id)
+    await _invalidate_template_cache()  # Also clear list cache
     
     return True
 
@@ -371,7 +372,7 @@ async def delete_template(db: AsyncSession, template_id: int) -> bool:
 # Template File Handling
 # -------------------------
 
-def load_template_file(template_name: str) -> str:
+async def load_template_file(template_name: str) -> str:
     """Load HTML template file"""
     template_path = TEMPLATE_DIR / f"{template_name}.html"
     if not template_path.exists():
@@ -381,7 +382,7 @@ def load_template_file(template_name: str) -> str:
         return f.read()
 
 
-def get_template_name_by_category(category: CertificateCategory) -> str:
+async def get_template_name_by_category(category: CertificateCategory) -> str:
     """Map certificate category to template file name"""
     mapping = {
         CertificateCategory.MANAGER_SALARY: "salary_certificate",
@@ -398,7 +399,7 @@ def get_template_name_by_category(category: CertificateCategory) -> str:
     return mapping.get(category, "salary_certificate")
 
 
-async def prepare_certificate_data(template: CertificateTemplate, certificate_data: Dict[str, Any], candidate_name: str, use_http_urls: bool = False) -> Dict[str, Any]:
+async def  prepare_certificate_data(template: CertificateTemplate, certificate_data: Dict[str, Any], candidate_name: str, use_http_urls: bool = False) -> Dict[str, Any]:
     """Prepare data for rendering certificate templates
     
     Args:
@@ -410,7 +411,7 @@ async def prepare_certificate_data(template: CertificateTemplate, certificate_da
     spa = certificate_data.get("spa") or {}
 
     # Get static file base path (using cached path)
-    static_base_path = _get_static_path()
+    static_base_path = await _get_static_path()
     # Remove leading slash for file:// URLs to avoid double slashes
     static_base_path_str = str(static_base_path).replace("\\", "/").lstrip("/")
     
@@ -445,7 +446,7 @@ async def prepare_certificate_data(template: CertificateTemplate, certificate_da
     # Handle SPA logo path conversion
     # Note: Files are saved to uploads/ but settings.UPLOAD_DIR might be "media"
     # Check both locations to handle the mismatch
-    media_base_path = _get_media_path()
+    media_base_path = await _get_media_path()
     # Remove leading slash for file:// URLs to avoid double slashes
     media_base_path_str = str(media_base_path).replace("\\", "/").lstrip("/")
     
@@ -565,7 +566,7 @@ async def prepare_certificate_data(template: CertificateTemplate, certificate_da
     # For SPA_THERAPIST, handle image paths/URLs (using cached paths)
     if template.category == CertificateCategory.SPA_THERAPIST:
         base_url = certificate_data.get("base_url", settings.API_BASE_URL)
-        media_base_path = _get_media_path()
+        media_base_path = await _get_media_path()
         media_base_path_str = str(media_base_path).replace("\\", "/")
         
         # Handle passport_size_photo
@@ -597,7 +598,7 @@ async def prepare_certificate_data(template: CertificateTemplate, certificate_da
     # For ID_CARD, handle candidate_photo image paths/URLs
     if template.category == CertificateCategory.ID_CARD:
         base_url = certificate_data.get("base_url", settings.API_BASE_URL)
-        media_base_path = _get_media_path()
+        media_base_path = await _get_media_path()
         # Remove leading slash for file:// URLs to avoid double slashes
         media_base_path_str = str(media_base_path).replace("\\", "/").lstrip("/")
         
@@ -708,7 +709,7 @@ async def prepare_certificate_data(template: CertificateTemplate, certificate_da
     # For UNDER_TAKING_SHEET and JOB_FORM_SHEET, handle employee_photo and employee_signature
     if template.category in (CertificateCategory.UNDER_TAKING_SHEET, CertificateCategory.JOB_FORM_SHEET):
         base_url = certificate_data.get("base_url", settings.API_BASE_URL)
-        media_base_path = _get_media_path()
+        media_base_path = await _get_media_path()
         media_base_path_str = str(media_base_path).replace("\\", "/").lstrip("/")
         
         # Handle employee_photo
@@ -894,7 +895,7 @@ async def prepare_certificate_data(template: CertificateTemplate, certificate_da
     return data
 
 
-def get_certificate_model(category: CertificateCategory):
+async def get_certificate_model(category: CertificateCategory):
     """Get the appropriate certificate model based on category"""
     model_map = {
         CertificateCategory.SPA_THERAPIST: SpaTherapistCertificate,
@@ -914,8 +915,8 @@ def get_certificate_model(category: CertificateCategory):
 # Certificate Generation
 # -------------------------
 
-async def create_generated_certificate(
-    db: AsyncSession,
+async def   create_generated_certificate(
+    db: Session,
     template_id: int,
     name: str,
     certificate_data: Optional[Dict[str, Any]] = None,
@@ -925,13 +926,13 @@ async def create_generated_certificate(
     user_agent: Optional[str] = None
 ):
     """Create a generated certificate with tracking"""
-    template = await get_template_by_id(db, template_id)
+    template = await getget_template_by_id(db, template_id)
     if not template:
         raise NotFoundError("Certificate template not found")
     if not template.is_public or not template.is_active:
         raise ValidationError("Certificate template is not available for public use")
 
-    CertificateModel = get_certificate_model(template.category)
+    CertificateModel = await get_certificate_model(template.category)
     certificate_payload = certificate_data or {}
 
     spa_payload = certificate_payload.get("spa") or {}
@@ -1171,7 +1172,7 @@ async def create_generated_certificate(
         if not template.template_html:
             raise ValidationError("HTML template requires template_html content. Please provide HTML in the template.")
         html_content = template.template_html
-        rendered_html = render_html_template(html_content, data)
+        rendered_html = await render_html_template(html_content, data)
         try:
             # Optimized: Use run_in_threadpool to avoid blocking event loop
             from starlette.concurrency import run_in_threadpool
@@ -1227,7 +1228,7 @@ async def create_generated_certificate(
 # Generated Certificate Queries
 # -------------------------
 
-async def get_generated_certificate_by_id(db: AsyncSession, certificate_id: int):
+async def  _generated_certificate_by_id(db: Session, certificate_id: int):
     """
     Get a certificate by ID from any certificate table.
     🚀 Optimized: Parallelized searching across all certificate models.
@@ -1246,7 +1247,7 @@ async def get_generated_certificate_by_id(db: AsyncSession, certificate_id: int)
         JobformSheet
     ]
     
-    async def check_model(model):
+    async def  check_model(model):
         try:
             # Eager load SPA details as it's almost always needed in the frontend
             stmt = select(model).options(joinedload(model.spa)).where(model.id == certificate_id)
@@ -1267,7 +1268,7 @@ async def get_generated_certificate_by_id(db: AsyncSession, certificate_id: int)
     return None
 
 
-async def get_public_certificates(db: AsyncSession, skip: int = 0, limit: int = 100):
+async def  _public_certificates(db: Session, skip: int = 0, limit: int = 100):
     """Get all public generated certificates from all certificate tables
     
     Optimized: Executes queries in parallel and uses database-level sorting where possible
@@ -1287,7 +1288,7 @@ async def get_public_certificates(db: AsyncSession, skip: int = 0, limit: int = 
     ]
     
     # Execute all queries in parallel for better performance
-    async def fetch_certificates(model):
+    async def  fetch_certificates(model):
         try:
             stmt = select(model).where(model.is_public.is_(True))
             result = await db.execute(stmt)
@@ -1314,7 +1315,7 @@ async def get_public_certificates(db: AsyncSession, skip: int = 0, limit: int = 
     return all_certificates[skip:skip + limit]
 
 
-async def get_user_certificates(db: AsyncSession, user_id: int, skip: int = 0, limit: int = 100):
+async def  _user_certificates(db: Session, user_id: int, skip: int = 0, limit: int = 100):
     """Get certificates created by a specific user
     
     Optimized: Executes queries in parallel for better performance
@@ -1334,7 +1335,7 @@ async def get_user_certificates(db: AsyncSession, user_id: int, skip: int = 0, l
     ]
     
     # Execute all queries in parallel
-    async def fetch_user_certificates(model):
+    async def  fetch_user_certificates(model):
         try:
             # Optimized: Added limit to avoid fetching all user certificates
             stmt = select(model).where(model.created_by == user_id).limit(skip + limit)
@@ -1353,7 +1354,7 @@ async def get_user_certificates(db: AsyncSession, user_id: int, skip: int = 0, l
         all_certificates.extend(cert_list)
 
     # Sort certificates by date, handling None values and different date field names
-    def get_sort_date(cert):
+    async def get_sort_date(cert):
         if hasattr(cert, 'generated_at') and cert.generated_at:
             return cert.generated_at
         elif hasattr(cert, 'created_at') and cert.created_at:
@@ -1366,7 +1367,7 @@ async def get_user_certificates(db: AsyncSession, user_id: int, skip: int = 0, l
     return all_certificates[skip:skip + limit]
 
 
-async def get_all_certificates_with_users(db: AsyncSession, skip: int = 0, limit: int = 100):
+async def  _all_certificates_with_users(db: Session, skip: int = 0, limit: int = 100):
     """Get all certificates with user information
     
     Optimized: 
@@ -1390,7 +1391,7 @@ async def get_all_certificates_with_users(db: AsyncSession, skip: int = 0, limit
     ]
     
     # Execute all queries in parallel
-    async def fetch_certificates(model):
+    async def  fetch_certificates(model):
         try:
             # Fetch only enough to potentially satisfy the pagination after sorting
             # Optimized: Defer heavy columns that aren't needed in the list view (e.g., Base64 images)
@@ -1430,8 +1431,8 @@ async def get_all_certificates_with_users(db: AsyncSession, skip: int = 0, limit
 
 
 
-async def delete_certificate(
-    db: AsyncSession,
+async def  delete_certificate(
+    db: Session,
     certificate_id: int,
     category: Optional[CertificateCategory] = None
 ) -> bool:
@@ -1449,7 +1450,7 @@ async def delete_certificate(
         (GeneratedCertificate, None),
     ]
 
-    async def delete_record(model):
+    async def  delete_record(model):
         # 1. Fetch record
         result = await db.execute(
             select(model).where(model.id == certificate_id)
@@ -1508,7 +1509,7 @@ async def delete_certificate(
 
     return False
 
-async def get_certificate_statistics(db: AsyncSession):
+async def  _certificate_statistics(db: Session):
     """Get certificate statistics: total, by user, by category (Optimized with parallel queries & Redis caching)"""
     import asyncio
     import json
@@ -1541,17 +1542,13 @@ async def get_certificate_statistics(db: AsyncSession):
     ]
     
     # Helper to fetch stats for a single model
-    async def fetch_model_stats(model, category):
+    async def  fetch_model_stats(model, category):
         try:
-            # Optimized: Parallelize the two internal queries
             count_stmt = select(func.count(model.id))
             user_stmt = select(model.created_by, func.count(model.id)).group_by(model.created_by)
             
-            count_res, user_res = await asyncio.gather(
-                db.execute(count_stmt),
-                db.execute(user_stmt),
-                return_exceptions=True
-            )
+            count_res = await db.execute(count_stmt)
+            user_res = await db.execute(user_stmt)
             
             # Handle potential errors in parallel execution
             count = 0
@@ -1634,5 +1631,18 @@ async def get_certificate_statistics(db: AsyncSession):
         logger.warning(f"Error saving to Redis: {e}")
 
     return stats
+
+
+# Public async API aliases expected by routers and older imports.
+get_public_templates = _public_templates
+getget_template_by_id = get_template_by_id
+get_all_templates = _all_templates
+get_templates_by_category = _templates_by_category
+get_template_variants_by_category = _template_variants_by_category
+get_generated_certificate_by_id = _generated_certificate_by_id
+get_public_certificates = _public_certificates
+get_user_certificates = _user_certificates
+get_all_certificates_with_users = _all_certificates_with_users
+get_certificate_statistics = _certificate_statistics
 
 

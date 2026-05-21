@@ -4,7 +4,9 @@ Business logic for user operations using SQLAlchemy
 """
 from typing import Optional, List
 from datetime import datetime, timezone
-from sqlalchemy.ext.asyncio import AsyncSession
+import secrets
+import string
+from sqlalchemy.ext.asyncio import AsyncSession as Session
 from sqlalchemy import select, or_
 from sqlalchemy.orm import selectinload
 from passlib.context import CryptContext
@@ -14,7 +16,21 @@ from core.exceptions import NotFoundError, ValidationError
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-def hash_password(password: str) -> str:
+async def generate_secure_password(length: int = 12) -> str:
+    """Generate a one-time password for admin-created accounts."""
+    alphabet = string.ascii_letters + string.digits
+    password = [
+        secrets.choice(string.ascii_uppercase),
+        secrets.choice(string.ascii_lowercase),
+        secrets.choice(string.digits),
+        secrets.choice("@#$%&*!"),
+    ]
+    password.extend(secrets.choice(alphabet) for _ in range(max(length - len(password), 0)))
+    secrets.SystemRandom().shuffle(password)
+    return "".join(password)
+
+
+async def hash_password(password: str) -> str:
     """
     Hash a password using bcrypt.
     
@@ -49,13 +65,13 @@ def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
+async def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password"""
     return pwd_context.verify(plain_password, hashed_password)
 
 
-async def create_user(
-    db: AsyncSession,
+async def  create_user(
+    db: Session,
     username: str,
     email: str,
     password: str,
@@ -80,7 +96,7 @@ async def create_user(
     user = User(
         username=username,
         email=email,
-        password_hash=hash_password(password),
+        password_hash=await hash_password(password),
         first_name=first_name,
         last_name=last_name,
         role=role,
@@ -109,28 +125,28 @@ async def create_user(
     return user
 
 
-async def get_user_by_id(db: AsyncSession, user_id: int) -> Optional[User]:
+async def get_user_by_id(db: Session, user_id: int) -> Optional[User]:
     """Get user by ID"""
     stmt = select(User).where(User.id == user_id)
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
 
-async def get_user_by_username(db: AsyncSession, username: str) -> Optional[User]:
+async def get_user_by_username(db: Session, username: str) -> Optional[User]:
     """Get user by username"""
     stmt = select(User).where(User.username == username)
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
 
-async def get_user_by_email(db: AsyncSession, email: str) -> Optional[User]:
+async def get_user_by_email(db: Session, email: str) -> Optional[User]:
     """Get user by email"""
     stmt = select(User).where(User.email == email)
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
 
-async def authenticate_user(db: AsyncSession, username_or_email: str, password: str) -> Optional[User]:
+async def authenticate_user(db: Session, username_or_email: str, password: str) -> Optional[User]:
     """Authenticate user with username/email and password (Optimized to single query)"""
     stmt = select(User).where(
         or_(User.username == username_or_email, User.email == username_or_email)
@@ -141,13 +157,13 @@ async def authenticate_user(db: AsyncSession, username_or_email: str, password: 
     if not user:
         return None
     
-    if not verify_password(password, user.password_hash):
+    if not await verify_password(password, user.password_hash):
         return None
     
     return user
 
 
-async def update_user(db: AsyncSession, user_id: int, update_data: dict) -> User:
+async def update_user(db: Session, user_id: int, update_data: dict) -> User:
     """Update user"""
     user = await get_user_by_id(db, user_id)
     if not user:
@@ -155,7 +171,7 @@ async def update_user(db: AsyncSession, user_id: int, update_data: dict) -> User
     
     # Handle password separately - hash it if provided
     if 'password' in update_data and update_data['password']:
-        update_data['password_hash'] = hash_password(update_data.pop('password'))
+        update_data['password_hash'] = await hash_password(update_data.pop('password'))
     
     # Check for username/email conflicts if being updated
     if 'username' in update_data or 'email' in update_data:
@@ -195,8 +211,9 @@ async def update_user(db: AsyncSession, user_id: int, update_data: dict) -> User
     return user
 
 
-async def get_all_users(db: AsyncSession, skip: int = 0, limit: int = 1000) -> List[User]:
+async def get_all_users(db: Session, skip: int = 0, limit: int = 1000) -> List[User]:
     """Get all users with pagination"""
     stmt = select(User).offset(skip).limit(limit)
     result = await db.execute(stmt)
     return list(result.scalars().all())
+

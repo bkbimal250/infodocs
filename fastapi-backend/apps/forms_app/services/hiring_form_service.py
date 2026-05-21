@@ -4,14 +4,14 @@ Business logic for hiring form submissions
 """
 from typing import Optional
 from datetime import datetime, timezone
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession as Session
 from sqlalchemy import select
 from apps.forms_app.models import Hiring_Form
 from core.exceptions import NotFoundError
 
 
-async def create_hiring_form(
-    db: AsyncSession,
+async def  create_hiring_form(
+    db: Session,
     spa_id: Optional[int],
     spa_name_text: Optional[str],
     staff_required: int,
@@ -41,7 +41,7 @@ async def create_hiring_form(
     return hiring_form
 
 
-async def get_hiring_form_by_id(db: AsyncSession, form_id: int) -> Optional[Hiring_Form]:
+async def get_hiring_form_by_id(db: Session, form_id: int) -> Optional[Hiring_Form]:
     """Get hiring form by ID with SPA relationship"""
     from sqlalchemy.orm import selectinload
     stmt = select(Hiring_Form).options(selectinload(Hiring_Form.spa)).where(Hiring_Form.id == form_id)
@@ -50,7 +50,7 @@ async def get_hiring_form_by_id(db: AsyncSession, form_id: int) -> Optional[Hiri
 
 
 async def get_all_hiring_forms(
-    db: AsyncSession,
+    db: Session,
     skip: int = 0,
     limit: int = 1000,
     created_by: Optional[int] = None,
@@ -93,7 +93,7 @@ async def get_all_hiring_forms(
 
 
 async def update_hiring_form(
-    db: AsyncSession,
+    db: Session,
     form_id: int,
     spa_id: Optional[int] = None,
     staff_required: Optional[int] = None,
@@ -128,7 +128,7 @@ async def update_hiring_form(
     return form
 
 
-async def delete_hiring_form(db: AsyncSession, form_id: int) -> bool:
+async def delete_hiring_form(db: Session, form_id: int) -> bool:
     """Delete a hiring form submission"""
     from sqlalchemy import delete
     
@@ -142,7 +142,7 @@ async def delete_hiring_form(db: AsyncSession, form_id: int) -> bool:
     return True
 
 
-async def get_all_hiring_forms_with_users(db: AsyncSession, skip: int = 0, limit: int = 1000):
+async def get_all_hiring_forms_with_users(db: Session, skip: int = 0, limit: int = 1000):
     """Get all hiring forms with user and SPA information"""
     from apps.users.models import User
     from sqlalchemy.orm import selectinload
@@ -165,7 +165,7 @@ async def get_all_hiring_forms_with_users(db: AsyncSession, skip: int = 0, limit
     
     return forms
 
-async def get_forms_statistics(db: AsyncSession):
+async def get_forms_statistics(db: Session):
     """Get forms statistics: total, by SPA, by user"""
     from sqlalchemy import func
     from apps.users.models import User

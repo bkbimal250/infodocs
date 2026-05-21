@@ -33,7 +33,7 @@
 - **Fix**: Use joins or implement SPA caching
 
 ### 6. **No Template Caching**
-- **Location**: `get_template_by_id()`, `get_public_templates()`
+- **Location**: `getget_template_by_id()`, `get_public_templates()`
 - **Issue**: Templates fetched from database on every request
 - **Impact**: Unnecessary database queries for frequently accessed data
 - **Fix**: Implement Redis or in-memory caching for templates

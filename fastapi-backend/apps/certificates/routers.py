@@ -6,7 +6,7 @@ from typing import List, Optional, Dict
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Response, Query, UploadFile, File, Form
 from fastapi.responses import FileResponse, StreamingResponse
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession as Session
 from pathlib import Path
 import io
 import logging
@@ -27,7 +27,7 @@ from apps.certificates.schemas import (
 from pydantic import BaseModel
 from apps.certificates.services.certificate_service import (
     get_public_templates,
-    get_template_by_id,
+    getget_template_by_id,
     get_all_templates,
     get_templates_by_category,
     get_template_variants_by_category,
@@ -64,7 +64,7 @@ certificates_router = APIRouter()
 # -------------------------
 
 @certificates_router.get("/background-removal/status")
-async def background_removal_status():
+async def  background_removal_status():
     """
     Check if background removal service is available.
     Returns the status of rembg installation.
@@ -87,7 +87,7 @@ async def background_removal_status():
 
 
 @certificates_router.post("/remove-background")
-async def remove_background_endpoint(
+async def  remove_background_endpoint(
     file: UploadFile = File(..., description="Image file to remove background from"),
     output_format: str = Form("PNG", description="Output format: PNG, JPEG, etc.")
 ):
@@ -168,7 +168,7 @@ async def remove_background_endpoint(
 
 
 @certificates_router.post("/remove-background-base64")
-async def remove_background_base64_endpoint(
+async def  remove_background_base64_endpoint(
     image: str = Form(..., description="Base64-encoded image string (with or without data URL prefix)"),
     output_format: str = Form("PNG", description="Output format: PNG, JPEG, etc.")
 ):
@@ -220,10 +220,10 @@ async def remove_background_base64_endpoint(
 
 
 @certificates_router.get("/templates", response_model=List[CertificateTemplateResponse])
-async def list_public_templates(
+async def  list_public_templates(
     category: Optional[str] = Query(None, description="Filter by certificate category"),
     variant: Optional[str] = Query(None, description="Filter by template variant/UI type"),
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ):
     """
     List all public certificate templates.
@@ -258,9 +258,9 @@ async def list_public_templates(
 
 
 @certificates_router.get("/templates/by-category/{category}", response_model=Dict[str, List[CertificateTemplateResponse]])
-async def get_templates_by_category_endpoint(
+async def  _templates_by_category_endpoint(
     category: str,
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ):
     """
     Get all template variants for a specific category, grouped by variant.
@@ -291,10 +291,10 @@ async def get_templates_by_category_endpoint(
 
 
 @certificates_router.get("/templates/{template_id}", response_model=CertificateTemplateResponse)
-async def get_public_template(template_id: int, db: AsyncSession = Depends(get_db)):
+async def  _public_template(template_id: int, db: Session = Depends(get_db)):
     """Get a single public certificate template"""
     try:
-        template = await get_template_by_id(db, template_id)
+        template = await getget_template_by_id(db, template_id)
         if not template or not template.is_public or not template.is_active:
             raise HTTPException(status_code=404, detail="Template not found or unavailable")
         return template
@@ -306,14 +306,14 @@ async def get_public_template(template_id: int, db: AsyncSession = Depends(get_d
 
 
 @certificates_router.post("/preview")
-async def preview_certificate(
+async def  preview_certificate(
     certificate_data: PublicCertificateCreate,
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
     """Preview certificate HTML before generation (Authentication required)"""
-    template = await get_template_by_id(db, certificate_data.template_id)
+    template = await getget_template_by_id(db, certificate_data.template_id)
     if not template or not template.is_public or not template.is_active:
         raise HTTPException(status_code=404, detail="Template not found or unavailable")
 
@@ -369,14 +369,14 @@ async def preview_certificate(
         raise HTTPException(status_code=400, detail="HTML template requires template_html content. Please provide HTML in the template.")
     
     html_content = template.template_html
-    rendered_html = render_html_template(html_content, data)
+    rendered_html = await render_html_template(html_content, data)
     return {"html": rendered_html}
 
 
 
 from fastapi import BackgroundTasks
 
-async def generate_pdf_background_task(
+async def  generate_pdf_background_task(
     certificate_id: int,
     template_html: str,
     data: dict,
@@ -393,10 +393,10 @@ async def generate_pdf_background_task(
             logger.info(f"Starting background PDF generation for certificate {certificate_id}")
             
             # 1. Render HTML
-            rendered_html = render_html_template(template_html, data)
+            rendered_html = await render_html_template(template_html, data)
             
             # 2. Generate PDF (Blocking)
-            pdf_bytes = await run_in_threadpool(html_to_pdf, rendered_html)
+            pdf_bytes = run_in_threadpool(html_to_pdf, rendered_html)
             
             # 3. Save file
             filename = await save_certificate_file(certificate_id, pdf_bytes)
@@ -413,11 +413,11 @@ async def generate_pdf_background_task(
 
 
 @certificates_router.post("/generate/async")
-async def generate_certificate_async(
+async def  generate_certificate_async(
     certificate_data: PublicCertificateCreate,
     background_tasks: BackgroundTasks,
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
     """
@@ -441,7 +441,7 @@ async def generate_certificate_async(
             user_agent=user_agent
         )
 
-        template = await get_template_by_id(db, certificate.template_id)
+        template = await getget_template_by_id(db, certificate.template_id)
         if not template:
             raise HTTPException(status_code=404, detail="Template not found")
             
@@ -449,7 +449,7 @@ async def generate_certificate_async(
              raise HTTPException(status_code=400, detail="Template HTML missing")
 
         # 2. Prepare Data (Fast)
-        display_name = get_certificate_name(certificate)
+        display_name = await get_certificate_name(certificate)
         
         # Helper to load SPA data (similar to sync endpoint)
         cert_data = certificate.certificate_data or {}
@@ -505,10 +505,10 @@ async def generate_certificate_async(
 
 
 @certificates_router.post("/generate")
-async def generate_certificate(
+async def  generate_certificate(
     certificate_data: PublicCertificateCreate,
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
     """Generate a certificate and return PDF for download (Authentication required)"""
@@ -528,7 +528,7 @@ async def generate_certificate(
             user_agent=user_agent
         )
 
-        template = await get_template_by_id(db, certificate.template_id)
+        template = await getget_template_by_id(db, certificate.template_id)
         if not template:
             raise HTTPException(status_code=404, detail="Template not found")
 
@@ -587,13 +587,13 @@ async def generate_certificate(
             raise HTTPException(status_code=400, detail="HTML template requires template_html content. Please provide HTML in the template.")
         
         html_content = template.template_html
-        rendered_html = render_html_template(html_content, data)
+        rendered_html = await render_html_template(html_content, data)
         
         # Generate PDF with detailed error logging
         try:
             logger.info(f"Generating PDF for certificate {certificate.id}")
             # Run blocking PDF generation in a thread pool
-            pdf_bytes = await run_in_threadpool(html_to_pdf, rendered_html)
+            pdf_bytes = run_in_threadpool(html_to_pdf, rendered_html)
             logger.info(f"PDF generated successfully: {len(pdf_bytes)} bytes")
         except Exception as pdf_error:
             logger.error(f"PDF generation failed: {pdf_error}", exc_info=True)
@@ -620,10 +620,10 @@ async def generate_certificate(
 
 
 @certificates_router.get("/generated/public", response_model=List[GeneratedCertificateResponse])
-async def list_public_certificates(
+async def  list_public_certificates(
     skip: int = 0,
     limit: int = 1000,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
     """List certificates - requires authentication (no public access)"""
@@ -632,7 +632,7 @@ async def list_public_certificates(
     return []
 
 
-def get_certificate_name(certificate) -> str:
+async def get_certificate_name(certificate) -> str:
     """Get the name field from any certificate type"""
     if hasattr(certificate, 'candidate_name') and certificate.candidate_name:
         return certificate.candidate_name
@@ -647,10 +647,10 @@ def get_certificate_name(certificate) -> str:
     return ""
 
 
-def convert_certificate_to_response(certificate):
+async def convert_certificate_to_response(certificate):
     """Convert any certificate model to GeneratedCertificateResponse format"""
     # Get candidate name based on certificate type
-    candidate_name = get_certificate_name(certificate)
+    candidate_name = await get_certificate_name(certificate)
     
     # Get spa_id
     spa_id = getattr(certificate, 'spa_id', None)
@@ -709,26 +709,26 @@ def convert_certificate_to_response(certificate):
 
 
 @certificates_router.get("/generated/my-certificates", response_model=List[GeneratedCertificateResponse])
-async def list_my_certificates(
+async def  list_my_certificates(
     skip: int = 0,
     limit: int = 1000,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
     """List certificates created by the current user"""
     try:
         certificates = await get_user_certificates(db, user_id=current_user.id, skip=skip, limit=limit)
         # Convert certificates to response format
-        return [convert_certificate_to_response(cert) for cert in certificates]
+        return [await convert_certificate_to_response(cert) for cert in certificates]
     except Exception as e:
         logger.error(f"Error listing user certificates: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to retrieve certificates: {str(e)}")
 
 
 @certificates_router.get("/generated/{certificate_id}", response_model=GeneratedCertificateResponse)
-async def get_certificate(
+async def  _certificate(
     certificate_id: int, 
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
     """Get a single certificate - requires authentication (no public access)"""
@@ -748,13 +748,13 @@ async def get_certificate(
         raise HTTPException(status_code=403, detail="You don't have permission to access this certificate")
     
     # Convert to response format
-    return convert_certificate_to_response(certificate)
+    return await convert_certificate_to_response(certificate)
 
 
 @certificates_router.get("/generated/{certificate_id}/download/pdf")
-async def download_certificate_pdf(
+async def  download_certificate_pdf(
     certificate_id: int, 
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
     """Download certificate as PDF - requires authentication (no public access)"""
@@ -779,7 +779,7 @@ async def download_certificate_pdf(
             return FileResponse(str(pdf_path), media_type="application/pdf",
                                 filename=f"certificate_{certificate_id}.pdf")
 
-    template = await get_template_by_id(db, certificate.template_id)
+    template = await getget_template_by_id(db, certificate.template_id)
     if not template:
         raise HTTPException(status_code=404, detail="Template not found")
     
@@ -875,12 +875,12 @@ async def download_certificate_pdf(
             cert_data["spa_id"] = spa_obj.id
     
     # Get the name for this certificate type
-    certificate_name = get_certificate_name(certificate)
+    certificate_name = await get_certificate_name(certificate)
     data = await prepare_certificate_data(template, cert_data, certificate_name, use_http_urls=False)
     html_content = template.template_html
-    rendered_html = render_html_template(html_content, data)
+    rendered_html = await render_html_template(html_content, data)
     # Run blocking PDF generation in a thread pool
-    pdf_bytes = await run_in_threadpool(html_to_pdf, rendered_html)
+    pdf_bytes = run_in_threadpool(html_to_pdf, rendered_html)
 
     return StreamingResponse(io.BytesIO(pdf_bytes), media_type="application/pdf",
                              headers={"Content-Disposition": f"attachment; filename=certificate_{certificate_id}.pdf"})
@@ -892,9 +892,9 @@ async def download_certificate_pdf(
 # -------------------------
 
 @certificates_router.post("/templates", response_model=CertificateTemplateResponse, status_code=status.HTTP_201_CREATED)
-async def create_template_endpoint(
+async def   create_template_endpoint(
     template_data: TemplateCreate,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin", "super_admin", "spa_manager", "hr"))
 ):
     """Create certificate template"""
@@ -928,10 +928,10 @@ async def create_template_endpoint(
 
 
 @certificates_router.put("/templates/{template_id}", response_model=CertificateTemplateResponse)
-async def update_template_endpoint(
+async def  update_template_endpoint(
     template_id: int,
     template_data: TemplateUpdate,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin", "super_admin", "spa_manager", "hr"))
 ):
     """Update certificate template"""
@@ -967,9 +967,9 @@ async def update_template_endpoint(
 
 
 @certificates_router.delete("/templates/{template_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_template_endpoint(
+async def  delete_template_endpoint(
     template_id: int,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin", "super_admin", "spa_manager", "hr"))
 ):
     """Delete certificate template"""
@@ -990,8 +990,8 @@ async def delete_template_endpoint(
 
 
 @certificates_router.get("/admin/statistics")
-async def get_certificate_statistics_endpoint(
-    db: AsyncSession = Depends(get_db),
+async def  _certificate_statistics_endpoint(
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin", "super_admin"))
 ):
     """Get certificate statistics for admin dashboard"""
@@ -1003,10 +1003,10 @@ async def get_certificate_statistics_endpoint(
 
 
 @certificates_router.get("/admin/all", response_model=List[GeneratedCertificateResponse])
-async def get_all_certificates_admin(
+async def  _all_certificates_admin(
     skip: int = 0,
     limit: int = 100,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin", "super_admin"))
 ):
     """Get all certificates with user information (admin only)"""
@@ -1025,10 +1025,10 @@ async def get_all_certificates_admin(
 
 
 @certificates_router.get("/hr/all", response_model=List[GeneratedCertificateResponse])
-async def get_all_certificates_hr(
+async def  _all_certificates_hr(
     skip: int = 0,
     limit: int = 100,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_role("hr", "admin", "super_admin"))
 ):
     """Get all certificates for HR (HR can see all certificates from all users)"""
@@ -1046,10 +1046,10 @@ async def get_all_certificates_hr(
 
 
 @certificates_router.delete("/admin/{certificate_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_certificate_admin(
+async def  delete_certificate_admin(
     certificate_id: int,
     category: Optional[str] = Query(None, description="Optional category to speed up deletion"),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin", "super_admin"))
 ):
     """Delete a certificate (admin only)"""
@@ -1076,9 +1076,9 @@ class BulkDeleteRequest(BaseModel):
 
 
 @certificates_router.post("/admin/bulk-delete", status_code=status.HTTP_200_OK)
-async def bulk_delete_certificates_admin(
+async def  bulk_delete_certificates_admin(
     request: BulkDeleteRequest,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin", "super_admin"))
 ):
     """Delete multiple certificates (admin only)"""

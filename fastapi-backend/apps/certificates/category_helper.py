@@ -5,12 +5,12 @@ Author: Bimal Developer
 """
 from typing import Dict, List, Optional, Any
 from apps.certificates.models import CertificateCategory, TemplateType
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession as Session
 from apps.certificates.services.certificate_service import create_template
 
 
-async def create_category_templates(
-    db: AsyncSession,
+async def  create_category_templates(
+    db: Session,
     category: CertificateCategory,
     created_by: int,
     templates: List[Dict[str, Any]],
@@ -85,7 +85,7 @@ async def create_category_templates(
     return created_templates
 
 
-def get_category_template_structure(category: CertificateCategory) -> Dict:
+async def get_category_template_structure(category: CertificateCategory) -> Dict:
     """
     Get the data structure/fields required for a certificate category.
     This helps understand what data is needed when creating templates.
@@ -233,7 +233,7 @@ def get_category_template_structure(category: CertificateCategory) -> Dict:
     })
 
 
-def generate_template_variant_names(base_name: str, variants: List[str]) -> List[str]:
+async def generate_template_variant_names(base_name: str, variants: List[str]) -> List[str]:
     """
     Helper to generate template names for multiple variants.
     

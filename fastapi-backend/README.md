@@ -65,7 +65,7 @@ cp .env.example .env
 Update `.env` with your MySQL credentials:
 
 ```env
-DATABASE_URL=mysql+pymysql://root:password@localhost:3306/infodocs
+DATABASE_URL=mysql+aiomysql://root:password@localhost:3306/infodocs
 ```
 
 ---

@@ -3,7 +3,7 @@ Tutorial Service
 Handles business logic for tutorials
 """
 from typing import List, Optional
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession as Session
 from sqlalchemy import select, func, and_
 from sqlalchemy.orm import selectinload
 from fastapi import HTTPException, status, UploadFile
@@ -74,7 +74,7 @@ async def save_video_file(file: UploadFile) -> dict:
     }
 
 
-def delete_video_file(file_path: str) -> bool:
+async def delete_video_file(file_path: str) -> bool:
     """
     Delete video file from filesystem
     Returns True if deleted, False if not found
@@ -93,8 +93,8 @@ def delete_video_file(file_path: str) -> bool:
     return False
 
 
-async def create_tutorial(
-    db: AsyncSession,
+async def  create_tutorial(
+    db: Session,
     tutorial_data: TutorialCreate,
     created_by: int,
     video_file: Optional[UploadFile] = None
@@ -124,7 +124,7 @@ async def create_tutorial(
 
 
 async def get_tutorial_by_id(
-    db: AsyncSession,
+    db: Session,
     tutorial_id: int,
     include_deleted: bool = False
 ) -> Optional[Tutorial]:
@@ -139,7 +139,7 @@ async def get_tutorial_by_id(
 
 
 async def get_tutorials(
-    db: AsyncSession,
+    db: Session,
     skip: int = 0,
     limit: int = 100,
     is_active: Optional[bool] = None,
@@ -176,7 +176,7 @@ async def get_tutorials(
 
 
 async def update_tutorial(
-    db: AsyncSession,
+    db: Session,
     tutorial_id: int,
     tutorial_data: TutorialUpdate,
     updated_by: int,
@@ -215,7 +215,7 @@ async def update_tutorial(
 
 
 async def delete_tutorial(
-    db: AsyncSession,
+    db: Session,
     tutorial_id: int,
     deleted_by: int,
     permanent: bool = False

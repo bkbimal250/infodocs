@@ -1,186 +1,112 @@
 """
 MySQL Database Configuration
-Handles database connection and sessions using SQLAlchemy Async
+Async SQLAlchemy Version
 """
 
-import asyncio
 import logging
 from urllib.parse import quote_plus
-from sqlalchemy import text, event
-from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import declarative_base
+
 from sqlalchemy.ext.asyncio import (
-    create_async_engine,
     AsyncSession,
     async_sessionmaker,
+    create_async_engine,
 )
-from fastapi import HTTPException
-from core.exceptions import CustomException
+from sqlalchemy.orm import declarative_base
 
 from config.settings import settings
 
 logger = logging.getLogger(__name__)
 
-# ----------------------------------------------------
-# SQLAlchemy Base
-# ----------------------------------------------------
+# =========================================================
+# BASE
+# =========================================================
+
 Base = declarative_base()
 
-# ----------------------------------------------------
-# Engine + Session Factory
-# ----------------------------------------------------
-engine = None
-async_session_maker = None
+# =========================================================
+# DATABASE URL
+# =========================================================
+
+DATABASE_URL = (
+    f"mysql+aiomysql://"
+    f"{quote_plus(str(settings.DB_USER))}:"
+    f"{quote_plus(str(settings.DB_PASSWORD))}@"
+    f"{settings.DB_HOST}:{settings.DB_PORT}/"
+    f"{quote_plus(str(settings.DB_NAME))}"
+)
+
+# =========================================================
+# ENGINE
+# =========================================================
+
+engine = create_async_engine(
+    DATABASE_URL,
+    echo=settings.DEBUG,
+    pool_pre_ping=True,
+    pool_recycle=3600,
+    pool_size=10,
+    max_overflow=20,
+    future=True,
+)
+
+# SQLAlchemy's PyMySQL ping detection does not recognize aiomysql's async
+# adapter signature in some version combinations and calls ping() without
+# the required reconnect argument. The adapter expects ping(False), while
+# direct raw aiomysql connections still use ping(reconnect=True).
+engine.sync_engine.dialect._send_false_to_ping = True
+
+# =========================================================
+# SESSION
+# =========================================================
+
+async_session_maker = async_sessionmaker(
+    bind=engine,
+    class_=AsyncSession,
+    autocommit=False,
+    autoflush=False,
+    expire_on_commit=False,
+)
 
 
-# ----------------------------------------------------
-# Build MySQL URL
-# ----------------------------------------------------
-def get_db_url() -> str:
-    """Return encoded MySQL async URL."""
-    return (
-        f"mysql+aiomysql://"
-        f"{quote_plus(str(settings.DB_USER))}:"
-        f"{quote_plus(str(settings.DB_PASSWORD))}@"
-        f"{settings.DB_HOST}:{settings.DB_PORT}/"
-        f"{quote_plus(str(settings.DB_NAME))}"
-    )
+# Backward-compatible alias for modules that still import SessionLocal.
+SessionLocal = async_session_maker
+async_session = async_session_maker
 
+# Backward-compatible annotation alias for older async-migration code.
+Session = AsyncSession
 
-# ----------------------------------------------------
-# Connect to Database
-# ----------------------------------------------------
-async def connect_to_db():
-    """Initialize async engine + sessionmaker, test connection."""
-    global engine, async_session_maker
+# =========================================================
+# DEPENDENCY
+# =========================================================
 
-    try:
-        database_url = get_db_url()
-
-        # Optimized connection pool for 500+ concurrent users
-        # pool_size: Base connections always available
-        # max_overflow: Additional connections when pool is exhausted
-        # Total max connections = pool_size + max_overflow = 50 + 100 = 150
-        # This allows handling 500+ concurrent users with connection pooling
-        engine = create_async_engine(
-            database_url,
-            echo=settings.DEBUG,
-            future=True,
-            pool_pre_ping=True,  # Verify connections before using
-            pool_recycle=3600,  # Recycle connections after 1 hour
-            pool_timeout=30,  # Wait up to 30s for connection from pool
-            pool_size=10,  # Increased from 5 to 50 base connections
-            max_overflow=20,  # Increased from 10 to 100 overflow connections
-            connect_args={
-                "connect_timeout": 10,
-            },
-        )
-        
-        # Set MySQL timezone to UTC on connection for async engine
-        # This ensures all datetime operations use UTC
-        @event.listens_for(engine.sync_engine, "connect")
-        def set_timezone(dbapi_conn, connection_record):
-            cursor = dbapi_conn.cursor()
-            try:
-                cursor.execute("SET time_zone = '+00:00'")
-            except Exception:
-                pass  # Ignore if timezone setting fails
-            finally:
-                cursor.close()
-
-        async_session_maker = async_sessionmaker(
-            engine,
-            class_=AsyncSession,
-            expire_on_commit=False,
-        )
-
-        # Test connection with timeout
-        await asyncio.wait_for(_test_connection(), timeout=10.0)
-
-        logger.info(f"Connected to MySQL database: {settings.DB_NAME}")
-
-    except asyncio.TimeoutError:
-        logger.error("MySQL connection test timed out (10s).")
-        raise RuntimeError("Database connection timeout. Please check your database server is running.")
-    except Exception as e:
-        logger.error(f"MySQL connection failed: {e}", exc_info=True)
-        raise RuntimeError(f"Database connection failed: {str(e)}. Please check your database credentials and server status.")
-
-
-async def _test_connection():
-    """Simple SELECT 1 to test MySQL availability."""
-    async with engine.begin() as conn:
-        await conn.execute(text("SELECT 1"))
-
-
-# ----------------------------------------------------
-# Close DB on Shutdown
-# ----------------------------------------------------
-async def close_db_connection():
-    """Dispose all database connections."""
-    if engine:
-        await engine.dispose()
-        logger.info("Disconnected from MySQL")
-
-
-# ----------------------------------------------------
-# Provide DB Session
-# ----------------------------------------------------
-async def get_db() -> AsyncSession:
-    """FastAPI dependency to get DB session."""
-    global async_session_maker
-
-    if async_session_maker is None:
-        logger.warning("DB not connected; attempting reconnect...")
+async def get_db():
+    async with async_session_maker() as db:
         try:
-            await asyncio.wait_for(connect_to_db(), timeout=15.0)
-        except asyncio.TimeoutError:
-            logger.error("Database reconnection timed out")
-            raise RuntimeError("Database connection timeout. Please check your network connection.")
-
-        if async_session_maker is None:
-            raise RuntimeError("Database unavailable.")
-
-    try:
-        async with async_session_maker() as session:
-            try:
-                yield session
-            except SQLAlchemyError as e:
-                logger.error(f"Database SQL error: {e}", exc_info=True)
-                await session.rollback()
-                raise
-            except (HTTPException, CustomException):
-                # Re-raise HTTPExceptions and CustomExceptions as-is (don't wrap them)
-                raise
-            except Exception as e:
-                logger.error(f"Database operation error: {e}", exc_info=True)
-                await session.rollback()
-                raise
-    except (HTTPException, CustomException):
-        # Re-raise HTTPExceptions and CustomExceptions as-is
-        raise
-    except Exception as e:
-        # If session creation itself fails, log and provide better error
-        logger.error(f"Failed to create database session: {e}", exc_info=True)
-        
-        # Check if it's a connection error
-        error_str = str(e).lower()
-        if "connection" in error_str or "connect" in error_str:
-            raise RuntimeError("Database connection failed. Please check your database server is running and credentials are correct.")
-        elif "timeout" in error_str:
-            raise RuntimeError("Database connection timeout. Please check your network connection.")
-        else:
-            # For other errors, provide the original error but in a cleaner format
-            raise RuntimeError(f"Database error: {str(e)}")
+            yield db
+        finally:
+            await db.close()
 
 
-# ----------------------------------------------------
-# Create Tables Automatically
-# ----------------------------------------------------
+async def connect_to_db() -> None:
+    """Open and ping an async DB connection during startup."""
+    async with engine.connect() as conn:
+        raw_connection = await conn.get_raw_connection()
+        driver_connection = raw_connection.driver_connection
+        await driver_connection.ping(reconnect=True)
+
+
+async def close_db_connection() -> None:
+    """Dispose the async SQLAlchemy engine."""
+    await engine.dispose()
+
+
+# =========================================================
+# INIT DB
+# =========================================================
+
 async def init_db():
-    # Import all models so Base.metadata.create_all works
     # Users
-    from apps.users.models import User, OTP  # noqa
+    from apps.users.models import User, OTP
 
     # Certificates
     from apps.certificates.models import (
@@ -196,23 +122,27 @@ async def init_db():
         DailySheetCertificate,
         UndertakingSheet,
         JobformSheet,
-    )  # noqa
+    )
 
-    # Forms App
-    from apps.forms_app.models import SPA, Hiring_Form  # noqa
+    # Forms
+    from apps.forms_app.models import SPA, Hiring_Form
 
     # Tutorials
-    from apps.tutorials.models import Tutorial  # noqa
+    from apps.tutorials.models import Tutorial
 
-    # Staff Management
-    from apps.StaffManagement.models import Staff, StaffEvent, WorkHistory  # noqa
+    # Staff
+    from apps.StaffManagement.models import (
+        Staff,
+        StaffDocument,
+        StaffEvent,
+        WorkHistory,
+        StaffVerificationLog,
+    )
 
-    # Query models
-    from apps.Query.models import Query, QueryType  # noqa
-    
-    if not engine:
-        raise RuntimeError("Engine not initialized before init_db()")
+    # Queries
+    from apps.Query.models import Query, QueryType
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-        logger.info("Database tables created successfully")
+
+    logger.info("Database initialized successfully")

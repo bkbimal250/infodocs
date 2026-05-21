@@ -5,7 +5,7 @@ from typing import Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession as Session
 from config.settings import settings
 from config.database import get_db
 from apps.users.models import User
@@ -16,7 +16,7 @@ from fastapi import Request
 
 async def get_current_user(
     request: Request,
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ) -> User:
     """
     Get current authenticated user from 'access_token' cookie
@@ -104,7 +104,7 @@ def require_role(*allowed_roles: str):
 
 async def get_optional_current_user(
     request: Request,
-    db: AsyncSession = Depends(get_db)
+    db: Session = Depends(get_db)
 ) -> Optional[User]:
     """
     Get current authenticated user from 'access_token' cookie (optional)
