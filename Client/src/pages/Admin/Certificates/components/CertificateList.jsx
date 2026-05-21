@@ -236,7 +236,7 @@ const CertificateList = ({ certificates = [], loading, onRefresh }) => {
       </div>
 
       {/* Table Content */}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto overflow-y-visible">
         {filteredCertificates.length > 0 ? (
           <table className="w-full text-left border-collapse">
             <thead>

@@ -142,6 +142,9 @@ async def init_db():
     # Queries
     from apps.Query.models import Query, QueryType
 
+    # Integrations
+    from apps.integrations.models import IntegrationApiKey
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 

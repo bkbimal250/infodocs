@@ -40,6 +40,8 @@ const AdminStaffTable = ({
         );
     };
 
+    const getStaffKey = (member) => member.staff_uuid || member.id;
+
     const StatusBadge = ({ status }) => {
         const statusStr = status ? status.toLowerCase() : '';
         const colors = {
@@ -138,9 +140,9 @@ const AdminStaffTable = ({
                     <tbody className="divide-y divide-gray-100">
                         {staff.map(member => (
                             <tr 
-                                key={member.id} 
+                                key={getStaffKey(member)} 
                                 className="hover:bg-gray-50 transition-colors cursor-pointer" 
-                                onClick={() => navigate(`/admin/staff/${member.id}`)}
+                                onClick={() => navigate(`/admin/staff/${getStaffKey(member)}`)}
                             >
                                 <td className="px-6 py-4">
                                     <div className="flex items-center gap-3">
@@ -176,8 +178,8 @@ const AdminStaffTable = ({
                                 </td>
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex justify-end gap-1">
-                                        <ActionButton icon={<FaEye />} tooltip="View Details" onClick={() => navigate(`/admin/staff/${member.id}`)} />
-                                        <ActionButton icon={<FaEdit />} tooltip="Edit Profile" onClick={() => navigate(`/admin/staff/${member.id}/edit`)} color="blue" />
+                                        <ActionButton icon={<FaEye />} tooltip="View Details" onClick={() => navigate(`/admin/staff/${getStaffKey(member)}`)} />
+                                        <ActionButton icon={<FaEdit />} tooltip="Edit Profile" onClick={() => navigate(`/admin/staff/${getStaffKey(member)}/edit`)} color="blue" />
                                         <ActionButton icon={<FaHistory />} tooltip="View History" onClick={() => viewHistory(member)} color="gray" />
                                         <ActionButton icon={<FaExchangeAlt />} tooltip="Transfer" onClick={() => setShowTransfer(member)} color="orange" />
                                         <ActionButton icon={<FaTrash />} tooltip="Delete" onClick={() => executeDeleteStaff(member)} color="red" />
@@ -194,9 +196,9 @@ const AdminStaffTable = ({
             <div className="md:hidden space-y-3 p-4">
                 {staff.map(member => (
                     <div
-                        key={member.id}
+                        key={getStaffKey(member)}
                         className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm"
-                        onClick={() => navigate(`/admin/staff/${member.id}`)}
+                        onClick={() => navigate(`/admin/staff/${getStaffKey(member)}`)}
                     >
                         <div className="flex items-start gap-3 border-b border-gray-100 pb-3 mb-3">
                             <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-semibold text-lg flex-shrink-0">
@@ -238,7 +240,7 @@ const AdminStaffTable = ({
 
                         <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                             <div className="flex gap-1 -ml-2">
-                                <ActionButton icon={<FaEdit size={16} />} onClick={() => navigate(`/admin/staff/${member.id}/edit`)} color="blue" />
+                                <ActionButton icon={<FaEdit size={16} />} onClick={() => navigate(`/admin/staff/${getStaffKey(member)}/edit`)} color="blue" />
                                 <ActionButton icon={<FaExchangeAlt size={16} />} onClick={() => setShowTransfer(member)} color="orange" />
                                 <ActionButton icon={<FaTrash size={16} />} onClick={() => executeDeleteStaff(member)} color="red" />
                             </div>

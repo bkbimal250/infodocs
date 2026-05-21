@@ -18,6 +18,8 @@ const StaffTable = ({
   onPageChange
 }) => {
 
+  const getStaffKey = (member) => member.staff_uuid || member.id;
+
   const StatusBadge = ({ status }) => {
     const colors = {
       active: 'bg-emerald-50 text-emerald-700 border-emerald-200',
@@ -60,7 +62,7 @@ const StaffTable = ({
   return (
     <div className="w-full">
       {/* Desktop Table */}
-      <div className="hidden md:block overflow-x-auto">
+      <div className="hidden md:block overflow-x-auto overflow-y-visible">
         <table className="w-full text-left">
           <thead>
             <tr className="border-b bg-gray-50">
@@ -73,9 +75,9 @@ const StaffTable = ({
           <tbody className="divide-y">
             {staff.map(member => (
               <tr
-                key={member.id}
+                key={getStaffKey(member)}
                 className="hover:bg-gray-50/50 transition-colors cursor-pointer"
-                onClick={() => navigate(`/manager/staff/${member.id}`)}
+                onClick={() => navigate(`/manager/staff/${getStaffKey(member)}`)}
               >
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
@@ -101,8 +103,8 @@ const StaffTable = ({
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex justify-end gap-1 opacity-50 hover:opacity-100 transition-opacity">
-                    <ActionBtn icon={<FaEye />} title="View" onClick={() => navigate(`/manager/staff/${member.id}`)} />
-                    <ActionBtn icon={<FaEdit />} title="Edit" onClick={() => navigate(`/manager/staff/${member.id}/edit`)} />
+                    <ActionBtn icon={<FaEye />} title="View" onClick={() => navigate(`/manager/staff/${getStaffKey(member)}`)} />
+                    <ActionBtn icon={<FaEdit />} title="Edit" onClick={() => navigate(`/manager/staff/${getStaffKey(member)}/edit`)} />
                     <ActionBtn icon={<FaHistory />} title="History" onClick={() => viewHistory(member)} />
                     <ActionBtn icon={<FaExchangeAlt />} title="Transfer" onClick={() => setShowTransfer(member)} />
                     <ActionBtn icon={<FaSignOutAlt />} title="Mark Left" onClick={() => setShowLeave(member)} color="red" />
@@ -119,9 +121,9 @@ const StaffTable = ({
       <div className="md:hidden divide-y">
         {staff.map(member => (
           <div
-            key={member.id}
+            key={getStaffKey(member)}
             className="p-4 active:bg-gray-50 transition-colors"
-            onClick={() => navigate(`/manager/staff/${member.id}`)}
+            onClick={() => navigate(`/manager/staff/${getStaffKey(member)}`)}
           >
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center text-white font-semibold">
@@ -137,7 +139,7 @@ const StaffTable = ({
             </div>
             <div className="flex items-center justify-between">
               <div className="flex gap-1">
-                <ActionBtn icon={<FaEdit size={12} />} onClick={() => navigate(`/manager/staff/${member.id}/edit`)} />
+                <ActionBtn icon={<FaEdit size={12} />} onClick={() => navigate(`/manager/staff/${getStaffKey(member)}/edit`)} />
                 <ActionBtn icon={<FaHistory size={12} />} onClick={() => viewHistory(member)} />
                 <ActionBtn icon={<FaExchangeAlt size={12} />} onClick={() => setShowTransfer(member)} />
               </div>

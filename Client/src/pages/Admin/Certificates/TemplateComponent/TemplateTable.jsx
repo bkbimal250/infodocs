@@ -36,7 +36,7 @@ const TemplateTable = React.memo(({ templates, onEdit, onDelete, getCategoryLabe
   return (
     <div className="bg-white overflow-hidden">
       {/* Desktop View */}
-      <div className="hidden md:block overflow-x-auto">
+      <div className="hidden md:block overflow-x-auto overflow-y-visible">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-gray-50/50">

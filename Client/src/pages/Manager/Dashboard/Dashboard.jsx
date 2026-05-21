@@ -195,7 +195,7 @@ const ManagerDashboard = () => {
         <div className="bg-[var(--color-bg-primary)] rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-4">Recent Certificates</h2>
           {recentCertificates.length > 0 ? (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto overflow-y-visible">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-[var(--color-bg-secondary)]">
                   <tr>

@@ -3,14 +3,13 @@ Staff Management Routers
 Exposes secure RESTful routes mapping API calls to backend services.
 """
 from typing import Optional, List
-from fastapi import APIRouter, Depends, Query, Path, status, UploadFile, File
+from fastapi import APIRouter, Query, Path, status, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession as Session
 
 from apps.StaffManagement.dependencies import (
     db_dependency,
     current_user_dependency,
     admin_only,
-    super_admin_only,
 )
 from apps.StaffManagement.schemas import (
     StaffCreate,
@@ -137,7 +136,7 @@ async def update_staff_endpoint(
     current_user: User = current_user_dependency
 ):
     """
-    Updates base attributes. Sensitive Aadhaar/PAN items will trigger re-hashing and check duplicates.
+    Updates basic staff profile attributes.
     Direct branch transfers are blocked here (must be routed via the `/transfer` endpoint).
     """
     return await StaffService.update_staff(
@@ -293,7 +292,7 @@ async def get_today_analytics(
     result = await db.execute(query)
     events = result.scalars().all()
     
-    joined_count = sum(1 for e in events if e.event_type in (StaffEventTypeEnum.joined, StaffEventTypeEnum.rejoined))
+    joined_count = sum(1 for e in events if e.event_type == StaffEventTypeEnum.joined)
     left_count = sum(1 for e in events if e.event_type == StaffEventTypeEnum.resigned)
     transferred_count = sum(1 for e in events if e.event_type == StaffEventTypeEnum.transferred)
     
@@ -405,7 +404,7 @@ async def get_consolidated_analytics(
     total_active = len(active_staff)
     
     left_query = select(Staff).where(
-        Staff.employment_status == EmploymentStatusEnum.left,
+        Staff.employment_status == EmploymentStatusEnum.resigned,
         Staff.deleted_at.is_(None)
     )
     if spa_id:
@@ -428,7 +427,7 @@ async def get_consolidated_analytics(
     today_events = event_res.scalars().all()
     
     today_new_join = sum(1 for e in today_events if e.event_type == StaffEventTypeEnum.joined)
-    today_re_join = sum(1 for e in today_events if e.event_type == StaffEventTypeEnum.rejoined)
+    today_re_join = 0
     today_transfer_out = sum(1 for e in today_events if e.event_type == StaffEventTypeEnum.transferred)
     today_leave = sum(1 for e in today_events if e.event_type == StaffEventTypeEnum.resigned)
 
@@ -465,7 +464,7 @@ async def upload_document_endpoint(
 ):
     """
     Attaches a document image/PDF to an employee profile.
-    Checks system-wide collisions for Aadhaar/PAN hashing to prevent duplicate registrants.
+    Attaches optional document/image files to staff profiles.
     """
     return await DocumentService.add_document(
         db=db,

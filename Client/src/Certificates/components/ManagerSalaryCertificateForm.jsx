@@ -377,7 +377,7 @@ const ManagerSalaryCertificateForm = ({ formData, handleInputChange }) => {
           Month-wise Salary
         </h3>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto overflow-y-visible">
           <table className="min-w-full border border-slate-200 rounded-lg bg-white text-sm">
             <thead className="bg-slate-50">
               <tr>

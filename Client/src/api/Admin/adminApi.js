@@ -235,6 +235,15 @@ export const adminApi = {
     },
 
     /**
+     * Regenerate a user's password and return one-time credentials
+     * @param {number} id - User ID
+     * @returns {Promise}
+     */
+    regeneratePassword: (id) => {
+      return apiClient.post(`/users/${id}/regenerate-password`);
+    },
+
+    /**
      * Delete a user
      * @param {number} id - User ID
      * @returns {Promise}

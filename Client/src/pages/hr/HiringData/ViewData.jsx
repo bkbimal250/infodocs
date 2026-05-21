@@ -81,7 +81,7 @@ const ViewData = () => {
           <h1 className="text-xl font-bold text-[var(--color-text-primary)] mb-4">Hiring Form Details</h1>
 
           {/* Data Table */}
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto overflow-y-visible">
             <table className="min-w-full divide-y divide-gray-200">
               <tbody className="bg-[var(--color-bg-primary)] divide-y divide-gray-200">
                 <tr className="hover:bg-[var(--color-bg-secondary)]">

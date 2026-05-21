@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { HiArrowLeft } from 'react-icons/hi';
 import { adminApi } from '../../../api/Admin/adminApi';
+import OneTimeCredentialsCard from './OneTimeCredentialsCard';
 
 /**
  * Create User Component
@@ -14,7 +15,6 @@ const CreateUser = () => {
     email: '',
     first_name: '',
     last_name: '',
-    password: '',
     role: 'user',
     phone_number: '',
     is_active: true,
@@ -22,6 +22,7 @@ const CreateUser = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [credentialResponse, setCredentialResponse] = useState(null);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -36,15 +37,9 @@ const CreateUser = () => {
     setLoading(true);
     setError(null);
 
-    if (!formData.password) {
-      setError('Password is required');
-      setLoading(false);
-      return;
-    }
-
     try {
-      await adminApi.users.createUser(formData);
-      navigate('/admin/users');
+      const response = await adminApi.users.createUser(formData);
+      setCredentialResponse(response.data);
     } catch (err) {
       setError(
         err.response?.data?.error || err.response?.data?.detail || 'Failed to create user'
@@ -133,16 +128,11 @@ const CreateUser = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Password *
+                  Password
                 </label>
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+                <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 text-sm text-gray-600">
+                  Generated automatically and shown once after creation.
+                </div>
               </div>
 
               <div>
@@ -216,6 +206,12 @@ const CreateUser = () => {
           </form>
         </div>
       </div>
+
+      <OneTimeCredentialsCard
+        credentials={credentialResponse?.credentials}
+        message={credentialResponse?.message}
+        onClose={() => navigate('/admin/users')}
+      />
     </div>
   );
 };

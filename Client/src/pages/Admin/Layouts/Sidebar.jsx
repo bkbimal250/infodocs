@@ -12,13 +12,14 @@ import {
   HiOutlineClock,
   HiOutlineChatAlt,
   HiOutlineVideoCamera,
+  HiOutlineKey,
 } from 'react-icons/hi';
 
 /**
  * Admin Sidebar Navigation Component
  * Modern sidebar with gradient design and smooth animations
  */
-const AdminSidebar = ({ onLinkClick }) => {
+const AdminSidebar = ({ user, onLinkClick }) => {
   const location = useLocation();
 
   const isActive = (path) => {
@@ -82,7 +83,17 @@ const AdminSidebar = ({ onLinkClick }) => {
       path: '/admin/activities',
       icon: HiOutlineClock,
     },
+    {
+      name: 'API Keys',
+      path: '/admin/api-keys',
+      icon: HiOutlineKey,
+      superAdminOnly: true,
+    },
   ];
+
+  const visibleMenuItems = menuItems.filter((item) => {
+    return !item.superAdminOnly || user?.role === 'super_admin';
+  });
 
   return (
     <div className="w-64 h-full bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 text-white flex flex-col shadow-2xl">
@@ -97,7 +108,7 @@ const AdminSidebar = ({ onLinkClick }) => {
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto mt-4 px-3 pb-6">
         <ul className="space-y-1.5">
-          {menuItems.map((item) => {
+          {visibleMenuItems.map((item) => {
             const active = isActive(item.path);
             const Icon = item.icon;
 

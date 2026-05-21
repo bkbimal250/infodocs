@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { adminApi } from '../../../api/Admin/adminApi';
 import { FaArrowLeft } from 'react-icons/fa';
+import OneTimeCredentialsCard from './OneTimeCredentialsCard';
 
 /**
  * Edit User Page
@@ -25,6 +26,7 @@ const EditUserPage = () => {
   const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState(null);
   const [user, setUser] = useState(null);
+  const [credentialResponse, setCredentialResponse] = useState(null);
 
   useEffect(() => {
     if (id) {
@@ -89,6 +91,27 @@ const EditUserPage = () => {
     }
   };
 
+  const handleRegeneratePassword = async () => {
+    if (!window.confirm('Regenerate this user password? The new password will be shown only once.')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await adminApi.users.regeneratePassword(id);
+      setCredentialResponse(response.data);
+      setFormData((prev) => ({ ...prev, password: '' }));
+    } catch (err) {
+      setError(
+        err.response?.data?.error || err.response?.data?.detail || 'Failed to regenerate password'
+      );
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loadingData) {
     return (
       <div className="min-h-screen bg-[var(--color-bg-secondary)] flex items-center justify-center">
@@ -115,6 +138,14 @@ const EditUserPage = () => {
             <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">Edit User</h2>
             <p className="text-sm text-[var(--color-text-secondary)] mt-1">Update user account information</p>
           </div>
+          <button
+            type="button"
+            onClick={handleRegeneratePassword}
+            disabled={loading}
+            className="rounded-lg border border-[var(--color-border-primary)] px-4 py-2 text-sm font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-gray-50)] disabled:opacity-50"
+          >
+            Regenerate Password
+          </button>
         </div>
 
         {error && (
@@ -191,16 +222,11 @@ const EditUserPage = () => {
 
               <div>
                 <label className="block text-sm font-semibold text-[var(--color-text-primary)] mb-2">
-                  Password (leave blank to keep current)
+                  Password
                 </label>
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2.5 border-1.5 border-[var(--color-border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] transition"
-                  placeholder="Enter new password"
-                />
+                <div className="w-full rounded-lg border border-[var(--color-border-primary)] bg-[var(--color-gray-50)] px-4 py-2.5 text-sm text-[var(--color-text-secondary)]">
+                  Use Regenerate Password to create a one-time password.
+                </div>
               </div>
 
               <div>
@@ -291,6 +317,12 @@ const EditUserPage = () => {
           </form>
         )}
       </div>
+
+      <OneTimeCredentialsCard
+        credentials={credentialResponse?.credentials}
+        message={credentialResponse?.message}
+        onClose={() => setCredentialResponse(null)}
+      />
     </div>
   );
 };

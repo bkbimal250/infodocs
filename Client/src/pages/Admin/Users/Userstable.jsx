@@ -69,7 +69,7 @@ const UsersTable = React.memo(({ users, onEdit, onDelete, loading = false }) => 
   return (
     <div className="bg-[var(--color-bg-primary)] rounded-lg shadow overflow-hidden">
       {/* Desktop View */}
-      <div className="hidden md:block overflow-x-auto">
+      <div className="hidden md:block overflow-x-auto overflow-y-visible">
         <table className="min-w-full divide-y divide-[var(--color-border-primary)]">
           <thead className="bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-dark)]">
             <tr>

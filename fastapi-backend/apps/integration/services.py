@@ -15,6 +15,12 @@ from apps.StaffManagement.models import (
 logger = logging.getLogger(__name__)
 
 
+def _mask_phone(phone: str) -> str:
+    if len(phone) <= 4:
+        return "****"
+    return f"***{phone[-4:]}"
+
+
 class IntegrationStaffVerificationService:
     """Read-only staff verification service for internal systems."""
 
@@ -24,15 +30,17 @@ class IntegrationStaffVerificationService:
         mobile_number: str,
         api_key_fingerprint: str,
     ) -> Dict[str, Any]:
+        masked_mobile = _mask_phone(mobile_number)
+
         logger.info(
             "Internal staff verification requested phone=%s key=%s",
-            mobile_number,
+            masked_mobile,
             api_key_fingerprint,
         )
 
         stmt = (
             select(Staff)
-            .options(selectinload(Staff.spa))
+            .options(selectinload(Staff.current_spa))
             .where(
                 Staff.phone == mobile_number,
                 Staff.deleted_at.is_(None),
@@ -44,7 +52,7 @@ class IntegrationStaffVerificationService:
         if not staff:
             logger.info(
                 "Internal staff verification not found phone=%s key=%s",
-                mobile_number,
+                masked_mobile,
                 api_key_fingerprint,
             )
             return {
@@ -56,7 +64,7 @@ class IntegrationStaffVerificationService:
         if staff.is_blacklisted:
             logger.warning(
                 "Blocked blacklisted staff verification phone=%s staff_uuid=%s key=%s",
-                mobile_number,
+                masked_mobile,
                 staff.staff_uuid,
                 api_key_fingerprint,
             )
@@ -89,7 +97,7 @@ class IntegrationStaffVerificationService:
                 "message": "Staff is not active",
             }
 
-        if not staff.current_spa_id or not staff.spa:
+        if not staff.current_spa_id or not staff.current_spa:
             return {
                 "success": True,
                 "staff_found": True,
@@ -98,8 +106,8 @@ class IntegrationStaffVerificationService:
             }
 
         current_spa = {
-            "spa_id": staff.spa.id,
-            "spa_name": staff.spa.name,
+            "spa_id": staff.current_spa.id,
+            "spa_name": staff.current_spa.name,
         }
 
         return {

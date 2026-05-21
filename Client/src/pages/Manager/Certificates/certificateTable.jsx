@@ -63,7 +63,7 @@ const CertificateTable = ({
     <div className="w-full">
       {/* Desktop View (Table) */}
       <div className="hidden md:block overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
+          <table className="min-w-full divide-y divide-gray-200 overflow-y-visible">
           <thead>
             <tr className="bg-gray-50/50">
               <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">

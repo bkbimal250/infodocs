@@ -1,14 +1,14 @@
 import hashlib
-import hmac
 import logging
-import time
-from collections import defaultdict, deque
+from datetime import datetime
 from dataclasses import dataclass
-from typing import Deque, Dict, List, Tuple
 
-from fastapi import Header, HTTPException, Request, status
+from fastapi import Depends, Header, HTTPException, Request, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.settings import settings
+from apps.integrations.models import IntegrationApiKey
+from config.database import get_db
 
 
 logger = logging.getLogger(__name__)
@@ -17,45 +17,12 @@ logger = logging.getLogger(__name__)
 @dataclass(frozen=True)
 class InternalApiClient:
     key_fingerprint: str
+    key_id: int
+    key_prefix: str
 
 
-class IntegrationRateLimiter:
-    """Small in-memory limiter for internal API calls."""
-
-    def __init__(self) -> None:
-        self.requests: Dict[str, Deque[float]] = defaultdict(deque)
-
-    async def is_allowed(self, identity: str) -> Tuple[bool, int]:
-        now = time.time()
-        window_start = now - 60
-        timestamps = self.requests[identity]
-
-        while timestamps and timestamps[0] <= window_start:
-            timestamps.popleft()
-
-        remaining = settings.INTERNAL_RATE_LIMIT_PER_MINUTE - len(timestamps)
-        if remaining <= 0:
-            return False, 0
-
-        timestamps.append(now)
-        return True, remaining - 1
-
-
-integration_rate_limiter = IntegrationRateLimiter()
-
-
-def _fingerprint_api_key(api_key: str) -> str:
-    return hashlib.sha256(api_key.encode("utf-8")).hexdigest()[:12]
-
-
-def _configured_api_keys() -> List[str]:
-    if isinstance(settings.INTERNAL_API_KEYS, str):
-        return [
-            key.strip()
-            for key in settings.INTERNAL_API_KEYS.split(",")
-            if key.strip()
-        ]
-    return list(settings.INTERNAL_API_KEYS or [])
+def _hash_api_key(api_key: str) -> str:
+    return hashlib.sha256(api_key.encode("utf-8")).hexdigest()
 
 
 def _get_client_ip(request: Request) -> str:
@@ -76,18 +43,14 @@ def _get_client_ip(request: Request) -> str:
 async def verify_internal_api_key(
     request: Request,
     x_api_key: str = Header(default="", alias="X-API-KEY"),
+    db: AsyncSession = Depends(get_db),
 ) -> InternalApiClient:
-    configured_keys = _configured_api_keys()
-    key_fingerprint = _fingerprint_api_key(x_api_key) if x_api_key else "missing"
+    incoming_hash = _hash_api_key(x_api_key) if x_api_key else ""
+    key_fingerprint = incoming_hash[:12] if incoming_hash else "missing"
 
-    key_is_valid = any(
-        hmac.compare_digest(x_api_key, configured_key)
-        for configured_key in configured_keys
-    )
-
-    if not x_api_key or not key_is_valid:
+    if not x_api_key:
         logger.warning(
-            "Invalid internal API key attempt from ip=%s key=%s path=%s",
+            "Invalid internal API key attempt from ip=%s key_hash_prefix=%s path=%s",
             _get_client_ip(request),
             key_fingerprint,
             request.url.path,
@@ -97,27 +60,38 @@ async def verify_internal_api_key(
             detail="Invalid internal API key",
         )
 
-    client_ip = _get_client_ip(request)
-    limiter_identity = f"{key_fingerprint}:{client_ip}"
-    allowed, remaining = await integration_rate_limiter.is_allowed(limiter_identity)
-    if not allowed:
+    stmt = select(IntegrationApiKey).where(
+        IntegrationApiKey.api_key_hash == incoming_hash,
+        IntegrationApiKey.is_active.is_(True),
+    )
+    result = await db.execute(stmt)
+    api_key = result.scalar_one_or_none()
+
+    if not api_key:
         logger.warning(
-            "Integration rate limit exceeded ip=%s key=%s path=%s",
-            client_ip,
+            "Invalid internal API key attempt from ip=%s key_hash_prefix=%s path=%s",
+            _get_client_ip(request),
             key_fingerprint,
             request.url.path,
         )
         raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Integration API rate limit exceeded",
-            headers={"Retry-After": "60"},
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid internal API key",
         )
 
+    api_key.last_used_at = datetime.utcnow()
+    await db.commit()
+
     logger.info(
-        "Internal API key accepted ip=%s key=%s path=%s remaining=%s",
-        client_ip,
+        "Internal API key accepted ip=%s key_id=%s key_prefix=%s key_hash_prefix=%s path=%s",
+        _get_client_ip(request),
+        api_key.id,
+        api_key.key_prefix,
         key_fingerprint,
         request.url.path,
-        remaining,
     )
-    return InternalApiClient(key_fingerprint=key_fingerprint)
+    return InternalApiClient(
+        key_fingerprint=key_fingerprint,
+        key_id=api_key.id,
+        key_prefix=api_key.key_prefix,
+    )

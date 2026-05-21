@@ -19,7 +19,7 @@ from apps.StaffManagement.models import (
 
 class StaffDocumentBase(BaseModel):
     document_type: DocumentTypeEnum
-    file_url: str
+    file_url: Optional[str] = None
 
 
 class StaffDocumentCreate(StaffDocumentBase):
@@ -31,14 +31,21 @@ class StaffDocumentCreate(StaffDocumentBase):
         return v.strip() if isinstance(v, str) and v.strip() else None
 
 
-class StaffDocumentResponse(StaffDocumentBase):
+class StaffDocumentResponse(BaseModel):
     id: int
     staff_id: int
-    document_number_last4: Optional[str]
-    is_verified: bool
-    verified_by: Optional[int]
-    verified_at: Optional[datetime]
-    uploaded_at: datetime
+
+    document_type: DocumentTypeEnum
+
+    document_number: Optional[str] = None
+
+    file_url: Optional[str] = None
+
+    verification_status: VerificationStatusEnum
+
+    uploaded_by: Optional[int] = None
+
+    created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -104,12 +111,8 @@ class StaffVerificationLogResponse(BaseModel):
 class StaffBase(BaseModel):
     full_name: str = Field(..., min_length=2, max_length=255)
     gender: Optional[str] = Field(None, max_length=20)
-    dob: Optional[datetime] = None
     profile_photo: Optional[str] = Field(None, max_length=500)
     phone: Optional[str] = None
-    alternate_phone: Optional[str] = None
-    emergency_contact_name: Optional[str] = Field(None, max_length=255)
-    emergency_contact_number: Optional[str] = None
     address: Optional[str] = None
     city: Optional[str] = Field(None, max_length=100)
     state: Optional[str] = Field(None, max_length=100)
@@ -123,9 +126,6 @@ class StaffBase(BaseModel):
         "gender",
         "profile_photo",
         "phone",
-        "alternate_phone",
-        "emergency_contact_name",
-        "emergency_contact_number",
         "address",
         "city",
         "state",
@@ -136,32 +136,16 @@ class StaffBase(BaseModel):
     @classmethod
     def clean_text_fields(cls, v):
         return v.strip() if isinstance(v, str) else v
-
+    
 
 class StaffCreate(StaffBase):
-    aadhaar_number: Optional[str] = Field(None, description="Aadhaar entered during staff registration")
-    pan_number: Optional[str] = Field(None, description="PAN entered during staff registration")
-
-    @field_validator("aadhaar_number", mode="before")
-    @classmethod
-    def clean_staff_aadhaar(cls, v: Optional[str]) -> Optional[str]:
-        return v.strip() if isinstance(v, str) and v.strip() else None
-
-    @field_validator("pan_number", mode="before")
-    @classmethod
-    def clean_staff_pan(cls, v: Optional[str]) -> Optional[str]:
-        return v.strip().upper() if isinstance(v, str) and v.strip() else None
-
+    pass
 
 class StaffUpdate(BaseModel):
     full_name: Optional[str] = Field(None, min_length=2, max_length=255)
     gender: Optional[str] = Field(None, max_length=20)
-    dob: Optional[datetime] = None
     profile_photo: Optional[str] = Field(None, max_length=500)
     phone: Optional[str] = None
-    alternate_phone: Optional[str] = None
-    emergency_contact_name: Optional[str] = Field(None, max_length=255)
-    emergency_contact_number: Optional[str] = None
     address: Optional[str] = None
     city: Optional[str] = Field(None, max_length=100)
     state: Optional[str] = Field(None, max_length=100)
@@ -170,40 +154,31 @@ class StaffUpdate(BaseModel):
     current_spa_id: Optional[int] = None
     joining_date: Optional[datetime] = None
     employment_status: Optional[EmploymentStatusEnum] = None
-    aadhaar_number: Optional[str] = None
-    pan_number: Optional[str] = None
 
     @field_validator(
         "full_name",
         "gender",
         "profile_photo",
         "phone",
-        "alternate_phone",
-        "emergency_contact_name",
-        "emergency_contact_number",
         "address",
         "city",
         "state",
         "pincode",
         "designation",
-        "aadhaar_number",
         mode="before",
     )
     @classmethod
     def clean_update_text_fields(cls, v):
         return v.strip() if isinstance(v, str) and v.strip() else v
 
-    @field_validator("pan_number", mode="before")
-    @classmethod
-    def clean_update_pan(cls, v: Optional[str]) -> Optional[str]:
-        return v.strip().upper() if isinstance(v, str) and v.strip() else None
+# =========================================================
+# STAFF RESPONSE SCHEMAS
+# =========================================================
 
 
 class StaffResponse(StaffBase):
     id: int
     staff_uuid: str
-    aadhaar_last4: Optional[str]
-    pan_last4: Optional[str]
     verification_status: VerificationStatusEnum
     verification_reason: Optional[str]
     verified_by: Optional[int]
@@ -222,6 +197,7 @@ class StaffResponse(StaffBase):
     verification_logs: List[StaffVerificationLogResponse] = []
 
     model_config = ConfigDict(from_attributes=True)
+
 
 
 # =========================================================

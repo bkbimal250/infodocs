@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminApi } from '../../../api/Admin/adminApi';
 import { FaArrowLeft } from 'react-icons/fa';
+import OneTimeCredentialsCard from './OneTimeCredentialsCard';
 
 /**
  * Add User Page
@@ -14,7 +15,6 @@ const AddUserPage = () => {
     email: '',
     first_name: '',
     last_name: '',
-    password: '',
     role: 'user',
     phone_number: '',
     is_active: true,
@@ -22,6 +22,7 @@ const AddUserPage = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [credentialResponse, setCredentialResponse] = useState(null);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -36,15 +37,9 @@ const AddUserPage = () => {
     setLoading(true);
     setError(null);
 
-    if (!formData.password) {
-      setError('Password is required');
-      setLoading(false);
-      return;
-    }
-
     try {
-      await adminApi.users.createUser(formData);
-      navigate('/admin/users');
+      const response = await adminApi.users.createUser(formData);
+      setCredentialResponse(response.data);
     } catch (err) {
       setError(
         err.response?.data?.error || err.response?.data?.detail || 'Failed to create user'
@@ -149,17 +144,11 @@ const AddUserPage = () => {
 
             <div>
               <label className="block text-sm font-semibold text-[var(--color-text-primary)] mb-2">
-                Password <span className="text-red-500">*</span>
+                Password
               </label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleInputChange}
-                required
-                className="w-full px-4 py-2.5 border-1.5 border-[var(--color-border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] transition"
-                placeholder="Enter password"
-              />
+              <div className="w-full rounded-lg border border-[var(--color-border-primary)] bg-[var(--color-gray-50)] px-4 py-2.5 text-sm text-[var(--color-text-secondary)]">
+                Generated automatically and shown once after creation.
+              </div>
             </div>
 
             <div>
@@ -250,6 +239,12 @@ const AddUserPage = () => {
           </div>
         </form>
       </div>
+
+      <OneTimeCredentialsCard
+        credentials={credentialResponse?.credentials}
+        message={credentialResponse?.message}
+        onClose={() => navigate('/admin/users')}
+      />
     </div>
   );
 };

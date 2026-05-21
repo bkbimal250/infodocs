@@ -35,22 +35,6 @@ class StaffService:
             if existing_phone:
                 raise DuplicateStaffError("phone", data.phone)
 
-        # 2. Keep raw identity values as entered after lightweight schema cleanup.
-        # Legacy columns are retained to avoid a DB migration in this targeted fix.
-        aadhaar_value = data.aadhaar_number
-        pan_value = data.pan_number
-
-        # 3. Check duplicate identities only against the stored direct values.
-        if aadhaar_value or pan_value:
-            duplicate_identity = await StaffRepository.check_identity_duplicates(
-                db, aadhaar_number=aadhaar_value, pan_number=pan_value
-            )
-            if duplicate_identity:
-                conflict_val = "Aadhaar" if duplicate_identity.aadhaar_number == aadhaar_value else "PAN"
-                raise DuplicateStaffError(
-                    f"identity ({conflict_val})",
-                    "provided document is already registered"
-                )
 
         # 4. Validate SPA ID if provided
         if data.current_spa_id:
@@ -63,10 +47,6 @@ class StaffService:
         staff = await StaffRepository.create(
             db=db,
             data=data,
-            aadhaar_number=aadhaar_value,
-            aadhaar_last4=None,
-            pan_number=pan_value,
-            pan_last4=None,
             creator_id=creator_id
         )
 
@@ -116,25 +96,6 @@ class StaffService:
             existing_phone = await StaffRepository.get_by_phone(db, new_phone, include_relations=False)
             if existing_phone:
                 raise DuplicateStaffError("phone", new_phone)
-
-        # Store identity values directly in legacy identity columns without hashing/last4 helpers.
-        raw_aadhaar = update_dict.pop("aadhaar_number", None)
-        if raw_aadhaar:
-            if raw_aadhaar != staff.aadhaar_number:
-                dup = await StaffRepository.check_identity_duplicates(db, aadhaar_number=raw_aadhaar)
-                if dup:
-                    raise DuplicateStaffError("Aadhaar", "provided Aadhaar is already registered")
-                update_dict["aadhaar_number"] = raw_aadhaar
-                update_dict["aadhaar_last4"] = None
-
-        raw_pan = update_dict.pop("pan_number", None)
-        if raw_pan:
-            if raw_pan != staff.pan_number:
-                dup = await StaffRepository.check_identity_duplicates(db, pan_number=raw_pan)
-                if dup:
-                    raise DuplicateStaffError("PAN", "provided PAN is already registered")
-                update_dict["pan_number"] = raw_pan
-                update_dict["pan_last4"] = None
 
         # Handle current_spa_id checking (if someone tries to change it via update, warn or block)
         new_spa_id = update_dict.get("current_spa_id")
@@ -244,7 +205,7 @@ class StaffService:
         )
 
         # 3. Update staff details
-        staff.employment_status = EmploymentStatusEnum.left
+        staff.employment_status = EmploymentStatusEnum.resigned
         staff.current_spa_id = None
         
         await db.flush()
@@ -326,7 +287,7 @@ class StaffService:
 
         # 3. Update staff properties
         update_dict = {
-            "employment_status": EmploymentStatusEnum.left,
+            "employment_status": EmploymentStatusEnum.resigned,
             "leave_date": leave_date,
             "current_spa_id": None
         }

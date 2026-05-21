@@ -16,6 +16,7 @@ import {
 } from 'react-icons/hi';
 import { adminApi } from '../../../api/Admin/adminApi';
 import apiClient from '../../../utils/apiConfig';
+import OneTimeCredentialsCard from './OneTimeCredentialsCard';
 
 /**
  * User Details Page
@@ -32,6 +33,7 @@ const UsersDetails = () => {
   const [success, setSuccess] = useState('');
   const [loginHistory, setLoginHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [credentialResponse, setCredentialResponse] = useState(null);
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -135,6 +137,26 @@ const UsersDetails = () => {
     }
   };
 
+  const handleRegeneratePassword = async () => {
+    if (!window.confirm('Regenerate this user password? The new password will be shown only once.')) {
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setError('');
+      setSuccess('');
+      const response = await adminApi.users.regeneratePassword(id);
+      setCredentialResponse(response.data);
+      setFormData((prev) => ({ ...prev, password: '' }));
+    } catch (err) {
+      setError(err.response?.data?.detail || err.response?.data?.error || 'Failed to regenerate password');
+      console.error(err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const getRoleDisplay = (role) => {
     const roleMap = {
       'super_admin': 'Super Admin',
@@ -192,6 +214,13 @@ const UsersDetails = () => {
                   className="px-4 py-2 bg-[var(--color-primary)] text-[var(--color-text-inverse)] rounded-lg hover:bg-[var(--color-primary-dark)] flex items-center"
                 >
                   <HiOutlinePencil className="mr-2" /> Edit
+                </button>
+                <button
+                  onClick={handleRegeneratePassword}
+                  disabled={saving}
+                  className="px-4 py-2 border border-[var(--color-border-primary)] text-[var(--color-text-primary)] rounded-lg hover:bg-[var(--color-gray-50)] disabled:opacity-50 flex items-center"
+                >
+                  Reset Password
                 </button>
                 <button
                   onClick={handleDelete}
@@ -359,15 +388,11 @@ const UsersDetails = () => {
               {editing && (
                 <div>
                   <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
-                    Password (leave blank to keep current)
+                    Password
                   </label>
-                  <input
-                    type="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-[var(--color-border-primary)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                  />
+                  <div className="rounded-md border border-[var(--color-border-primary)] bg-[var(--color-gray-50)] px-3 py-2 text-sm text-[var(--color-text-secondary)]">
+                    Use Reset Password to create a one-time password.
+                  </div>
                 </div>
               )}
 
@@ -498,7 +523,7 @@ const UsersDetails = () => {
                 <p className="text-[var(--color-text-secondary)]">No login history found</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto overflow-y-visible">
                 <table className="min-w-full divide-y divide-[var(--color-border-primary)]">
                   <thead className="bg-[var(--color-gray-50)]">
                     <tr>
@@ -565,6 +590,12 @@ const UsersDetails = () => {
           </div>
         </div>
       </div>
+
+      <OneTimeCredentialsCard
+        credentials={credentialResponse?.credentials}
+        message={credentialResponse?.message}
+        onClose={() => setCredentialResponse(null)}
+      />
     </div>
   );
 };

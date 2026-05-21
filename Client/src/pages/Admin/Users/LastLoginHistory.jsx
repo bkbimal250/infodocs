@@ -80,7 +80,7 @@ const LastLoginHistory = () => {
               <p className="text-gray-500">No login history found</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto overflow-y-visible">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>

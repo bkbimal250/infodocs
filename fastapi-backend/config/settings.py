@@ -31,7 +31,6 @@ class Settings(BaseSettings):
     # Internal API Integration
     # ------------------------------------------------------------------
     INTERNAL_API_KEYS: Union[str, List[str]] = ""
-    INTERNAL_RATE_LIMIT_PER_MINUTE: int = 120
 
     @field_validator("INTERNAL_API_KEYS", mode="before")
     @classmethod
@@ -125,13 +124,6 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------
     REDIS_URL: str = "redis://localhost:6379/0"
     REDIS_ENABLED: bool = False  # Set to True to enable Redis caching
-    
-    # ------------------------------------------------------------------
-    # Rate Limiting Settings
-    # ------------------------------------------------------------------
-    RATE_LIMIT_ENABLED: bool = True  # Enable rate limiting in production
-    RATE_LIMIT_PER_MINUTE: int = 60  # Requests per minute per IP
-    RATE_LIMIT_PER_HOUR: int = 1000  # Requests per hour per IP
     
     # ------------------------------------------------------------------
     # Performance & Scalability Settings

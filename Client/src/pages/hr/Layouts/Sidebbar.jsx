@@ -40,6 +40,11 @@ const HrSidebar = ({ onLinkClick }) => {
       icon: HiOutlineBriefcase,
     },
     {
+      name: 'Staff',
+      path: '/hr/staff',
+      icon: HiOutlineUser,
+    },
+    {
       name: 'Queries',
       path: '/hr/queries',
       icon: HiOutlineChatAlt,

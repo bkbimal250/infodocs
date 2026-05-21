@@ -1,21 +1,20 @@
-from sqlalchemy import (
-    Column,
-    String,
-    DateTime,
-    Enum,
-    ForeignKey,
-    Boolean,
-    Text,
-    Index,
-    Integer,
-    BigInteger,
-)
-
-from sqlalchemy.orm import relationship
-from sqlalchemy.orm import synonym
 from datetime import datetime
 import enum
 import uuid
+from apps.forms_app.models import SPA
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
+
+from sqlalchemy.orm import relationship
 
 from config.database import Base
 
@@ -23,6 +22,12 @@ from config.database import Base
 # =========================================================
 # ENUMS
 # =========================================================
+
+class GenderEnum(str, enum.Enum):
+    male = "male"
+    female = "female"
+    other = "other"
+
 
 class VerificationStatusEnum(str, enum.Enum):
     pending = "pending"
@@ -33,44 +38,40 @@ class VerificationStatusEnum(str, enum.Enum):
 class EmploymentStatusEnum(str, enum.Enum):
     active = "active"
     inactive = "inactive"
-    left = "left"
+    resigned = "resigned"
+    terminated = "terminated"
 
 
 class StaffEventTypeEnum(str, enum.Enum):
     joined = "joined"
     transferred = "transferred"
+    verified = "verified"
+    rejected = "rejected"
+    blacklisted = "blacklisted"
     resigned = "resigned"
-    rejoined = "rejoined"
+    terminated = "terminated"
 
 
 class DocumentTypeEnum(str, enum.Enum):
-    aadhaar = "aadhaar"
-    pan = "pan"
-    passport_photo = "passport_photo"
+    aadhaar_photo = "aadhaar_photo"
     course_certificate = "course_certificate"
+    pancard = "pancard"
+    passport_size_photo = "passport_size_photo"
+    other = "other"
 
 
 # =========================================================
-# STAFF MASTER TABLE
+# STAFF
 # =========================================================
 
 class Staff(Base):
     __tablename__ = "staff"
 
-    # =====================================================
-    # PRIMARY KEY
-    # =====================================================
-
     id = Column(
-        BigInteger,
+        Integer,
         primary_key=True,
-        index=True,
-        autoincrement=True
+        index=True
     )
-
-    # =====================================================
-    # UNIQUE IDENTITY
-    # =====================================================
 
     staff_uuid = Column(
         String(36),
@@ -86,17 +87,11 @@ class Staff(Base):
 
     full_name = Column(
         String(255),
-        nullable=False,
-        index=True
+        nullable=False
     )
 
     gender = Column(
-        String(20),
-        nullable=True
-    )
-
-    dob = Column(
-        DateTime,
+        Enum(GenderEnum),
         nullable=True
     )
 
@@ -106,33 +101,18 @@ class Staff(Base):
     )
 
     # =====================================================
-    # CONTACT
+    # CONTACT DETAILS
     # =====================================================
 
     phone = Column(
         String(20),
-        nullable=True,
         unique=True,
+        nullable=False,
         index=True
     )
 
-    alternate_phone = Column(
-        String(20),
-        nullable=True
-    )
-
-    emergency_contact_name = Column(
-        String(255),
-        nullable=True
-    )
-
-    emergency_contact_number = Column(
-        String(20),
-        nullable=True
-    )
-
     # =====================================================
-    # ADDRESS
+    # ADDRESS DETAILS
     # =====================================================
 
     address = Column(
@@ -141,13 +121,12 @@ class Staff(Base):
     )
 
     city = Column(
-        String(100),
-        nullable=True,
-        index=True
+        String(255),
+        nullable=True
     )
 
     state = Column(
-        String(100),
+        String(255),
         nullable=True
     )
 
@@ -157,51 +136,17 @@ class Staff(Base):
     )
 
     # =====================================================
-    # IDENTITY DETAILS
-    # =====================================================
-
-    # Legacy column names are kept for database compatibility.
-    # Values are stored directly so managers can complete fast entry.
-
-    aadhaar_hash = Column(
-        String(255),
-        unique=True,
-        nullable=True
-    )
-
-    aadhaar_last4 = Column(
-        String(4),
-        nullable=True
-    )
-
-    pan_hash = Column(
-        String(255),
-        unique=True,
-        nullable=True
-    )
-
-    pan_last4 = Column(
-        String(4),
-        nullable=True
-    )
-
-    # Backward-compatible Python aliases for the simplified entry flow.
-    # The database column names are legacy, but values are now stored directly.
-    aadhaar_number = synonym("aadhaar_hash")
-    pan_number = synonym("pan_hash")
-
-    # =====================================================
-    # EMPLOYMENT
+    # EMPLOYMENT DETAILS
     # =====================================================
 
     designation = Column(
-        String(100),
+        String(255),
         nullable=True
     )
 
     current_spa_id = Column(
         Integer,
-        ForeignKey("spas.id", ondelete="SET NULL"),
+        ForeignKey("spas.id"),
         nullable=True,
         index=True
     )
@@ -216,16 +161,19 @@ class Staff(Base):
         nullable=True
     )
 
+    employment_status = Column(
+        Enum(EmploymentStatusEnum),
+        default=EmploymentStatusEnum.active,
+        nullable=False,
+        index=True
+    )
+
     # =====================================================
     # VERIFICATION
     # =====================================================
 
     verification_status = Column(
-        Enum(
-            VerificationStatusEnum,
-            native_enum=False,
-            length=30
-        ),
+        Enum(VerificationStatusEnum),
         default=VerificationStatusEnum.pending,
         nullable=False,
         index=True
@@ -238,7 +186,7 @@ class Staff(Base):
 
     verified_by = Column(
         Integer,
-        ForeignKey("users.id", ondelete="SET NULL"),
+        ForeignKey("users.id"),
         nullable=True
     )
 
@@ -248,27 +196,14 @@ class Staff(Base):
     )
 
     # =====================================================
-    # EMPLOYMENT STATUS
-    # =====================================================
-
-    employment_status = Column(
-        Enum(
-            EmploymentStatusEnum,
-            native_enum=False,
-            length=20
-        ),
-        default=EmploymentStatusEnum.inactive,
-        nullable=False,
-        index=True
-    )
-
-    # =====================================================
-    # BLACKLIST
+    # SECURITY
     # =====================================================
 
     is_blacklisted = Column(
         Boolean,
-        default=False
+        default=False,
+        nullable=False,
+        index=True
     )
 
     blacklist_reason = Column(
@@ -277,40 +212,42 @@ class Staff(Base):
     )
 
     # =====================================================
-    # SOFT DELETE
-    # =====================================================
-
-    deleted_at = Column(
-        DateTime,
-        nullable=True,
-        index=True
-    )
-
-    # =====================================================
-    # METADATA
+    # SYSTEM
     # =====================================================
 
     created_by = Column(
         Integer,
-        ForeignKey("users.id", ondelete="SET NULL"),
+        ForeignKey("users.id"),
         nullable=True
     )
 
     created_at = Column(
         DateTime,
         default=datetime.utcnow,
-        index=True
+        nullable=False
     )
 
     updated_at = Column(
         DateTime,
         default=datetime.utcnow,
-        onupdate=datetime.utcnow
+        onupdate=datetime.utcnow,
+        nullable=False
+    )
+
+    deleted_at = Column(
+        DateTime,
+        nullable=True
     )
 
     # =====================================================
     # RELATIONSHIPS
     # =====================================================
+
+    current_spa = relationship(
+        "SPA",
+        foreign_keys=[current_spa_id],
+        lazy="selectin"
+    )
 
     documents = relationship(
         "StaffDocument",
@@ -340,24 +277,6 @@ class Staff(Base):
         lazy="selectin"
     )
 
-    spa = relationship(
-        "SPA",
-        foreign_keys=[current_spa_id],
-        backref="staff_members"
-    )
-
-    # =====================================================
-    # INDEXES
-    # =====================================================
-
-    __table_args__ = (
-        Index("idx_staff_phone", "phone"),
-        Index("idx_staff_verification", "verification_status"),
-        Index("idx_staff_employment", "employment_status"),
-        Index("idx_staff_blacklisted", "is_blacklisted"),
-        Index("idx_staff_spa", "current_spa_id"),
-    )
-
 
 # =========================================================
 # STAFF DOCUMENTS
@@ -367,61 +286,53 @@ class StaffDocument(Base):
     __tablename__ = "staff_documents"
 
     id = Column(
-        BigInteger,
+        Integer,
         primary_key=True,
-        autoincrement=True
+        index=True
     )
 
     staff_id = Column(
-        BigInteger,
+        Integer,
         ForeignKey("staff.id", ondelete="CASCADE"),
         nullable=False,
         index=True
     )
 
     document_type = Column(
-        Enum(
-            DocumentTypeEnum,
-            native_enum=False,
-            length=50
-        ),
-        nullable=False,
-        index=True
-    )
-
-    file_url = Column(
-        String(500),
+        Enum(DocumentTypeEnum),
         nullable=False
     )
 
-    document_number_last4 = Column(
-        String(4),
+    document_number = Column(
+        String(255),
         nullable=True
     )
 
-    is_verified = Column(
-        Boolean,
-        default=False
+    file_url = Column(
+        String(1000),
+        nullable=True
     )
 
-    verified_by = Column(
+    verification_status = Column(
+        Enum(VerificationStatusEnum),
+        default=VerificationStatusEnum.pending,
+        nullable=False
+    )
+
+    uploaded_by = Column(
         Integer,
-        ForeignKey("users.id", ondelete="SET NULL"),
+        ForeignKey("users.id"),
         nullable=True
     )
 
-    verified_at = Column(
+    created_at = Column(
         DateTime,
-        nullable=True
-    )
-
-    uploaded_at = Column(
-        DateTime,
-        default=datetime.utcnow
+        default=datetime.utcnow,
+        nullable=False
     )
 
     # =====================================================
-    # RELATIONSHIP
+    # RELATIONSHIPS
     # =====================================================
 
     staff = relationship(
@@ -439,47 +350,38 @@ class StaffEvent(Base):
     __tablename__ = "staff_events"
 
     id = Column(
-        BigInteger,
+        Integer,
         primary_key=True,
-        autoincrement=True
+        index=True
     )
 
     staff_id = Column(
-        BigInteger,
+        Integer,
         ForeignKey("staff.id", ondelete="CASCADE"),
         nullable=False,
         index=True
     )
 
     event_type = Column(
-        Enum(
-            StaffEventTypeEnum,
-            native_enum=False,
-            length=30
-        ),
-        nullable=False,
-        index=True
+        Enum(StaffEventTypeEnum),
+        nullable=False
     )
-
-    # =====================================================
-    # SPA MOVEMENT
-    # =====================================================
 
     spa_id = Column(
         Integer,
-        ForeignKey("spas.id", ondelete="SET NULL"),
+        ForeignKey("spas.id"),
         nullable=True
     )
 
     from_spa_id = Column(
         Integer,
-        ForeignKey("spas.id", ondelete="SET NULL"),
+        ForeignKey("spas.id"),
         nullable=True
     )
 
     to_spa_id = Column(
         Integer,
-        ForeignKey("spas.id", ondelete="SET NULL"),
+        ForeignKey("spas.id"),
         nullable=True
     )
 
@@ -487,10 +389,6 @@ class StaffEvent(Base):
         Text,
         nullable=True
     )
-
-    # =====================================================
-    # EXTRA
-    # =====================================================
 
     notes = Column(
         Text,
@@ -500,36 +398,29 @@ class StaffEvent(Base):
     event_date = Column(
         DateTime,
         default=datetime.utcnow,
-        index=True
+        nullable=False
     )
 
     created_by = Column(
         Integer,
-        ForeignKey("users.id", ondelete="SET NULL"),
+        ForeignKey("users.id"),
         nullable=True
     )
 
     created_at = Column(
         DateTime,
-        default=datetime.utcnow
+        default=datetime.utcnow,
+        nullable=False
     )
 
     # =====================================================
-    # RELATIONSHIP
+    # RELATIONSHIPS
     # =====================================================
 
     staff = relationship(
         "Staff",
         back_populates="events",
         lazy="selectin"
-    )
-
-    __table_args__ = (
-        Index(
-            "idx_staff_event",
-            "staff_id",
-            "event_type"
-        ),
     )
 
 
@@ -541,13 +432,13 @@ class WorkHistory(Base):
     __tablename__ = "work_history"
 
     id = Column(
-        BigInteger,
+        Integer,
         primary_key=True,
-        autoincrement=True
+        index=True
     )
 
     staff_id = Column(
-        BigInteger,
+        Integer,
         ForeignKey("staff.id", ondelete="CASCADE"),
         nullable=False,
         index=True
@@ -555,19 +446,13 @@ class WorkHistory(Base):
 
     spa_id = Column(
         Integer,
-        ForeignKey("spas.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True
+        ForeignKey("spas.id"),
+        nullable=False
     )
-
-    # =====================================================
-    # TIMELINE
-    # =====================================================
 
     join_date = Column(
         DateTime,
-        default=datetime.utcnow,
-        index=True
+        nullable=False
     )
 
     leave_date = Column(
@@ -575,41 +460,32 @@ class WorkHistory(Base):
         nullable=True
     )
 
-    # =====================================================
-    # TRANSFER
-    # =====================================================
-
     is_transferred = Column(
         Boolean,
-        default=False
+        default=False,
+        nullable=False
     )
-
-    # =====================================================
-    # EXTRA
-    # =====================================================
 
     notes = Column(
         Text,
         nullable=True
     )
 
-    # =====================================================
-    # METADATA
-    # =====================================================
-
     created_at = Column(
         DateTime,
-        default=datetime.utcnow
+        default=datetime.utcnow,
+        nullable=False
     )
 
     updated_at = Column(
         DateTime,
         default=datetime.utcnow,
-        onupdate=datetime.utcnow
+        onupdate=datetime.utcnow,
+        nullable=False
     )
 
     # =====================================================
-    # RELATIONSHIP
+    # RELATIONSHIPS
     # =====================================================
 
     staff = relationship(
@@ -618,42 +494,34 @@ class WorkHistory(Base):
         lazy="selectin"
     )
 
-    __table_args__ = (
-        Index(
-            "idx_staff_spa_history",
-            "staff_id",
-            "spa_id"
-        ),
-    )
-
 
 # =========================================================
-# STAFF VERIFICATION LOGS
+# VERIFICATION LOGS
 # =========================================================
 
 class StaffVerificationLog(Base):
     __tablename__ = "staff_verification_logs"
 
     id = Column(
-        BigInteger,
+        Integer,
         primary_key=True,
-        autoincrement=True
+        index=True
     )
 
     staff_id = Column(
-        BigInteger,
+        Integer,
         ForeignKey("staff.id", ondelete="CASCADE"),
         nullable=False,
         index=True
     )
 
     old_status = Column(
-        String(30),
+        Enum(VerificationStatusEnum),
         nullable=True
     )
 
     new_status = Column(
-        String(30),
+        Enum(VerificationStatusEnum),
         nullable=False
     )
 
@@ -664,18 +532,18 @@ class StaffVerificationLog(Base):
 
     changed_by = Column(
         Integer,
-        ForeignKey("users.id", ondelete="SET NULL"),
+        ForeignKey("users.id"),
         nullable=True
     )
 
     created_at = Column(
         DateTime,
         default=datetime.utcnow,
-        index=True
+        nullable=False
     )
 
     # =====================================================
-    # RELATIONSHIP
+    # RELATIONSHIPS
     # =====================================================
 
     staff = relationship(

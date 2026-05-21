@@ -43,3 +43,5 @@ export { default as AddStaffPage } from './StaffManage/AddStaffForm';
 export { default as EditStaffPage } from './StaffManage/EditStaffForm';
 export { default as ViewStaffPage } from './StaffManage/ViewStaffDetails';
 
+// Admin API Key Management
+export { default as AdminApiKeysPage } from './Apikey';

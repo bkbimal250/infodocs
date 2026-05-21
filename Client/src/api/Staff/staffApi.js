@@ -4,6 +4,8 @@ import apiClient from '../../utils/apiConfig';
  * Staff Management API endpoints
  */
 export const staffApi = {
+  getStaffKey: (staff) => staff?.staff_uuid || staff?.id,
+
   /**
    * Get all staff (Admin can see all, Manager sees limited by backend if implemented, 
    * but here we pass spa_id if we want to filter on frontend)
@@ -76,7 +78,11 @@ export const staffApi = {
    * @returns {Promise}
    */
   transferStaff: (id, data) => {
-    return apiClient.post(`/staff/${id}/transfer`, data);
+    return apiClient.patch(`/staff/${id}/transfer`, {
+      target_spa_id: data.target_spa_id || data.to_spa_id,
+      transfer_reason: data.transfer_reason || data.reason || '',
+      notes: data.notes || ''
+    });
   },
 
   /**
@@ -127,5 +133,53 @@ export const staffApi = {
         'Content-Type': 'multipart/form-data'
       }
     });
+  },
+
+  /**
+   * Add a document to a staff profile
+   * @param {string} staffUuid - Staff UUID or ID
+   * @param {Object} docData - { document_type, document_number, file_url }
+   * @returns {Promise}
+   */
+  addStaffDocument: (staffUuid, docData) => {
+    return apiClient.post(`/staff/${staffUuid}/documents`, docData);
+  },
+
+  /**
+   * Approve or reject a staff's verification status
+   * @param {string} staffUuid - Staff UUID or ID
+   * @param {Object} data - { status, reason }
+   * @returns {Promise}
+   */
+  verifyStaff: (staffUuid, data) => {
+    return apiClient.patch(`/staff/${staffUuid}/verify`, data);
+  },
+
+  /**
+   * Blacklist or unblacklist a staff member
+   * @param {string} staffUuid - Staff UUID or ID
+   * @param {Object} data - { is_blacklisted, blacklist_reason }
+   * @returns {Promise}
+   */
+  blacklistStaff: (staffUuid, data) => {
+    return apiClient.patch(`/staff/${staffUuid}/blacklist`, data);
+  },
+
+  /**
+   * Verify an uploaded staff document
+   * @param {number} docId - Document ID
+   * @returns {Promise}
+   */
+  verifyDocument: (docId) => {
+    return apiClient.patch(`/staff/documents/${docId}/verify`);
+  },
+
+  /**
+   * Delete a document attachment
+   * @param {number} docId - Document ID
+   * @returns {Promise}
+   */
+  deleteDocument: (docId) => {
+    return apiClient.delete(`/staff/documents/${docId}`);
   }
 };

@@ -99,56 +99,32 @@ class StaffRepository:
         result = await db.execute(query)
         return result.scalar_one_or_none()
 
-    @staticmethod
-    async def check_identity_duplicates(
-        db: Session, aadhaar_number: Optional[str] = None, pan_number: Optional[str] = None
-    ) -> Optional[Staff]:
-        """
-        Queries database for pre-existing identity values to prevent double registry.
-        Column names are legacy; values are stored directly by the simplified staff flow.
-        """
-        filters = []
-        if aadhaar_number:
-            filters.append(Staff.aadhaar_number == aadhaar_number)
-        if pan_number:
-            filters.append(Staff.pan_number == pan_number)
-
-        if not filters:
-            return None
-
-        query = select(Staff).where(or_(*filters), Staff.deleted_at.is_(None))
-        result = await db.execute(query)
-        return result.scalar_one_or_none()
 
     @staticmethod
     async def create(
         db: Session,
         data: StaffCreate,
-        aadhaar_number: Optional[str],
-        aadhaar_last4: Optional[str],
-        pan_number: Optional[str],
-        pan_last4: Optional[str],
         creator_id: Optional[int] = None,
     ) -> Staff:
         """Persists a new Staff record into the database."""
-        # Convert schema fields into database dictionary
-        db_fields = data.model_dump(exclude={"aadhaar_number", "pan_number"})
-        
+
+        db_fields = data.model_dump()
+
         staff = Staff(
             **db_fields,
-            aadhaar_number=aadhaar_number,
-            aadhaar_last4=aadhaar_last4,
-            pan_number=pan_number,
-            pan_last4=pan_last4,
             created_by=creator_id,
             verification_status=VerificationStatusEnum.pending,
             employment_status=EmploymentStatusEnum.inactive,
             is_blacklisted=False,
         )
-        db.add(staff)
-        await db.flush()  # Populates staff.id via autoincrement
-        return staff
 
+        db.add(staff)
+
+        await db.flush()
+
+        return staff
+    
+   
     @staticmethod
     async def update(db: Session, staff: Staff, update_fields: dict) -> Staff:
         """Applies dynamic updates to an existing Staff entity"""

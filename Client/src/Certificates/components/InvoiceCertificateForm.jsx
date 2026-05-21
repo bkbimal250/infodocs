@@ -130,7 +130,7 @@ const InvoiceCertificateForm = ({
           Services & Items
         </h3>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto overflow-y-visible">
           <table className="min-w-full text-xs md:text-sm border border-slate-200 rounded-lg overflow-hidden">
             <thead className="bg-slate-50">
               <tr>

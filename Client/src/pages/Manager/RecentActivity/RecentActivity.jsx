@@ -280,7 +280,7 @@ const RecentActivity = () => {
               </div>
             ) : (
               <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-md overflow-hidden">
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto overflow-y-visible">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-[var(--color-bg-secondary)]">
                       <tr>

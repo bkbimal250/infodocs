@@ -53,6 +53,7 @@ const AdminStaffManage = lazy(() => import('../pages/Admin').then(module => ({ d
 const AdminAddStaffPage = lazy(() => import('../pages/Admin').then(module => ({ default: module.AddStaffPage })));
 const AdminEditStaffPage = lazy(() => import('../pages/Admin').then(module => ({ default: module.EditStaffPage })));
 const AdminViewStaffPage = lazy(() => import('../pages/Admin').then(module => ({ default: module.ViewStaffPage })));
+const AdminApiKeysPage = lazy(() => import('../pages/Admin/Apikey'));
 
 // Manager Pages - Lazy Loaded
 const ManagerDashboard = lazy(() => import('../pages/Manager').then(module => ({ default: module.ManagerDashboard })));
@@ -79,6 +80,10 @@ const HrCertificates = lazy(() => import('../pages/hr/Certificates'));
 const HrCertificateCreation = lazy(() => import('../pages/hr/CertificateCreation'));
 const HrQuery = lazy(() => import('../pages/hr/Query/Query'));
 const HrTutorials = lazy(() => import('../pages/hr/tutorials/tutorials'));
+const HrStaffManage = lazy(() => import('../pages/hr/StaffManage').then(module => ({ default: module.HrStaffManage })));
+const HrAddStaffPage = lazy(() => import('../pages/hr/StaffManage').then(module => ({ default: module.AddStaffPage })));
+const HrEditStaffPage = lazy(() => import('../pages/hr/StaffManage').then(module => ({ default: module.EditStaffPage })));
+const HrViewStaffPage = lazy(() => import('../pages/hr/StaffManage').then(module => ({ default: module.ViewStaffPage })));
 
 // Common Pages - Lazy Loaded
 const CertificateCreation = lazy(() => import('../pages/common').then(module => ({ default: module.CertificateCreation })));
@@ -520,6 +525,16 @@ const AppRouter = () => {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/admin/api-keys"
+            element={
+              <ProtectedRoute allowedRoles={['super_admin']}>
+                <AdminLayout>
+                  <AdminApiKeysPage />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
 
           {/* Protected Routes - HR */}
           <Route
@@ -537,6 +552,10 @@ const AppRouter = () => {
             <Route path="hiring-data" element={<Hiringpages />} />
             <Route path="hiring-data/:id" element={<ViewData />} />
             <Route path="profile" element={<HrProfile />} />
+            <Route path="staff" element={<HrStaffManage />} />
+            <Route path="staff/add" element={<HrAddStaffPage />} />
+            <Route path="staff/:id" element={<HrViewStaffPage />} />
+            <Route path="staff/:id/edit" element={<HrEditStaffPage />} />
             <Route path="queries" element={<HrQuery />} />
             <Route path="tutorials" element={<HrTutorials />} />
             <Route path="notifications" element={<UserRecentNotification />} />
@@ -859,4 +878,3 @@ const NotFoundPage = () => {
 };
 
 export default AppRouter;
-

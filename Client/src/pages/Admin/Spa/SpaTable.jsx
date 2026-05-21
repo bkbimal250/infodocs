@@ -56,7 +56,7 @@ const SpaTable = ({
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto overflow-y-visible">
       <table className="min-w-full divide-y divide-[var(--color-border-primary)]">
         <thead className="bg-gradient-to-r from-[var(--color-gray-50)] to-[var(--color-gray-100)]">
           <tr>

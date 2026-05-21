@@ -96,7 +96,7 @@ const AdminLayout = ({ children }) => {
                 sidebarOpen ? 'translate-x-0' : '-translate-x-full'
               } fixed lg:static lg:translate-x-0 top-16 bottom-0 left-0 z-40 w-64 transition-transform duration-300 ease-in-out lg:transition-none`}
             >
-              <AdminSidebar onLinkClick={() => setSidebarOpen(false)} />
+              <AdminSidebar user={user} onLinkClick={() => setSidebarOpen(false)} />
             </div>
 
             {/* Overlay for mobile */}
