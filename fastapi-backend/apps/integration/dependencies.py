@@ -1,6 +1,6 @@
 import hashlib
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from dataclasses import dataclass
 
 from fastapi import Depends, Header, HTTPException, Request, status
@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.integrations.models import IntegrationApiKey
 from config.database import get_db
+from config.settings import settings
 
 
 logger = logging.getLogger(__name__)
@@ -79,8 +80,13 @@ async def verify_internal_api_key(
             detail="Invalid internal API key",
         )
 
-    api_key.last_used_at = datetime.utcnow()
-    await db.commit()
+    now = datetime.utcnow()
+    last_used_threshold = now - timedelta(
+        seconds=settings.INTEGRATION_LAST_USED_UPDATE_SECONDS
+    )
+    if not api_key.last_used_at or api_key.last_used_at < last_used_threshold:
+        api_key.last_used_at = now
+        await db.commit()
 
     logger.info(
         "Internal API key accepted ip=%s key_id=%s key_prefix=%s key_hash_prefix=%s path=%s",

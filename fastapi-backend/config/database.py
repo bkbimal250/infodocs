@@ -43,9 +43,9 @@ engine = create_async_engine(
     DATABASE_URL,
     echo=settings.DEBUG,
     pool_pre_ping=True,
-    pool_recycle=3600,
-    pool_size=10,
-    max_overflow=20,
+    pool_recycle=settings.DB_POOL_RECYCLE_SECONDS,
+    pool_size=settings.DB_POOL_SIZE,
+    max_overflow=settings.DB_MAX_OVERFLOW,
     future=True,
 )
 
@@ -105,6 +105,10 @@ async def close_db_connection() -> None:
 # =========================================================
 
 async def init_db():
+    if not settings.AUTO_CREATE_TABLES:
+        logger.info("Automatic table creation disabled")
+        return
+
     # Users
     from apps.users.models import User, OTP
 

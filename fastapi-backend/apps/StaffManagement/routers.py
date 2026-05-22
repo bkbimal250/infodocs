@@ -10,6 +10,7 @@ from apps.StaffManagement.dependencies import (
     db_dependency,
     current_user_dependency,
     admin_only,
+    verify_staff_permission_dependency,
 )
 from apps.StaffManagement.schemas import (
     StaffCreate,
@@ -188,14 +189,13 @@ async def delete_staff_endpoint(
 @router.patch(
     "/{staff_uuid}/verify",
     response_model=StaffResponse,
-    dependencies=[admin_only],
-    summary="[Admin/HR] Approve or reject a staff's verification status"
+    summary="[Admin/Manager] Approve or reject a staff's verification status"
 )
 async def verify_staff_endpoint(
     payload: StaffVerificationRequest,
     staff_uuid: str = Path(..., description="Unique staff UUID identifier"),
     db: Session = db_dependency,
-    current_user: User = current_user_dependency
+    current_user: User = verify_staff_permission_dependency
 ):
     """
     Triggers HR verification workflows.
@@ -285,13 +285,14 @@ async def get_today_analytics(
     Can be filtered by a specific SPA branch.
     """
     from datetime import datetime, time
-    from sqlalchemy import select, or_
+    from sqlalchemy import func, or_, select
     from apps.StaffManagement.models import StaffEvent, StaffEventTypeEnum
     
     start_of_today = datetime.combine(datetime.utcnow().date(), time.min)
     
-    # Query events from today
-    query = select(StaffEvent).where(StaffEvent.event_date >= start_of_today)
+    query = select(StaffEvent.event_type, func.count(StaffEvent.id)).where(
+        StaffEvent.event_date >= start_of_today
+    )
     
     if spa_id:
         query = query.where(
@@ -302,17 +303,14 @@ async def get_today_analytics(
             )
         )
         
+    query = query.group_by(StaffEvent.event_type)
     result = await db.execute(query)
-    events = result.scalars().all()
-    
-    joined_count = sum(1 for e in events if e.event_type == StaffEventTypeEnum.joined)
-    left_count = sum(1 for e in events if e.event_type == StaffEventTypeEnum.resigned)
-    transferred_count = sum(1 for e in events if e.event_type == StaffEventTypeEnum.transferred)
+    event_counts = {event_type: count for event_type, count in result.all()}
     
     return {
-        "joined": joined_count,
-        "left": left_count,
-        "transferred": transferred_count
+        "joined": event_counts.get(StaffEventTypeEnum.joined, 0),
+        "left": event_counts.get(StaffEventTypeEnum.resigned, 0),
+        "transferred": event_counts.get(StaffEventTypeEnum.transferred, 0)
     }
 
 
@@ -329,34 +327,41 @@ async def get_overall_analytics(
     Retrieves overall metrics: total registered staff, active staff,
     verification status breakdown, and blacklisted staff.
     """
-    from sqlalchemy import select
+    from sqlalchemy import case, func, select
     from apps.StaffManagement.models import Staff, VerificationStatusEnum, EmploymentStatusEnum
     
-    base_query = select(Staff).where(Staff.deleted_at.is_(None))
+    base_conditions = [Staff.deleted_at.is_(None)]
     if spa_id:
-        base_query = base_query.where(Staff.current_spa_id == spa_id)
-        
-    result = await db.execute(base_query)
-    staff_list = result.scalars().all()
-    
-    total_registered = len(staff_list)
-    active_staff = sum(1 for s in staff_list if s.employment_status == EmploymentStatusEnum.active)
-    
-    pending_verification = sum(1 for s in staff_list if s.verification_status == VerificationStatusEnum.pending)
-    verified_verification = sum(1 for s in staff_list if s.verification_status == VerificationStatusEnum.verified)
-    rejected_verification = sum(1 for s in staff_list if s.verification_status == VerificationStatusEnum.rejected)
-    
-    total_blacklisted = sum(1 for s in staff_list if s.is_blacklisted)
+        base_conditions.append(Staff.current_spa_id == spa_id)
+
+    stmt = select(
+        func.count(Staff.id),
+        func.sum(case((Staff.employment_status == EmploymentStatusEnum.active, 1), else_=0)),
+        func.sum(case((Staff.verification_status == VerificationStatusEnum.pending, 1), else_=0)),
+        func.sum(case((Staff.verification_status == VerificationStatusEnum.verified, 1), else_=0)),
+        func.sum(case((Staff.verification_status == VerificationStatusEnum.rejected, 1), else_=0)),
+        func.sum(case((Staff.is_blacklisted.is_(True), 1), else_=0)),
+    ).where(*base_conditions)
+
+    result = await db.execute(stmt)
+    (
+        total_registered,
+        active_staff,
+        pending_verification,
+        verified_verification,
+        rejected_verification,
+        total_blacklisted,
+    ) = result.one()
     
     return {
         "total_registered": total_registered,
-        "active_staff": active_staff,
+        "active_staff": active_staff or 0,
         "verification_breakdown": {
-            "pending": pending_verification,
-            "verified": verified_verification,
-            "rejected": rejected_verification
+            "pending": pending_verification or 0,
+            "verified": verified_verification or 0,
+            "rejected": rejected_verification or 0
         },
-        "total_blacklisted": total_blacklisted
+        "total_blacklisted": total_blacklisted or 0
     }
 
 
@@ -373,61 +378,81 @@ async def get_consolidated_analytics(
     Retrieves aggregated dashboard data: SPA-by-SPA active staff count,
     gender ratios, designation breakdown, active and left totals, and today's changes.
     """
-    from sqlalchemy import select, or_
+    from sqlalchemy import and_, func, or_, select
     from apps.StaffManagement.models import Staff, EmploymentStatusEnum, StaffEvent, StaffEventTypeEnum
     from apps.forms_app.models import SPA
     from datetime import datetime, time
     
-    staff_query = select(Staff).where(
+    active_conditions = [
         Staff.employment_status == EmploymentStatusEnum.active,
         Staff.deleted_at.is_(None)
-    )
+    ]
     if spa_id:
-        staff_query = staff_query.where(Staff.current_spa_id == spa_id)
-        
-    staff_res = await db.execute(staff_query)
-    active_staff = staff_res.scalars().all()
-    
-    gender_counts = {}
-    for s in active_staff:
-        g = (s.gender or "Not Specified").strip().capitalize()
-        gender_counts[g] = gender_counts.get(g, 0) + 1
-        
-    designation_counts = {}
-    for s in active_staff:
-        d = (s.designation or "Not Specified").strip()
-        designation_counts[d] = designation_counts.get(d, 0) + 1
-        
-    spa_stats = []
-    spa_query = select(SPA)
+        active_conditions.append(Staff.current_spa_id == spa_id)
+
+    gender_stmt = (
+        select(Staff.gender, func.count(Staff.id))
+        .where(*active_conditions)
+        .group_by(Staff.gender)
+    )
+    gender_res = await db.execute(gender_stmt)
+    gender_counts = {
+        ((gender or "Not Specified").strip().capitalize()): count
+        for gender, count in gender_res.all()
+    }
+
+    designation_stmt = (
+        select(Staff.designation, func.count(Staff.id))
+        .where(*active_conditions)
+        .group_by(Staff.designation)
+    )
+    designation_res = await db.execute(designation_stmt)
+    designation_counts = {
+        ((designation or "Not Specified").strip()): count
+        for designation, count in designation_res.all()
+    }
+
+    spa_join_conditions = [
+        Staff.current_spa_id == SPA.id,
+        Staff.employment_status == EmploymentStatusEnum.active,
+        Staff.deleted_at.is_(None),
+    ]
+    spa_query = (
+        select(SPA.id, SPA.name, func.count(Staff.id))
+        .outerjoin(Staff, and_(*spa_join_conditions))
+        .group_by(SPA.id, SPA.name)
+    )
     if spa_id:
         spa_query = spa_query.where(SPA.id == spa_id)
     spa_res = await db.execute(spa_query)
-    spas = spa_res.scalars().all()
-    
-    for spa in spas:
-        count = sum(1 for s in active_staff if s.current_spa_id == spa.id)
-        spa_stats.append({
-            "spa_id": spa.id,
-            "spa_name": spa.name,
-            "active_count": count
-        })
-        
-    # Additional dashboard metrics
-    total_active = len(active_staff)
-    
-    left_query = select(Staff).where(
+    spa_stats = [
+        {
+            "spa_id": current_spa_id,
+            "spa_name": spa_name,
+            "active_count": active_count,
+        }
+        for current_spa_id, spa_name, active_count in spa_res.all()
+    ]
+
+    total_active_query = select(func.count(Staff.id)).where(*active_conditions)
+    total_active_res = await db.execute(total_active_query)
+    total_active = total_active_res.scalar_one()
+
+    left_conditions = [
         Staff.employment_status == EmploymentStatusEnum.resigned,
         Staff.deleted_at.is_(None)
-    )
+    ]
     if spa_id:
-        left_query = left_query.where(Staff.current_spa_id == spa_id)
+        left_conditions.append(Staff.current_spa_id == spa_id)
+    left_query = select(func.count(Staff.id)).where(*left_conditions)
     left_res = await db.execute(left_query)
-    total_left = len(left_res.scalars().all())
+    total_left = left_res.scalar_one()
 
     # Today breakdown query
     start_of_today = datetime.combine(datetime.utcnow().date(), time.min)
-    event_query = select(StaffEvent).where(StaffEvent.event_date >= start_of_today)
+    event_query = select(StaffEvent.event_type, func.count(StaffEvent.id)).where(
+        StaffEvent.event_date >= start_of_today
+    )
     if spa_id:
         event_query = event_query.where(
             or_(
@@ -436,13 +461,14 @@ async def get_consolidated_analytics(
                 StaffEvent.to_spa_id == spa_id
             )
         )
+    event_query = event_query.group_by(StaffEvent.event_type)
     event_res = await db.execute(event_query)
-    today_events = event_res.scalars().all()
-    
-    today_new_join = sum(1 for e in today_events if e.event_type == StaffEventTypeEnum.joined)
+    today_counts = {event_type: count for event_type, count in event_res.all()}
+
+    today_new_join = today_counts.get(StaffEventTypeEnum.joined, 0)
     today_re_join = 0
-    today_transfer_out = sum(1 for e in today_events if e.event_type == StaffEventTypeEnum.transferred)
-    today_leave = sum(1 for e in today_events if e.event_type == StaffEventTypeEnum.resigned)
+    today_transfer_out = today_counts.get(StaffEventTypeEnum.transferred, 0)
+    today_leave = today_counts.get(StaffEventTypeEnum.resigned, 0)
 
     return {
         "spa_stats": spa_stats,

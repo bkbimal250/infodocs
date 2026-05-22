@@ -4,7 +4,7 @@ import { toast } from 'react-hot-toast';
 import { FaPlus, FaUserMinus } from 'react-icons/fa';
 import { adminApi, authApi, staffApi } from '../../../api';
 import Pagination from '../../common/Pagination';
-import { useSpas, normalizePage, roleHasStaffActions, getStaffKey, staffName } from './StaffHelpers';
+import { useSpas, normalizePage, roleHasStaffActions, canVerifyStaff, getStaffKey, staffName } from './StaffHelpers';
 import { StaffFilters } from './StaffFilters';
 import { StaffTable } from './StaffTable';
 import { VerificationModal, TransferModal, LeaveModal } from './StaffModals';
@@ -192,6 +192,7 @@ export const StaffListPage = ({ scope = 'admin', basePath = '/admin/staff' }) =>
             spaMap={spaMap}
             basePath={basePath}
             canAct={canAct}
+            canVerify={(member) => canVerifyStaff(user, scope, member)}
             navigate={navigate}
             onVerify={(member) => setModal({ type: 'verify', staff: member })}
             onTransfer={(member) => setModal({ type: 'transfer', staff: member })}

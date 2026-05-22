@@ -9,6 +9,8 @@ import logging
 import traceback
 import time
 
+from config.settings import settings
+
 logger = logging.getLogger(__name__)
 
 
@@ -38,8 +40,6 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
             # Add CORS headers if origin is present
             origin = request.headers.get("origin")
             if origin:
-                # Get CORS origins from app settings
-                from config.settings import settings
                 cors_origins = settings.CORS_ORIGINS
                 if isinstance(cors_origins, str):
                     cors_origins = [origin.strip() for origin in cors_origins.split(",") if origin.strip()]
@@ -73,13 +73,11 @@ class PerformanceMiddleware(BaseHTTPMiddleware):
         # Add processing time to response headers
         response.headers["X-Process-Time"] = f"{ms:.2f}ms"
         
-        # Log slow requests or all requests based on threshold
-        # Using 500ms as a threshold for "Slow" warning, but logging all for now to help optimization
         log_msg = f"{request.method} {request.url.path} - Time: {ms:.2f}ms - Status: {response.status_code}"
         
-        if ms > 200:
+        if ms > settings.SLOW_REQUEST_MS:
             logger.warning(f"SLOW REQUEST: {log_msg}")
-        else:
+        elif settings.LOG_FAST_REQUESTS:
             logger.info(log_msg)
             
         return response

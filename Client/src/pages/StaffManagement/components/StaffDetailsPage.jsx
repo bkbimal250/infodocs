@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { FaArrowLeft, FaCheckCircle, FaCloudUploadAlt, FaSpinner } from 'react-icons/fa';
 import { authApi, staffApi } from '../../../api';
-import { useSpas, getStaffKey, staffName, titleCase, formatDate, formatDateTime, spaLabel, roleHasStaffActions } from './StaffHelpers';
+import { useSpas, getStaffKey, staffName, titleCase, formatDate, formatDateTime, spaLabel, roleHasStaffActions, canVerifyStaff } from './StaffHelpers';
 import { ProfilePhoto, Badge, DocumentCard } from './StaffHelpers';
 import { VerificationModal, TransferModal, LeaveModal } from './StaffModals';
 
@@ -58,6 +58,7 @@ export const StaffDetailsPage = ({ scope = 'admin', basePath = '/admin/staff' })
   ];
 
   const canActOnStaff = roleHasStaffActions(user, scope);
+  const canVerifyCurrentStaff = canVerifyStaff(user, scope, staff);
 
   const verify = async (data) => {
     try {
@@ -136,7 +137,7 @@ export const StaffDetailsPage = ({ scope = 'admin', basePath = '/admin/staff' })
             </div>
             <div className="flex flex-wrap gap-2">
               <Link to={`${basePath}/${getStaffKey(staff)}/edit`} className="rounded-md border px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">Edit</Link>
-              {canActOnStaff && <button type="button" onClick={() => setModal('verify')} className="rounded-md bg-blue-600 px-3 py-2 text-sm text-white">Verify</button>}
+              {canVerifyCurrentStaff && <button type="button" onClick={() => setModal('verify')} className="rounded-md bg-blue-600 px-3 py-2 text-sm text-white">Verify</button>}
               {canActOnStaff && <button type="button" onClick={() => setModal('transfer')} className="rounded-md bg-amber-600 px-3 py-2 text-sm text-white">Transfer</button>}
               <button type="button" onClick={() => setModal('leave')} className="rounded-md bg-rose-600 px-3 py-2 text-sm text-white">Mark Left</button>
             </div>

@@ -130,6 +130,13 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------
     MAX_WORKERS: int = 4  # Number of uvicorn workers (CPU cores * 2)
     WORKER_CONNECTIONS: int = 1000  # Max connections per worker
+    DB_POOL_SIZE: int = 10
+    DB_MAX_OVERFLOW: int = 20
+    DB_POOL_RECYCLE_SECONDS: int = 1800
+    AUTO_CREATE_TABLES: bool = False
+    LOG_FAST_REQUESTS: bool = False
+    SLOW_REQUEST_MS: int = 500
+    INTEGRATION_LAST_USED_UPDATE_SECONDS: int = 300
 
     # ------------------------------------------------------------------
     # Background Removal API (remove.bg)

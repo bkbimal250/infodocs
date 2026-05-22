@@ -28,6 +28,7 @@ export const StaffTable = ({
   spaMap,
   basePath,
   canAct,
+  canVerify,
   navigate,
   onVerify,
   onTransfer,
@@ -177,7 +178,7 @@ export const StaffTable = ({
                 </button>
 
                 {/* Verify */}
-                {canAct && (
+                {canVerify?.(member) && (
                   <button
                     type="button"
                     onClick={() => onVerify(member)}
@@ -353,7 +354,7 @@ export const StaffTable = ({
           </button>
 
           {/* Verify */}
-          {canAct && (
+          {canVerify?.(member) && (
             <button
               type="button"
               onClick={() => onVerify(member)}

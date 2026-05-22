@@ -146,6 +146,10 @@ class StaffService:
         if not staff:
             raise StaffNotFoundError(staff_uuid=staff_uuid)
         return staff
+    
+    
+
+
 
     @staticmethod
     async def get_staff_by_phone(db: Session, phone: str) -> Optional[Staff]:

@@ -48,6 +48,12 @@ export const roleHasStaffActions = (user, scope) => {
     return ['admin', 'super_admin', 'hr'].includes(role) || scope === 'admin' || scope === 'hr';
 };
 
+export const canVerifyStaff = (user, scope, staff) => {
+    const role = user?.role || user?.user_role || user?.type || '';
+    if (['admin', 'super_admin'].includes(role)) return true;
+    return role === 'spa_manager' && scope === 'manager' && staff?.created_by === user?.id;
+};
+
 export const spaLabel = (spa) => {
     if (!spa) return 'Central Pool';
     return [spa.name, spa.code ? `#${spa.code}` : '', spa.area || spa.city || ''].filter(Boolean).join(' - ');

@@ -1,4 +1,5 @@
-from typing import Optional
+from datetime import datetime
+from typing import List, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -14,24 +15,41 @@ class StaffVerifyRequest(BaseModel):
         return value
 
 
-class CurrentSpaResponse(BaseModel):
-    spa_id: int
-    spa_code: int
-    spa_name: str
-    spa_area:str
-    spa_city:str
-    spa_state:str
-
-
 class IntegrationStaffResponse(BaseModel):
-    staff_uuid: str
     full_name: str
     phone: Optional[str]
-    designation: Optional[str]
-    employment_status: str
+    spacode: Optional[str] = None
+    spa_id: Optional[int] = None
+    spaname: Optional[str] = None
+    spa_city: Optional[str] = None
+    profiles: List[str] = Field(default_factory=list)
     verification_status: str
-    is_blacklisted: bool
-    current_spa: Optional[CurrentSpaResponse] = None
+    employment_status: str
+
+
+class IntegrationStaffListResponse(BaseModel):
+    success: bool
+    total: int
+    limit: int
+    offset: int
+    items: List[IntegrationStaffResponse]
+
+
+class IntegrationStaffDocumentResponse(BaseModel):
+    id: int
+    document_type: str
+    file_url: Optional[str] = None
+    verification_status: str
+    created_at: datetime
+
+
+class IntegrationStaffDocumentListResponse(BaseModel):
+    success: bool
+    staff_found: bool
+    total: int
+    message: Optional[str] = None
+    staff: Optional[IntegrationStaffResponse] = None
+    documents: List[IntegrationStaffDocumentResponse] = Field(default_factory=list)
 
 
 class StaffVerifyResponse(BaseModel):
@@ -39,5 +57,9 @@ class StaffVerifyResponse(BaseModel):
     staff_found: bool
     verified: Optional[bool] = None
     blocked: Optional[bool] = None
+    is_verified: Optional[bool] = None
+    is_active_employee: Optional[bool] = None
+    is_blacklisted: Optional[bool] = None
+    status_code: Optional[str] = None
     message: Optional[str] = None
     staff: Optional[IntegrationStaffResponse] = None
