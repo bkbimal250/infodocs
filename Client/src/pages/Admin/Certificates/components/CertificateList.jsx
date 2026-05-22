@@ -258,70 +258,110 @@ const CertificateList = ({ certificates = [], loading, onRefresh }) => {
                 <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
-              {paginatedCertificates.map((cert) => {
-                const category = getCertificateCategory(cert);
-                return (
-                  <tr key={cert.id} className="hover:bg-indigo-50/30 transition-colors group">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-center">
-                        <input
-                          type="checkbox"
-                          checked={selectedIds.has(cert.id)}
-                          onChange={() => handleSelectOne(cert.id)}
-                          className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                        />
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-sm">
-                          <HiOutlineDocumentText size={20} />
-                        </div>
-                        <div>
-                          <div className="text-sm font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">
-                            {getCertificateName(cert)}
-                          </div>
-                          <div className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter mt-0.5">
-                            ID: #{cert.id} • {cert.generated_at ? new Date(cert.generated_at).toLocaleDateString(undefined, { dateStyle: 'medium' }) : 'N/A'}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-wider rounded-full border ${getCategoryColor(category)}`}>
-                        {category}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <HiOutlineUserCircle size={18} className="text-gray-400" />
-                        <span className="text-sm font-medium text-gray-600">{getCreatorName(cert)}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all duration-200">
-                        <button
-                          onClick={() => handleDownloadPDF(cert.id)}
-                          title="Download PDF"
-                          className="p-2 text-emerald-600 bg-emerald-50 rounded-xl hover:bg-emerald-100 transition-all active:scale-90"
-                        >
-                          <HiOutlineDownload size={18} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(cert.id, cert.category)}
-                          disabled={deletingId === cert.id}
-                          title="Delete Certificate"
-                          className="p-2 text-rose-600 bg-rose-50 rounded-xl hover:bg-rose-100 transition-all active:scale-90 disabled:opacity-50"
-                        >
-                          <HiOutlineTrash size={18} className={deletingId === cert.id ? 'animate-pulse' : ''} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
+
+       <tbody className="divide-y divide-gray-50">
+  {paginatedCertificates.map((cert, index) => {
+    const category = getCertificateCategory(cert);
+
+    return (
+      <tr
+        key={`${cert.id}-${index}`}
+        className="hover:bg-indigo-50/30 transition-colors group"
+      >
+        <td className="px-6 py-4">
+          <div className="flex items-center justify-center">
+            <input
+              type="checkbox"
+              checked={selectedIds.has(cert.id)}
+              onChange={() => handleSelectOne(cert.id)}
+              className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            />
+          </div>
+        </td>
+
+        <td className="px-6 py-4">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-sm">
+              <HiOutlineDocumentText size={20} />
+            </div>
+
+            <div>
+              <div className="text-sm font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">
+                {getCertificateName(cert)}
+              </div>
+
+              <div className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter mt-0.5">
+                ID: #{cert.id} •{" "}
+                {cert.generated_at
+                  ? new Date(cert.generated_at).toLocaleDateString(
+                      undefined,
+                      { dateStyle: "medium" }
+                    )
+                  : "N/A"}
+              </div>
+            </div>
+          </div>
+        </td>
+
+        <td className="px-6 py-4">
+          <span
+            className={`px-3 py-1 text-[10px] font-black uppercase tracking-wider rounded-full border ${getCategoryColor(
+              category
+            )}`}
+          >
+            {category}
+          </span>
+        </td>
+
+        <td className="px-6 py-4">
+          <div className="flex items-center gap-2">
+            <HiOutlineUserCircle
+              size={18}
+              className="text-gray-400"
+            />
+
+            <span className="text-sm font-medium text-gray-600">
+              {getCreatorName(cert)}
+            </span>
+          </div>
+        </td>
+
+        <td className="px-6 py-4">
+          <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all duration-200">
+            <button
+              onClick={() => handleDownloadPDF(cert.id)}
+              title="Download PDF"
+              className="p-2 text-emerald-600 bg-emerald-50 rounded-xl hover:bg-emerald-100 transition-all active:scale-90"
+            >
+              <HiOutlineDownload size={18} />
+            </button>
+
+            <button
+              onClick={() =>
+                handleDelete(cert.id, cert.category)
+              }
+              disabled={deletingId === cert.id}
+              title="Delete Certificate"
+              className="p-2 text-rose-600 bg-rose-50 rounded-xl hover:bg-rose-100 transition-all active:scale-90 disabled:opacity-50"
+            >
+              <HiOutlineTrash
+                size={18}
+                className={
+                  deletingId === cert.id
+                    ? "animate-pulse"
+                    : ""
+                }
+              />
+            </button>
+          </div>
+        </td>
+      </tr>
+    );
+  })}
+</tbody>
+
+
+
           </table>
         ) : (
           <div className="p-16 text-center">
