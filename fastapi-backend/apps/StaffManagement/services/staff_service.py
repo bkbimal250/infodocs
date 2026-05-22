@@ -146,6 +146,18 @@ class StaffService:
         if not staff:
             raise StaffNotFoundError(staff_uuid=staff_uuid)
         return staff
+
+    @staticmethod
+    async def get_staff_by_uuid_for_admin(db: Session, staff_uuid: str) -> Staff:
+        """Retrieves staff details for admin views, including soft-deleted records."""
+        staff = await StaffRepository.get_by_uuid_any_status(
+            db,
+            staff_uuid,
+            include_relations=True
+        )
+        if not staff:
+            raise StaffNotFoundError(staff_uuid=staff_uuid)
+        return staff
     
     
 
@@ -167,6 +179,7 @@ class StaffService:
         employment_status: Optional[str] = None,
         spa_id: Optional[int] = None,
         city: Optional[str] = None,
+        include_deleted: bool = False,
     ) -> Tuple[List[Staff], int]:
         """Queries multiple staff records applying active filters"""
         return await StaffRepository.query_paginated(
@@ -178,7 +191,8 @@ class StaffService:
             verification_status=verification_status,
             employment_status=employment_status,
             spa_id=spa_id,
-            city=city
+            city=city,
+            include_deleted=include_deleted
         )
 
     @staticmethod

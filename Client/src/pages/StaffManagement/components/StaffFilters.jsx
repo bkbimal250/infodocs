@@ -41,6 +41,17 @@ export const StaffFilters = ({ filters, setFilters, spas, showSpa }) => {
           <option value="true">Blacklisted</option>
           <option value="false">Not blacklisted</option>
         </select>
+        {showSpa && (
+          <label className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm text-gray-700">
+            <input
+              type="checkbox"
+              checked={Boolean(filters.include_deleted)}
+              onChange={(e) => update({ include_deleted: e.target.checked })}
+              className="h-4 w-4"
+            />
+            Show deleted
+          </label>
+        )}
       </div>
     </div>
   );

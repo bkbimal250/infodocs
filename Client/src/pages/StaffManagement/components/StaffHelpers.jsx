@@ -66,6 +66,7 @@ const badgeStyles = {
     pending: 'bg-amber-50 text-amber-700 border-amber-200',
     verified: 'bg-blue-50 text-blue-700 border-blue-200',
     rejected: 'bg-rose-50 text-rose-700 border-rose-200',
+    deleted: 'bg-rose-50 text-rose-700 border-rose-200',
     blacklisted: 'bg-gray-900 text-white border-gray-900'
 };
 

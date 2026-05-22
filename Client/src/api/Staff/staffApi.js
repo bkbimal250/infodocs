@@ -116,8 +116,8 @@ export const staffApi = {
    * @param {number} id - Staff ID
    * @returns {Promise}
    */
-  deleteStaff: (id) => {
-    return apiClient.delete(`/staff/${id}`);
+  deleteStaff: (id, params = {}) => {
+    return apiClient.delete(`/staff/${id}`, { params });
   },
 
   /**

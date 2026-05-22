@@ -82,6 +82,7 @@ async def list_staff_endpoint(
     status: Optional[str] = Query(None, description="Frontend alias for employment_status"),
     spa_id: Optional[int] = Query(None, description="Filter by active branch ID"),
     city: Optional[str] = Query(None, description="Filter by city registry"),
+    include_deleted: bool = Query(False, description="Admin/super admin only: include soft-deleted staff"),
     db: Session = db_dependency,
     current_user: User = current_user_dependency
 ):
@@ -97,6 +98,10 @@ async def list_staff_endpoint(
         except ValueError:
             pass
 
+    role = current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role)
+    can_view_deleted = role in {"admin", "super_admin"}
+    actual_include_deleted = include_deleted and can_view_deleted
+
     items, total = await StaffService.list_staff_paginated(
         db=db,
         limit=limit,
@@ -106,7 +111,8 @@ async def list_staff_endpoint(
         verification_status=verification_status,
         employment_status=actual_employment_status,
         spa_id=spa_id,
-        city=city
+        city=city,
+        include_deleted=actual_include_deleted
     )
     return Page(items=items, total=total, limit=limit, offset=actual_offset)
 
@@ -122,6 +128,9 @@ async def get_staff_details_endpoint(
     current_user: User = current_user_dependency
 ):
     """Loads a full employee graph including work history timeline, docs, and event audits."""
+    role = current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role)
+    if role in {"admin", "super_admin"}:
+        return await StaffService.get_staff_by_uuid_for_admin(db, staff_uuid)
     return await StaffService.get_staff_by_uuid(db, staff_uuid)
 
 
@@ -154,14 +163,21 @@ async def update_staff_endpoint(
 )
 async def delete_staff_endpoint(
     staff_uuid: str = Path(..., description="Unique staff UUID identifier"),
+    permanent: bool = Query(False, description="Admin/super admin only: permanently delete staff"),
     db: Session = db_dependency,
     current_user: User = current_user_dependency
 ):
     """
-    Super Admin permanently deletes the staff record and child records.
-    Admin/HR/Manager keep the existing soft-delete audit behavior.
+    Admin and Super Admin can permanently delete with permanent=true.
+    Default admin/HR/Manager behavior keeps the existing soft-delete audit flow.
     """
     role = current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role)
+
+    if permanent and role in {"admin", "super_admin"}:
+        return await StaffService.hard_delete_staff(
+            db=db,
+            staff_uuid=staff_uuid
+        )
 
     if role == "super_admin":
         return await StaffService.hard_delete_staff(

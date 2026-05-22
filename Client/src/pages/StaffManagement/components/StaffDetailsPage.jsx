@@ -132,6 +132,7 @@ export const StaffDetailsPage = ({ scope = 'admin', basePath = '/admin/staff' })
                   <Badge value={staff.verification_status} />
                   <Badge value={staff.employment_status} />
                   {staff.is_blacklisted && <Badge value="Blacklisted" tone="blacklisted" />}
+                  {staff.deleted_at && <Badge value="Deleted" tone="deleted" />}
                 </div>
               </div>
             </div>

@@ -143,6 +143,9 @@ export const StaffTable = ({
                     tone="blacklisted"
                   />
                 )}
+                {member.deleted_at && (
+                  <Badge value="Deleted" tone="deleted" />
+                )}
               </div>
             </td>
 
@@ -312,11 +315,14 @@ export const StaffTable = ({
 
           <Badge value={member.employment_status} />
 
-          {member.is_blacklisted && (
-            <Badge
-              value="Blacklisted"
-              tone="blacklisted"
-            />
+           {member.is_blacklisted && (
+             <Badge
+               value="Blacklisted"
+               tone="blacklisted"
+             />
+           )}
+          {member.deleted_at && (
+            <Badge value="Deleted" tone="deleted" />
           )}
 
         </div>

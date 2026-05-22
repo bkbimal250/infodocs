@@ -26,7 +26,8 @@ export const StaffListPage = ({ scope = 'admin', basePath = '/admin/staff' }) =>
     employment_status: '',
     verification_status: '',
     current_spa_id: '',
-    blacklist: ''
+    blacklist: '',
+    include_deleted: false
   });
   const itemsPerPage = 25;
   const canAct = roleHasStaffActions(user, scope);
@@ -50,7 +51,8 @@ export const StaffListPage = ({ scope = 'admin', basePath = '/admin/staff' }) =>
         city: filters.city || undefined,
         verification_status: filters.verification_status || undefined,
         employment_status: filters.employment_status || undefined,
-        spa_id: managerSpaId || filters.current_spa_id || undefined
+        spa_id: managerSpaId || filters.current_spa_id || undefined,
+        include_deleted: scope === 'manager' ? undefined : filters.include_deleted || undefined
       };
       const res = await staffApi.getAllStaff(params);
       const page = normalizePage(res.data);
@@ -88,10 +90,14 @@ export const StaffListPage = ({ scope = 'admin', basePath = '/admin/staff' }) =>
   };
 
   const deleteStaff = async (member) => {
-    if (!window.confirm(`Delete ${staffName(member)}?`)) return;
+    const permanent = Boolean(member.deleted_at);
+    const message = permanent
+      ? `Permanently delete ${staffName(member)}? This cannot be undone.`
+      : `Delete ${staffName(member)}?`;
+    if (!window.confirm(message)) return;
     try {
-      await staffApi.deleteStaff(getStaffKey(member));
-      toast.success('Staff deleted');
+      await staffApi.deleteStaff(getStaffKey(member), permanent ? { permanent: true } : {});
+      toast.success(permanent ? 'Staff permanently deleted' : 'Staff deleted');
       refresh();
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Delete failed');
