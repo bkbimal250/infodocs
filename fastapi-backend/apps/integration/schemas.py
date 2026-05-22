@@ -16,7 +16,11 @@ class StaffVerifyRequest(BaseModel):
 
 class CurrentSpaResponse(BaseModel):
     spa_id: int
+    spa_code: int
     spa_name: str
+    spa_area:str
+    spa_city:str
+    spa_state:str
 
 
 class IntegrationStaffResponse(BaseModel):

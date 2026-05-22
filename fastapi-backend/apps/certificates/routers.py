@@ -376,41 +376,73 @@ async def  preview_certificate(
 
 from fastapi import BackgroundTasks
 
-async def  generate_pdf_background_task(
+async def generate_pdf_background_task(
     certificate_id: int,
     template_html: str,
     data: dict,
     db_session_factory
 ):
     """Background task to generate PDF and update database"""
-    # Create a new session for the background task
+
     async with db_session_factory() as db:
+
         try:
-            from apps.certificates.services.certificate_service import get_generated_certificate_by_id
+
             from sqlalchemy import update
             from apps.certificates.models import GeneratedCertificate
+            from apps.certificates.services.pdf_generator import (
+                save_certificate_file
+            )
 
-            logger.info(f"Starting background PDF generation for certificate {certificate_id}")
-            
-            # 1. Render HTML
-            rendered_html = await render_html_template(template_html, data)
-            
-            # 2. Generate PDF (Blocking)
-            pdf_bytes = run_in_threadpool(html_to_pdf, rendered_html)
-            
-            # 3. Save file
-            filename = await save_certificate_file(certificate_id, pdf_bytes)
-            
-            # 4. Update certificate record
-            stmt = update(GeneratedCertificate).where(GeneratedCertificate.id == certificate_id).values(certificate_pdf=filename)
+            logger.info(
+                f"Starting background PDF generation "
+                f"for certificate {certificate_id}"
+            )
+
+            # Render HTML
+            rendered_html = await render_html_template(
+                template_html,
+                data
+            )
+
+            # FIXED
+            pdf_bytes = await html_to_pdf(
+                rendered_html
+            )
+
+            # Save file
+            filename = await save_certificate_file(
+                certificate_id,
+                pdf_bytes
+            )
+
+            # Update DB
+            stmt = (
+                update(GeneratedCertificate)
+                .where(
+                    GeneratedCertificate.id == certificate_id
+                )
+                .values(
+                    certificate_pdf=filename
+                )
+            )
+
             await db.execute(stmt)
             await db.commit()
-            
-            logger.info(f"Background PDF generation complete for certificate {certificate_id}: {filename}")
-            
-        except Exception as e:
-            logger.error(f"Background PDF generation failed for certificate {certificate_id}: {e}", exc_info=True)
 
+            logger.info(
+                f"Background PDF generation complete "
+                f"for certificate {certificate_id}: "
+                f"{filename}"
+            )
+
+        except Exception as e:
+
+            logger.error(
+                f"Background PDF generation failed "
+                f"for certificate {certificate_id}: {e}",
+                exc_info=True
+            )
 
 @certificates_router.post("/generate/async")
 async def  generate_certificate_async(
@@ -593,7 +625,7 @@ async def  generate_certificate(
         try:
             logger.info(f"Generating PDF for certificate {certificate.id}")
             # Run blocking PDF generation in a thread pool
-            pdf_bytes = run_in_threadpool(html_to_pdf, rendered_html)
+            pdf_bytes = await html_to_pdf(rendered_html)
             logger.info(f"PDF generated successfully: {len(pdf_bytes)} bytes")
         except Exception as pdf_error:
             logger.error(f"PDF generation failed: {pdf_error}", exc_info=True)

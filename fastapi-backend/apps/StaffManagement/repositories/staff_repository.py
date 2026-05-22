@@ -27,7 +27,7 @@ class StaffRepository:
     @staticmethod
     async def get_by_id(db: Session, staff_id: int, include_relations: bool = True) -> Optional[Staff]:
         """Fetches active (non-soft-deleted) staff by ID"""
-        query = select(Staff).where(Staff.id == staff_id, Staff.deleted_at.is_(None))
+        query = select(Staff).where(staff.id == staff_id, Staff.deleted_at.is_(None))
         if include_relations:
             query = query.options(*StaffRepository.relation_loaders())
         result = await db.execute(query)
@@ -61,7 +61,7 @@ class StaffRepository:
         query = (
             select(Staff)
             .options(*StaffRepository.relation_loaders())
-            .where(Staff.id == staff_id)
+            .where(staff.id == staff_id)
         )
         result = await db.execute(query)
         return result.scalar_one_or_none()

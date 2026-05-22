@@ -30,39 +30,111 @@ class VerificationService:
         verifier_id: Optional[int] = None
     ) -> Staff:
         """
-        Approves or rejects a staff member's verification documents.
-        Logs an immutable audit log, updates status flags, and sets employment active/inactive accordingly.
+        Approves, rejects, or resets a staff member verification.
+
+        Features:
+        - Immutable audit logging
+        - Automatic employment status updates
+        - Pending review reset support
+        - HR tracking
         """
+
+        # =========================================================
         # 1. Fetch staff
-        staff = await StaffRepository.get_by_uuid(db, staff_uuid)
+        # =========================================================
+
+        staff = await StaffRepository.get_by_uuid(
+            db,
+            staff_uuid
+        )
+
         if not staff:
-            raise StaffNotFoundError(staff_uuid=staff_uuid)
+            raise StaffNotFoundError(
+                staff_uuid=staff_uuid
+            )
 
-        # 2. Check redundant updates
+        # =========================================================
+        # 2. Prevent redundant updates
+        # =========================================================
+
         if staff.verification_status == status:
-            raise StaffActionError(f"Staff member is already marked as {status.value}.")
 
-        old_status = staff.verification_status.value if staff.verification_status else None
+            raise StaffActionError(
+                f"Staff member is already marked "
+                f"as {status.value}."
+            )
+
+        old_status = (
+            staff.verification_status.value
+            if staff.verification_status
+            else None
+        )
+
         new_status = status.value
 
-        # 3. Formulate update payload
+        # =========================================================
+        # 3. Build update payload
+        # =========================================================
+
         update_fields = {
             "verification_status": status,
             "verification_reason": reason,
             "verified_by": verifier_id,
-            "verified_at": datetime.utcnow() if status in [VerificationStatusEnum.verified, VerificationStatusEnum.rejected] else None
+            "verified_at": (
+                datetime.utcnow()
+                if status in [
+                    VerificationStatusEnum.verified,
+                    VerificationStatusEnum.rejected
+                ]
+                else None
+            )
         }
 
-        # Automatically transition employment status based on verification outcome
+        # =========================================================
+        # 4. Employment status automation
+        # =========================================================
+
         if status == VerificationStatusEnum.verified:
-            update_fields["employment_status"] = EmploymentStatusEnum.active
+
+            # Approved employee becomes active
+            update_fields["employment_status"] = (
+                EmploymentStatusEnum.active
+            )
+
         elif status == VerificationStatusEnum.rejected:
-            update_fields["employment_status"] = EmploymentStatusEnum.inactive
 
-        # 4. Save updates
-        updated_staff = await StaffRepository.update(db, staff, update_fields)
+            # Rejected employee becomes inactive
+            update_fields["employment_status"] = (
+                EmploymentStatusEnum.inactive
+            )
 
-        # 5. Append audit log
+        elif status == VerificationStatusEnum.pending:
+
+            # Reset back to pending review
+            # Keep employment inactive until verified
+
+            update_fields["employment_status"] = (
+                EmploymentStatusEnum.inactive
+            )
+
+            # Reset verification metadata
+            update_fields["verified_by"] = None
+            update_fields["verified_at"] = None
+
+        # =========================================================
+        # 5. Save updates
+        # =========================================================
+
+        updated_staff = await StaffRepository.update(
+            db,
+            staff,
+            update_fields
+        )
+
+        # =========================================================
+        # 6. Create audit log
+        # =========================================================
+
         await VerificationRepository.create_verification_log(
             db=db,
             staff_id=staff.id,
@@ -72,7 +144,14 @@ class VerificationService:
             changed_by=verifier_id
         )
 
-        return await StaffRepository.refresh_with_relations(db, updated_staff)
+        # =========================================================
+        # 7. Return refreshed object
+        # =========================================================
+
+        return await StaffRepository.refresh_with_relations(
+            db,
+            updated_staff
+        )
 
     @staticmethod
     async def toggle_blacklist(

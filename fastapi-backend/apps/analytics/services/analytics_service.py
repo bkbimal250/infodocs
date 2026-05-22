@@ -34,8 +34,8 @@ class AnalyticsService:
             # 1. Base statements
             stmts = [
                 select(func.count(Hiring_Form.id)),         # 0
-                select(func.count(Staff.id)),               # 1
-                select(func.count(Staff.id)).where(Staff.employment_status == EmploymentStatusEnum.active), # 2
+                select(func.count(staff.id)),               # 1
+                select(func.count(staff.id)).where(Staff.employment_status == EmploymentStatusEnum.active), # 2
                 select(func.count(User.id)),                # 3
                 select(func.count(User.id)).where(User.is_active == True), # 4
                 select(func.count(Query.id)),               # 5
@@ -142,8 +142,8 @@ class AnalyticsService:
             # 1. Base statements
             base_stmts = [
                 select(func.count(Hiring_Form.id)),         # 0
-                select(func.count(Staff.id)),               # 1
-                select(func.count(Staff.id)).where(Staff.employment_status == EmploymentStatusEnum.active), # 2
+                select(func.count(staff.id)),               # 1
+                select(func.count(staff.id)).where(Staff.employment_status == EmploymentStatusEnum.active), # 2
                 select(func.count(User.id)),                # 3
                 select(func.count(User.id)).where(User.is_active == True), # 4
                 select(func.count(Query.id)),               # 5

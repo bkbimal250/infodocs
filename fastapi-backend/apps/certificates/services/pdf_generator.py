@@ -54,39 +54,58 @@ MEDIA_DIR.mkdir(parents=True, exist_ok=True)
 # CORE PDF GENERATION
 # ============================================================
 
-async def html_to_pdf(html_content: str, output_path: Optional[str] = None) -> bytes:
+async def html_to_pdf(
+    html_content: str,
+    output_path: Optional[str] = None
+) -> bytes:
     """
     Convert HTML content to PDF with automatic fallback
-    
-    Args:
-        html_content: HTML string to convert
-        output_path: Optional path to save PDF file
-    
-    Returns:
-        PDF bytes
-        
-    Raises:
-        RuntimeError: If no PDF library is available
     """
+
     if not html_content or not html_content.strip():
         raise ValueError("HTML content cannot be empty")
-    
+
     try:
+
         if WEASYPRINT_AVAILABLE:
+
             logger.info("Generating PDF with WeasyPrint")
-            return _html_to_pdf_weasyprint(html_content, output_path)
+
+            # FIXED: await added
+            return await _html_to_pdf_weasyprint(
+                html_content,
+                output_path
+            )
+
         elif XHTML2PDF_AVAILABLE:
+
             logger.info("Generating PDF with xhtml2pdf")
-            return _html_to_pdf_xhtml2pdf(html_content, output_path)
+
+            # FIXED: await added
+            return await _html_to_pdf_xhtml2pdf(
+                html_content,
+                output_path
+            )
+
         else:
+
             raise RuntimeError(
                 "No PDF generation library available. "
-                "Install with: pip install weasyprint OR pip install xhtml2pdf"
+                "Install with: pip install weasyprint "
+                "OR pip install xhtml2pdf"
             )
-    except Exception as e:
-        logger.error(f"PDF generation failed: {str(e)}", exc_info=True)
-        raise RuntimeError(f"PDF generation error: {str(e)}") from e
 
+    except Exception as e:
+
+        logger.error(
+            f"PDF generation failed: {str(e)}",
+            exc_info=True
+        )
+
+        raise RuntimeError(
+            f"PDF generation error: {str(e)}"
+        ) from e
+    
 
 async def _html_to_pdf_weasyprint(html_content: str, output_path: Optional[str] = None) -> bytes:
     """
@@ -570,24 +589,48 @@ async def save_certificate_file(
         raise RuntimeError(f"Failed to save certificate: {str(e)}") from e
 
 
-async def get_certificate_path(relative_path: str) -> Path:
-    """Convert relative path to absolute path"""
+def get_certificate_path(
+    relative_path: str
+) -> Path:
+    """
+    Convert relative path to absolute path
+    """
+
     return Path(settings.UPLOAD_DIR) / relative_path
 
 
-async def delete_certificate_file(relative_path: str) -> bool:
-    """Delete certificate file"""
+async def delete_certificate_file(
+    relative_path: str
+) -> bool:
+    """
+    Delete certificate file
+    """
+
     try:
-        file_path = get_certificate_path(relative_path)
+
+        file_path = get_certificate_path(
+            relative_path
+        )
+
         if file_path.exists():
+
             file_path.unlink()
-            logger.info(f"Deleted certificate: {relative_path}")
+
+            logger.info(
+                f"Deleted certificate: {relative_path}"
+            )
+
             return True
-        return False
-    except Exception as e:
-        logger.error(f"Error deleting certificate: {str(e)}")
+
         return False
 
+    except Exception as e:
+
+        logger.error(
+            f"Error deleting certificate: {str(e)}"
+        )
+
+        return False
 
 # ============================================================
 # UTILITY FUNCTIONS

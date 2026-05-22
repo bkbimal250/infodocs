@@ -108,6 +108,10 @@ class IntegrationStaffVerificationService:
         current_spa = {
             "spa_id": staff.current_spa.id,
             "spa_name": staff.current_spa.name,
+            "spa_code": staff.current_spa.code,
+            "spa_area": staff.current_spa.area,
+            "spa_city": staff.current_spa.city,
+            "spa_state": staff.current_spa.state,
         }
 
         return {
