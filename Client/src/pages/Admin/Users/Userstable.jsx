@@ -12,8 +12,6 @@ import {
  */
 import React from 'react';
 
-// ... imports
-
 const getRoleBadgeColor = (role) => {
   switch (role?.toLowerCase()) {
     case 'super_admin':
@@ -43,7 +41,7 @@ const getRoleDisplay = (role) => {
   return roleMap[role.toLowerCase()] || role.charAt(0).toUpperCase() + role.slice(1);
 };
 
-const UsersTable = React.memo(({ users, onEdit, onDelete, loading = false }) => {
+const UsersTable = React.memo(({ users, onDelete, loading = false }) => {
   // ... helper functions
 
   if (loading) {
@@ -78,6 +76,9 @@ const UsersTable = React.memo(({ users, onEdit, onDelete, loading = false }) => 
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-inverse)]  tracking-wider">
                 Role
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-inverse)]  tracking-wider">
+                SPA
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-inverse)]  tracking-wider">
                 Status
@@ -115,6 +116,20 @@ const UsersTable = React.memo(({ users, onEdit, onDelete, loading = false }) => 
                   >
                     {getRoleDisplay(user.role)}
                   </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {user.spa_id ? (
+                    <div>
+                      <div className="text-sm font-medium text-[var(--color-text-primary)]">
+                        {user.spa_name || `SPA #${user.spa_id}`}
+                      </div>
+                      <div className="text-xs text-[var(--color-text-secondary)]">
+                        ID {user.spa_id}{user.spa_code ? ` • Code ${user.spa_code}` : ''}
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="text-sm text-[var(--color-text-tertiary)]">Unassigned</span>
+                  )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex flex-col gap-1">
@@ -193,6 +208,12 @@ const UsersTable = React.memo(({ users, onEdit, onDelete, loading = false }) => 
             </div>
 
             <div className="flex justify-between items-center text-sm border-t border-gray-500 pt-3">
+              <div>
+                <span className="text-xs text-gray-500">SPA</span>
+                <div className="text-xs font-medium text-[var(--color-text-primary)]">
+                  {user.spa_id ? `${user.spa_name || `SPA #${user.spa_id}`}` : 'Unassigned'}
+                </div>
+              </div>
               <div className="flex flex-col gap-1">
                 <span className="text-xs text-gray-500">Status</span>
                 <span

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
@@ -17,6 +18,7 @@ import {
 import { adminApi } from '../../../api/Admin/adminApi';
 import apiClient from '../../../utils/apiConfig';
 import OneTimeCredentialsCard from './OneTimeCredentialsCard';
+import SearchSelect from '../../../ui/SearchSelect';
 
 /**
  * User Details Page
@@ -29,11 +31,19 @@ const UsersDetails = () => {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState('details');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loginHistory, setLoginHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [credentialResponse, setCredentialResponse] = useState(null);
+  const [spas, setSpas] = useState([]);
+  const spaOptions = spas.map((spa) => ({
+    label: `${spa.name}${spa.code ? ` (${spa.code})` : ''} - ID ${spa.id}`,
+    value: String(spa.id),
+    city: spa.city,
+    state: spa.state,
+  }));
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -42,16 +52,21 @@ const UsersDetails = () => {
     phone_number: '',
     role: 'user',
     password: '',
+    spa_id: '',
     is_active: true,
     is_verified: false,
   });
 
-  useEffect(() => {
-    loadUser();
-    loadLoginHistory();
-  }, [id]);
+  async function loadSpas() {
+    try {
+      const response = await adminApi.forms.getAllSpas({ minimal: true });
+      setSpas(response.data || []);
+    } catch (err) {
+      console.error('Failed to load SPAs', err);
+    }
+  }
 
-  const loadUser = async () => {
+  async function loadUser() {
     try {
       setLoading(true);
       const response = await adminApi.users.getUser(id);
@@ -65,6 +80,7 @@ const UsersDetails = () => {
         phone_number: userData.phone_number || '',
         role: userData.role || 'user',
         password: '', // Don't pre-fill password
+        spa_id: userData.spa_id ? String(userData.spa_id) : '',
         is_active: userData.is_active !== undefined ? userData.is_active : true,
         is_verified: userData.is_verified !== undefined ? userData.is_verified : false,
       });
@@ -74,9 +90,9 @@ const UsersDetails = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  const loadLoginHistory = async () => {
+  async function loadLoginHistory() {
     try {
       setLoadingHistory(true);
       const response = await apiClient.get(`/notifications/login-history`, {
@@ -89,7 +105,13 @@ const UsersDetails = () => {
     } finally {
       setLoadingHistory(false);
     }
-  };
+  }
+
+  useEffect(() => {
+    loadUser();
+    loadLoginHistory();
+    loadSpas();
+  }, [id]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -110,6 +132,7 @@ const UsersDetails = () => {
       if (!updateData.password) {
         delete updateData.password;
       }
+      updateData.spa_id = updateData.spa_id ? Number(updateData.spa_id) : null;
 
       await adminApi.users.updateUser(id, updateData);
       setSuccess('User updated successfully');
@@ -191,7 +214,7 @@ const UsersDetails = () => {
 
   return (
     <div className="min-h-screen bg-[var(--color-bg-secondary)] py-8">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
           <Link
@@ -200,31 +223,31 @@ const UsersDetails = () => {
           >
             <HiArrowLeft className="mr-2" /> Back to Users
           </Link>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-4 rounded-lg border border-[var(--color-border-primary)] bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="text-3xl font-bold text-[var(--color-text-primary)]">
                 {user.first_name} {user.last_name}
               </h1>
-              <p className="mt-2 text-[var(--color-text-secondary)]">User Details and Management</p>
+              <p className="mt-2 text-[var(--color-text-secondary)]">@{user.username} - {getRoleDisplay(user.role)}</p>
             </div>
             {!editing && (
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => setEditing(true)}
-                  className="px-4 py-2 bg-[var(--color-primary)] text-[var(--color-text-inverse)] rounded-lg hover:bg-[var(--color-primary-dark)] flex items-center"
+                  className="inline-flex items-center rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-[var(--color-text-inverse)] transition hover:bg-[var(--color-primary-dark)]"
                 >
                   <HiOutlinePencil className="mr-2" /> Edit
                 </button>
                 <button
                   onClick={handleRegeneratePassword}
                   disabled={saving}
-                  className="px-4 py-2 border border-[var(--color-border-primary)] text-[var(--color-text-primary)] rounded-lg hover:bg-[var(--color-gray-50)] disabled:opacity-50 flex items-center"
+                  className="inline-flex items-center rounded-lg border border-[var(--color-border-primary)] px-4 py-2 text-sm font-semibold text-[var(--color-text-primary)] transition hover:bg-[var(--color-gray-50)] disabled:opacity-50"
                 >
                   Reset Password
                 </button>
                 <button
                   onClick={handleDelete}
-                  className="px-4 py-2 bg-[var(--color-error)] text-[var(--color-text-inverse)] rounded-lg hover:bg-[var(--color-error-dark)] flex items-center"
+                  className="inline-flex items-center rounded-lg bg-[var(--color-error)] px-4 py-2 text-sm font-semibold text-[var(--color-text-inverse)] transition hover:bg-[var(--color-error-dark)]"
                 >
                   <HiOutlineTrash className="mr-2" /> Delete
                 </button>
@@ -245,18 +268,58 @@ const UsersDetails = () => {
           </div>
         )}
 
+        <div className="mb-6 rounded-lg border border-[var(--color-border-primary)] bg-white p-1 shadow-sm">
+          <div className="grid grid-cols-2 gap-1">
+            <button
+              type="button"
+              onClick={() => setActiveTab('details')}
+              className={`flex items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition ${activeTab === 'details'
+                  ? 'bg-[var(--color-primary)] text-[var(--color-text-inverse)] shadow-sm'
+                  : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-gray-50)] hover:text-[var(--color-text-primary)]'
+                }`}
+            >
+              <HiOutlineUser className="h-4 w-4" />
+              Details
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('history')}
+              className={`flex items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition ${activeTab === 'history'
+                  ? 'bg-[var(--color-primary)] text-[var(--color-text-inverse)] shadow-sm'
+                  : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-gray-50)] hover:text-[var(--color-text-primary)]'
+                }`}
+            >
+              <HiOutlineClock className="h-4 w-4" />
+              Login History
+            </button>
+          </div>
+        </div>
+
         {/* User Details Card */}
-        <div className="bg-[var(--color-bg-primary)] rounded-lg shadow overflow-hidden">
-          <div className="px-6 py-4 bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-dark)]">
+        {activeTab === 'details' && (
+        <div className="bg-[var(--color-bg-primary)] rounded-lg border border-[var(--color-border-primary)] shadow-sm overflow-hidden">
+          <div className="border-b border-[var(--color-border-primary)] px-6 py-5">
             <div className="flex items-center">
-              <div className="h-16 w-16 bg-[var(--color-bg-primary)] rounded-full flex items-center justify-center">
+              <div className="h-16 w-16 bg-[var(--color-primary-light)] rounded-lg flex items-center justify-center">
                 <HiOutlineUser className="h-8 w-8 text-[var(--color-primary)]" />
               </div>
               <div className="ml-4">
-                <h2 className="text-xl font-bold text-[var(--color-text-inverse)]">
+                <h2 className="text-xl font-bold text-[var(--color-text-primary)]">
                   {user.first_name} {user.last_name}
                 </h2>
-                <p className="text-[var(--color-primary-light)]">{getRoleDisplay(user.role)}</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <span className="rounded-full bg-[var(--color-primary-light)] px-2.5 py-1 text-xs font-semibold text-[var(--color-primary-dark)]">
+                    {getRoleDisplay(user.role)}
+                  </span>
+                  <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${user.is_active ? 'bg-[var(--color-success-light)] text-[var(--color-success-dark)]' : 'bg-[var(--color-error-light)] text-[var(--color-error-dark)]'}`}>
+                    {user.is_active ? 'Active' : 'Inactive'}
+                  </span>
+                  {user.is_verified && (
+                    <span className="rounded-full bg-[var(--color-success-light)] px-2.5 py-1 text-xs font-semibold text-[var(--color-success-dark)]">
+                      Verified
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -384,6 +447,30 @@ const UsersDetails = () => {
                 )}
               </div>
 
+              {/* Associated SPA */}
+              <div>
+                <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
+                  Associated SPA
+                </label>
+                {editing ? (
+                  <SearchSelect
+                    options={spaOptions}
+                    value={formData.spa_id}
+                    onChange={(value) => setFormData((prev) => ({ ...prev, spa_id: value }))}
+                    placeholder="Search SPA by name, code, city, or state"
+                  />
+                ) : user.spa_id ? (
+                  <div>
+                    <p className="text-gray-900">{user.spa_name || `SPA #${user.spa_id}`}</p>
+                    <p className="text-xs text-[var(--color-text-secondary)]">
+                      ID {user.spa_id}{user.spa_code ? `, Code ${user.spa_code}` : ''}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-[var(--color-text-secondary)]">No SPA assigned</p>
+                )}
+              </div>
+
               {/* Password (only when editing) */}
               {editing && (
                 <div>
@@ -480,6 +567,7 @@ const UsersDetails = () => {
                       phone_number: user.phone_number || '',
                       role: user.role || 'user',
                       password: '',
+                      spa_id: user.spa_id ? String(user.spa_id) : '',
                       is_active: user.is_active !== undefined ? user.is_active : true,
                       is_verified: user.is_verified !== undefined ? user.is_verified : false,
                     });
@@ -502,14 +590,19 @@ const UsersDetails = () => {
             )}
           </div>
         </div>
+        )}
 
         {/* Login History Section */}
-        <div className="mt-8 bg-[var(--color-bg-primary)] rounded-lg shadow overflow-hidden">
-          <div className="px-6 py-4 bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-dark)]">
-            <h2 className="text-xl font-bold text-[var(--color-text-inverse)] flex items-center">
+        {activeTab === 'history' && (
+        <div className="bg-[var(--color-bg-primary)] rounded-lg border border-[var(--color-border-primary)] shadow-sm overflow-hidden">
+          <div className="border-b border-[var(--color-border-primary)] px-6 py-4">
+            <h2 className="text-xl font-bold text-[var(--color-text-primary)] flex items-center">
               <HiOutlineClock className="mr-2" />
               Login History
             </h2>
+            <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+              Showing login attempts for {user.first_name} {user.last_name} only.
+            </p>
           </div>
           <div className="px-6 py-4">
             {loadingHistory ? (
@@ -589,6 +682,7 @@ const UsersDetails = () => {
             )}
           </div>
         </div>
+        )}
       </div>
 
       <OneTimeCredentialsCard
@@ -601,4 +695,5 @@ const UsersDetails = () => {
 };
 
 export default UsersDetails;
+
 

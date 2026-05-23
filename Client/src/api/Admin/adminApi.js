@@ -207,6 +207,14 @@ export const adminApi = {
     },
 
     /**
+     * Get user counts grouped by SPA
+     * @returns {Promise}
+     */
+    getSpaCounts: () => {
+      return apiClient.get('/users/spa-counts');
+    },
+
+    /**
      * Get a single user
      * @param {number} id - User ID
      * @returns {Promise}

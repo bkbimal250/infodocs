@@ -1,21 +1,18 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { authApi } from '../../api/Auth/authApi';
-
 
 const Login = () => {
   const navigate = useNavigate();
-  const [loginMethod, setLoginMethod] = useState('password');
+  const [loginMethod, setLoginMethod] = useState('phone');
   const [formData, setFormData] = useState({
-    username: '',
+    phone_number: '',
     email: '',
-    password: '',
     otp: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [otpSent, setOtpSent] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -26,27 +23,15 @@ const Login = () => {
     if (error) setError(null);
   };
 
-  const handleRequestOTP = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+  const switchMethod = (method) => {
+    setLoginMethod(method);
+    setOtpSent(false);
     setError(null);
+    setFormData((prev) => ({ ...prev, otp: '' }));
+  };
 
-    if (!formData.email) {
-      setError('Please enter your email address');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      await authApi.requestLoginOTP({ email: formData.email });
-      setOtpSent(true);
-      setError(null);
-    } catch (err) {
-      const errorMessage = err.response?.data?.detail || err.response?.data?.error || 'Failed to send OTP email';
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
+  const getActiveIdentifier = () => {
+    return loginMethod === 'phone' ? formData.phone_number.trim() : formData.email.trim();
   };
 
   const getDashboardPath = (role) => {
@@ -65,236 +50,217 @@ const Login = () => {
     }
   };
 
-  const handleLogin = async (e) => {
+  const finishLogin = async (response) => {
+    if (response.data.message !== 'Login successful') {
+      setError('Login failed. Please check the OTP and try again.');
+      return;
+    }
+
+    try {
+      const userResponse = await authApi.getCurrentUser();
+      const user = userResponse.data;
+
+      if (!user) {
+        setError('Could not retrieve user profile. Please try logging in again.');
+        return;
+      }
+
+      localStorage.setItem(
+        'user',
+        JSON.stringify({
+          role: user.role,
+          username: user.first_name,
+        })
+      );
+
+      navigate(getDashboardPath(user.role), { replace: true });
+    } catch (profileErr) {
+      console.error('Error fetching profile after login:', profileErr);
+      setError('Verification failed. Please refresh and try again.');
+    }
+  };
+
+  const getErrorMessage = (err, fallback) => {
+    if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+      return 'Request timed out. Please try again.';
+    }
+    if (err.code === 'ERR_NETWORK' || err.message === 'Network Error') {
+      return 'Unable to connect to server. Please check your connection.';
+    }
+    return err.response?.data?.detail || err.response?.data?.error || err.message || fallback;
+  };
+
+  const handleRequestOTP = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
+    const identifier = getActiveIdentifier();
+    if (!identifier) {
+      setError(loginMethod === 'phone' ? 'Please enter your phone number' : 'Please enter your email address');
+      setLoading(false);
+      return;
+    }
+
     try {
-      let response;
-      if (loginMethod === 'password') {
-        const isEmail = formData.username.includes('@');
-        if (isEmail) {
-          response = await authApi.loginWithEmail({
-            email: formData.username,
-            password: formData.password,
-          });
-        } else {
-          response = await authApi.login({
-            username: formData.username || formData.email,
-            password: formData.password,
-          });
-        }
+      if (loginMethod === 'phone') {
+        await authApi.requestPhoneLoginOTP({ phone_number: identifier });
       } else {
-        response = await authApi.loginWithOTP({
-          email: formData.email,
-          otp: formData.otp,
-        });
+        await authApi.requestLoginOTP({ email: identifier });
       }
-
-      // Backend now sets the 'access_token' cookie and returns a minimal message
-      if (response.data.message === 'Login successful') {
-        // Since the login response is minimal for security, fetch user profile separately
-        try {
-          const userResponse = await authApi.getCurrentUser();
-          const user = userResponse.data;
-
-          if (user) {
-            // Store non-sensitive UI preferences in localStorage
-            localStorage.setItem('user', JSON.stringify({
-              role: user.role,
-              username: user.first_name,
-            }));
-            
-            const dashboardPath = getDashboardPath(user.role);
-            navigate(dashboardPath, { replace: true });
-          } else {
-            setError('Could not retrieve user profile. Please try logging in again.');
-          }
-        } catch (profileErr) {
-          console.error('Error fetching profile after login:', profileErr);
-          setError('Verification failed. Please refresh and try again.');
-        }
-      } else {
-        setError('Login failed. Please check your credentials.');
-      }
+      setOtpSent(true);
+      setFormData((prev) => ({ ...prev, otp: '' }));
     } catch (err) {
-      let errorMessage = 'Login failed. Please try again.';
-
-      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
-        errorMessage = 'Request timed out. Please ensure the backend server is running.';
-      } else if (err.code === 'ERR_NETWORK' || err.message === 'Network Error') {
-        errorMessage = 'Unable to connect to server. Please check if the backend is running.';
-      } else if (err.response?.data?.detail) {
-        errorMessage = err.response.data.detail;
-      } else if (err.response?.data?.error) {
-        errorMessage = err.response.data.error;
-      } else if (err.message) {
-        errorMessage = err.message;
-      }
-
-      setError(errorMessage);
+      setError(getErrorMessage(err, 'Failed to send OTP'));
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-background flex flex-col sm:items-center sm:justify-center">
-      <div className="w-full sm:max-w-[440px]">
-        {/* Login Card */}
-        <div className="bg-card min-h-[100dvh] sm:min-h-0 sm:rounded-[2rem] sm:shadow-card sm:border border-border/50 p-8 sm:p-10 flex flex-col justify-center transition-all duration-300">
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
 
-          <div className="mb-8 text-center sm:text-left">
-            <h1 className="text-3xl font-black text-text-primary tracking-tight mb-2">Welcome Back</h1>
-            <p className="text-sm font-medium text-text-secondary tracking-tight">Login to your workspace to continue.</p>
+    if (!formData.otp.trim()) {
+      setError('Please enter the OTP');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const identifier = getActiveIdentifier();
+      const response =
+        loginMethod === 'phone'
+          ? await authApi.loginWithPhoneOTP({
+              phone_number: identifier,
+              otp: formData.otp.trim(),
+            })
+          : await authApi.loginWithOTP({
+              email: identifier,
+              otp: formData.otp.trim(),
+            });
+
+      await finishLogin(response);
+    } catch (err) {
+      setError(getErrorMessage(err, 'Login failed. Please try again.'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const activeLabel = loginMethod === 'phone' ? 'Phone Number' : 'Email Address';
+  const activeName = loginMethod === 'phone' ? 'phone_number' : 'email';
+  const activeValue = loginMethod === 'phone' ? formData.phone_number : formData.email;
+  const activeType = loginMethod === 'phone' ? 'tel' : 'email';
+  const activePlaceholder = loginMethod === 'phone' ? 'Enter phone number' : 'Enter email address';
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="bg-white rounded-3xl shadow-xl border border-slate-200 p-8">
+          <div className="mb-8 text-center">
+            <h1 className="text-3xl font-bold text-slate-900">Welcome Back</h1>
+            <p className="text-slate-500 mt-2 text-sm">Sign in securely with OTP</p>
           </div>
 
           {error && (
-            <div className="alert alert-danger mb-6 animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="mb-5 rounded-xl bg-red-50 border border-red-200 text-red-600 px-4 py-3 text-sm">
               {error}
             </div>
           )}
 
-          {/* Login Method Toggle */}
-          <div className="flex gap-4 mb-8 border-b border-border/50 pb-2">
+          <div className="flex bg-slate-100 rounded-xl p-1 mb-6">
             <button
-              onClick={() => {
-                setLoginMethod('password');
-                setOtpSent(false);
-                setError(null);
-                setFormData({ ...formData, otp: '' });
-              }}
-              className={`pb-2 text-sm font-black uppercase tracking-widest transition-all ${loginMethod === 'password'
-                ? 'text-primary border-b-2 border-primary'
-                : 'text-text-muted hover:text-text-secondary'
-                }`}
+              type="button"
+              onClick={() => switchMethod('phone')}
+              className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                loginMethod === 'phone' ? 'bg-white shadow text-slate-900' : 'text-slate-500'
+              }`}
             >
-              Password
+              Phone OTP
             </button>
+
             <button
-              onClick={() => {
-                setLoginMethod('otp');
-                setOtpSent(false);
-                setError(null);
-                setFormData({ ...formData, otp: '' });
-              }}
-              className={`pb-2 text-sm font-black uppercase tracking-widest transition-all ${loginMethod === 'otp'
-                ? 'text-primary border-b-2 border-primary'
-                : 'text-text-muted hover:text-text-secondary'
-                }`}
+              type="button"
+              onClick={() => switchMethod('email')}
+              className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                loginMethod === 'email' ? 'bg-white shadow text-slate-900' : 'text-slate-500'
+              }`}
             >
-              OTP Login
+              Email OTP
             </button>
           </div>
 
-          {loginMethod === 'password' ? (
-            <form onSubmit={handleLogin} className="space-y-5">
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-text-muted uppercase tracking-widest ml-1">Identity</label>
+          <form onSubmit={otpSent ? handleLogin : handleRequestOTP} className="space-y-5">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">{activeLabel}</label>
+
+              <input
+                type={activeType}
+                name={activeName}
+                value={activeValue}
+                onChange={handleInputChange}
+                placeholder={activePlaceholder}
+                required
+                disabled={otpSent}
+                autoComplete={loginMethod === 'phone' ? 'tel' : 'email'}
+                className="w-full h-12 px-4 rounded-xl border border-slate-300 focus:border-black focus:ring-0 outline-none transition-all disabled:bg-slate-100"
+              />
+            </div>
+
+            {otpSent && (
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">OTP Code</label>
+
                 <input
                   type="text"
-                  name="username"
-                  value={formData.username}
+                  name="otp"
+                  value={formData.otp}
                   onChange={handleInputChange}
-                  placeholder="Username or Email"
+                  placeholder="000000"
                   required
-                  className="input"
+                  maxLength={6}
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  className="w-full h-12 px-4 rounded-xl border border-slate-300 text-center tracking-[8px] text-lg font-semibold focus:border-black focus:ring-0 outline-none transition-all"
                 />
-              </div>
-              <div className="space-y-1 relative">
-                <label className="text-[10px] font-black text-text-muted uppercase tracking-widest ml-1">Pass-key</label>
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  placeholder="••••••••"
-                  required
-                  className="input pr-12"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-[34px] text-text-muted hover:text-primary transition-colors text-[10px] font-black uppercase"
-                >
-                  {showPassword ? 'Hide' : 'Show'}
-                </button>
-              </div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="btn btn-primary w-full py-4 text-[11px] shadow-xl shadow-primary/20"
-              >
-                {loading ? 'Authenticating...' : 'Sign In Now'}
-              </button>
-            </form>
-          ) : (
-            <form onSubmit={otpSent ? handleLogin : handleRequestOTP} className="space-y-5">
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-text-muted uppercase tracking-widest ml-1">Email Address</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  placeholder="Enter your email"
-                  required
-                  disabled={otpSent}
-                  className="input disabled:opacity-60"
-                />
-              </div>
-              {otpSent && (
-                <div className="space-y-1 animate-in zoom-in-95 duration-300">
-                  <label className="text-[10px] font-black text-text-muted uppercase tracking-widest ml-1 text-center block w-full">Verification Code</label>
-                  <input
-                    type="text"
-                    name="otp"
-                    value={formData.otp}
-                    onChange={handleInputChange}
-                    placeholder="000000"
-                    required
-                    maxLength={6}
-                    className="input text-center text-xl tracking-[0.5em] font-black py-4"
-                  />
-                  <p className="mt-2 text-[10px] font-bold text-text-secondary text-center">
-                    Code sent to <span className="text-primary">{formData.email}</span>
-                  </p>
-                </div>
-              )}
-              <button
-                type="submit"
-                disabled={loading}
-                className="btn btn-primary w-full py-4 text-[11px] shadow-xl shadow-primary/20"
-              >
-                {loading ? 'Processing...' : otpSent ? 'Verify & Access' : 'Request Secure OTP'}
-              </button>
-              {otpSent && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setOtpSent(false);
-                    setFormData({ ...formData, otp: '' });
-                  }}
-                  className="w-full text-[10px] font-black text-text-muted hover:text-primary uppercase tracking-widest transition-colors py-2"
-                >
-                  Change Email Alias
-                </button>
-              )}
-            </form>
-          )}
 
-          {/* Links */}
-          <div className="mt-10 pt-8 border-t border-border/50 flex flex-col gap-4 text-center">
-            <Link to="/forgot-password" className="text-[10px] font-black text-primary uppercase tracking-widest hover:underline">
-              Reset Pass-key
+                <p className="text-xs text-slate-500 mt-2">
+                  OTP sent to {getActiveIdentifier()}
+                </p>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full h-12 rounded-xl bg-black text-white font-medium hover:opacity-90 transition-all disabled:opacity-50"
+            >
+              {loading ? 'Processing...' : otpSent ? 'Verify OTP' : 'Send OTP'}
+            </button>
+
+            {otpSent && (
+              <button
+                type="button"
+                onClick={() => {
+                  setOtpSent(false);
+                  setFormData((prev) => ({ ...prev, otp: '' }));
+                }}
+                className="w-full text-sm text-slate-500 hover:text-black transition-all"
+              >
+                Change {loginMethod === 'phone' ? 'Phone Number' : 'Email'}
+              </button>
+            )}
+          </form>
+
+          <div className="mt-7 text-center">
+            <Link
+              to="/forgot-password"
+              className="text-xs text-slate-400 hover:text-slate-700 transition-all"
+            >
+              Forgot password?
             </Link>
-            <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">
-              No account?{' '}
-              <Link to="/register" className="text-primary hover:underline">
-                Register Platform
-              </Link>
-            </p>
           </div>
         </div>
       </div>

@@ -1,10 +1,7 @@
-import { HiOutlineSearch, HiOutlineX } from 'react-icons/hi';
+import { HiOutlineFilter, HiOutlineSearch, HiOutlineX } from 'react-icons/hi';
+import SearchSelect from '../../../ui/SearchSelect';
 
-/**
- * User Filter Component
- * Provides search and filter functionality for users
- */
-const UserFilter = ({ filter, onFilterChange, onClearFilters }) => {
+const UserFilter = ({ filter, spas = [], onFilterChange, onClearFilters }) => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     onFilterChange({
@@ -13,59 +10,89 @@ const UserFilter = ({ filter, onFilterChange, onClearFilters }) => {
     });
   };
 
-  const hasActiveFilters = filter.search || filter.role || filter.status;
+  const handleSpaChange = (value) => {
+    onFilterChange({
+      ...filter,
+      spa_id: value,
+    });
+  };
+
+  const spaOptions = [
+    { label: 'Unassigned users', value: 'unassigned' },
+    ...spas.map((spa) => ({
+      label: `${spa.name}${spa.code ? ` (${spa.code})` : ''}`,
+      value: String(spa.id),
+      city: spa.city,
+      state: spa.state,
+    })),
+  ];
+
+  const hasActiveFilters = filter.search || filter.role || filter.status || filter.spa_id;
 
   return (
-    <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-md p-6 mb-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-[var(--color-text-primary)] flex items-center gap-2">
-          <svg className="w-5 h-5 text-[var(--color-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-          </svg>
-          Filters
-        </h2>
+    <div className="mb-6 rounded-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-primary)] shadow-sm">
+      <div className="flex flex-col gap-3 border-b border-[var(--color-border-primary)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--color-primary-light)] text-[var(--color-primary)]">
+            <HiOutlineFilter className="h-5 w-5" />
+          </span>
+          <div>
+            <h2 className="text-base font-semibold text-[var(--color-text-primary)]">User Filters</h2>
+            <p className="text-sm text-[var(--color-text-secondary)]">Find users by identity, SPA, role, or account state.</p>
+          </div>
+        </div>
+
         {hasActiveFilters && (
           <button
+            type="button"
             onClick={onClearFilters}
-            className="text-sm text-[var(--color-primary)] hover:text-[var(--color-primary-dark)] flex items-center gap-1 transition-colors"
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-[var(--color-border-primary)] px-3 py-2 text-sm font-semibold text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-gray-50)]"
           >
-            <HiOutlineX className="w-4 h-4" />
-            Clear All
+            <HiOutlineX className="h-4 w-4" />
+            Clear
           </button>
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Search */}
+      <div className="grid grid-cols-1 gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
         <div>
-          <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
+          <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">
             Search
           </label>
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <HiOutlineSearch className="h-5 w-5 text-[var(--color-text-tertiary)]" />
-            </div>
+            <HiOutlineSearch className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--color-text-tertiary)]" />
             <input
               type="text"
               name="search"
               value={filter.search || ''}
               onChange={handleInputChange}
-              placeholder="Search by name, email, username..."
-              className="w-full pl-10 pr-4 py-2 border border-[var(--color-border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] transition-colors"
+              placeholder="Name, email, phone, SPA"
+              className="w-full rounded-lg border border-[var(--color-border-primary)] bg-white py-2.5 pl-10 pr-4 text-sm text-[var(--color-text-primary)] outline-none transition focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
             />
           </div>
         </div>
 
-        {/* Role Filter */}
         <div>
-          <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
+          <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">
+            SPA
+          </label>
+          <SearchSelect
+            options={spaOptions}
+            value={filter.spa_id || ''}
+            onChange={handleSpaChange}
+            placeholder="All SPAs"
+          />
+        </div>
+
+        <div>
+          <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">
             Role
           </label>
           <select
             name="role"
             value={filter.role || ''}
             onChange={handleInputChange}
-            className="w-full px-4 py-2 border border-[var(--color-border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] transition-colors"
+            className="w-full rounded-lg border border-[var(--color-border-primary)] bg-white px-3 py-2.5 text-sm text-[var(--color-text-primary)] outline-none transition focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
           >
             <option value="">All Roles</option>
             <option value="super_admin">Super Admin</option>
@@ -76,16 +103,15 @@ const UserFilter = ({ filter, onFilterChange, onClearFilters }) => {
           </select>
         </div>
 
-        {/* Status Filter */}
         <div>
-          <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
+          <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">
             Status
           </label>
           <select
             name="status"
             value={filter.status || ''}
             onChange={handleInputChange}
-            className="w-full px-4 py-2 border border-[var(--color-border-primary)] rounded-lg focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] transition-colors"
+            className="w-full rounded-lg border border-[var(--color-border-primary)] bg-white px-3 py-2.5 text-sm text-[var(--color-text-primary)] outline-none transition focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
           >
             <option value="">All Status</option>
             <option value="active">Active</option>
@@ -100,4 +126,3 @@ const UserFilter = ({ filter, onFilterChange, onClearFilters }) => {
 };
 
 export default UserFilter;
-

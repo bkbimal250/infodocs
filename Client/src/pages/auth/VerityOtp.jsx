@@ -43,13 +43,7 @@ const VerityOtp = () => {
 
   return (
     <div
-      className="min-h-screen bg-[var(--color-bg-secondary)] flex items-center justify-center py-8 px-4"
-      style={{
-        backgroundImage: `url(${backgroundImage})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-      }}
-    >
+      className="min-h-screen bg-[var(--color-bg-secondary)] flex items-center justify-center py-8 px-4">
       <div className="w-full max-w-md">
         <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-sm border border-[var(--color-border-primary)] p-6">
           <h1 className="text-2xl font-bold text-[var(--color-text-primary)] mb-2 text-center">

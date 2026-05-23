@@ -13,6 +13,8 @@ import Pagination from '../../common/Pagination';
 const AdminUsers = () => {
   const navigate = useNavigate();
   const [allUsers, setAllUsers] = useState([]);
+  const [spas, setSpas] = useState([]);
+  const [spaCounts, setSpaCounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -20,14 +22,17 @@ const AdminUsers = () => {
     search: '',
     role: '',
     status: '',
+    spa_id: '',
   });
   const itemsPerPage = 50;
 
   useEffect(() => {
     loadUsers();
+    loadSpas();
+    loadSpaCounts();
   }, []);
 
-  const loadUsers = async () => {
+  async function loadUsers() {
     try {
       setLoading(true);
       const response = await adminApi.users.getUsers({ limit: 1000 });
@@ -40,7 +45,25 @@ const AdminUsers = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }
+
+  async function loadSpas() {
+    try {
+      const response = await adminApi.forms.getAllSpas({ minimal: true });
+      setSpas(response.data || []);
+    } catch (err) {
+      console.error('Failed to load SPAs', err);
+    }
+  }
+
+  async function loadSpaCounts() {
+    try {
+      const response = await adminApi.users.getSpaCounts();
+      setSpaCounts(response.data || []);
+    } catch (err) {
+      console.error('Failed to load SPA user counts', err);
+    }
+  }
 
   // Memoized filtered users
   const filteredUsers = useMemo(() => {
@@ -53,7 +76,9 @@ const AdminUsers = () => {
           user.last_name?.toLowerCase().includes(searchLower) ||
           user.email?.toLowerCase().includes(searchLower) ||
           user.username?.toLowerCase().includes(searchLower) ||
-          user.phone_number?.toLowerCase().includes(searchLower);
+          user.phone_number?.toLowerCase().includes(searchLower) ||
+          user.spa_name?.toLowerCase().includes(searchLower) ||
+          String(user.spa_code || '').includes(searchLower);
         if (!matchesSearch) return false;
       }
 
@@ -68,6 +93,13 @@ const AdminUsers = () => {
         if (filter.status === 'inactive' && user.is_active) return false;
         if (filter.status === 'verified' && !user.is_verified) return false;
         if (filter.status === 'unverified' && user.is_verified) return false;
+      }
+
+      if (filter.spa_id === 'unassigned' && user.spa_id) {
+        return false;
+      }
+      if (filter.spa_id && filter.spa_id !== 'unassigned' && String(user.spa_id || '') !== String(filter.spa_id)) {
+        return false;
       }
 
       return true;
@@ -90,6 +122,7 @@ const AdminUsers = () => {
       search: '',
       role: '',
       status: '',
+      spa_id: '',
     });
     setCurrentPage(1);
   };
@@ -150,11 +183,14 @@ const AdminUsers = () => {
         )}
 
         {/* Statistics */}
-        <UsersStats users={allUsers} />
+        <UsersStats users={allUsers} spaCounts={spaCounts} />
+
+
 
         {/* Filters */}
         <UserFilter
           filter={filter}
+          spas={spas}
           onFilterChange={handleFilterChange}
           onClearFilters={handleClearFilters}
         />

@@ -14,7 +14,8 @@ export const authApi = {
   },
 
   /**
-   * Login with username and password
+   * Login with username/email and password.
+   * Kept for manual/admin use, but not shown on the login page.
    * @param {Object} data - { username, password } or { email, password }
    * @returns {Promise}
    */
@@ -23,7 +24,8 @@ export const authApi = {
   },
 
   /**
-   * Login with email and password
+   * Login with email and password.
+   * Kept for manual/admin use, but not shown on the login page.
    * @param {Object} data - { email, password }
    * @returns {Promise}
    */
@@ -32,7 +34,7 @@ export const authApi = {
   },
 
   /**
-   * Request OTP for login
+   * Request OTP for email login
    * @param {Object} data - { email }
    * @returns {Promise}
    */
@@ -41,12 +43,30 @@ export const authApi = {
   },
 
   /**
-   * Login with OTP
+   * Login with email and OTP
    * @param {Object} data - { email, otp }
    * @returns {Promise}
    */
   loginWithOTP: (data) => {
     return apiClient.post('/users/auth/login_with_otp', data);
+  },
+
+  /**
+   * Request OTP for phone login
+   * @param {Object} data - { phone_number }
+   * @returns {Promise}
+   */
+  requestPhoneLoginOTP: (data) => {
+    return apiClient.post('/users/auth/request_phone_login_otp', data);
+  },
+
+  /**
+   * Login with phone and OTP
+   * @param {Object} data - { phone_number, otp }
+   * @returns {Promise}
+   */
+  loginWithPhoneOTP: (data) => {
+    return apiClient.post('/users/auth/login_with_phone_otp', data);
   },
 
   /**
@@ -83,4 +103,3 @@ export const authApi = {
     return apiClient.post('/users/auth/logout');
   },
 };
-

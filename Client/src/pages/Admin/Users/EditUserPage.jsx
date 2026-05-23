@@ -1,8 +1,10 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { adminApi } from '../../../api/Admin/adminApi';
 import { FaArrowLeft } from 'react-icons/fa';
 import OneTimeCredentialsCard from './OneTimeCredentialsCard';
+import SearchSelect from '../../../ui/SearchSelect';
 
 /**
  * Edit User Page
@@ -19,6 +21,7 @@ const EditUserPage = () => {
     password: '',
     role: 'user',
     phone_number: '',
+    spa_id: '',
     is_active: true,
     is_verified: false,
   });
@@ -27,14 +30,25 @@ const EditUserPage = () => {
   const [error, setError] = useState(null);
   const [user, setUser] = useState(null);
   const [credentialResponse, setCredentialResponse] = useState(null);
+  const [spas, setSpas] = useState([]);
 
-  useEffect(() => {
-    if (id) {
-      loadUser();
+  const spaOptions = spas.map((spa) => ({
+    label: `${spa.name}${spa.code ? ` (${spa.code})` : ''} - ID ${spa.id}`,
+    value: String(spa.id),
+    city: spa.city,
+    state: spa.state,
+  }));
+
+  async function loadSpas() {
+    try {
+      const response = await adminApi.forms.getAllSpas({ minimal: true });
+      setSpas(response.data || []);
+    } catch (err) {
+      console.error('Failed to load SPAs', err);
     }
-  }, [id]);
+  }
 
-  const loadUser = async () => {
+  async function loadUser() {
     try {
       setLoadingData(true);
       const response = await adminApi.users.getUser(id);
@@ -48,6 +62,7 @@ const EditUserPage = () => {
         password: '', // Don't pre-fill password
         role: userData.role || 'user',
         phone_number: userData.phone_number || '',
+        spa_id: userData.spa_id ? String(userData.spa_id) : '',
         is_active: userData.is_active !== undefined ? userData.is_active : true,
         is_verified: userData.is_verified !== undefined ? userData.is_verified : false,
       });
@@ -57,7 +72,14 @@ const EditUserPage = () => {
     } finally {
       setLoadingData(false);
     }
-  };
+  }
+
+  useEffect(() => {
+    if (id) {
+      loadUser();
+      loadSpas();
+    }
+  }, [id]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -78,6 +100,7 @@ const EditUserPage = () => {
       if (!submitData.password) {
         delete submitData.password;
       }
+      submitData.spa_id = submitData.spa_id ? Number(submitData.spa_id) : null;
 
       await adminApi.users.updateUser(id, submitData);
       navigate('/admin/users');
@@ -240,9 +263,9 @@ const EditUserPage = () => {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-[var(--color-text-primary)] mb-2">
-                  Role <span className="text-red-500">*</span>
+            <div>
+              <label className="block text-sm font-semibold text-[var(--color-text-primary)] mb-2">
+                Role <span className="text-red-500">*</span>
                 </label>
                 <select
                   name="role"
@@ -256,9 +279,27 @@ const EditUserPage = () => {
                   <option value="spa_manager">SPA Manager</option>
                   <option value="admin">Admin</option>
                   <option value="super_admin">Super Admin</option>
-                </select>
-              </div>
+              </select>
             </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-[var(--color-text-primary)] mb-2">
+                Associated SPA
+              </label>
+              <SearchSelect
+                options={spaOptions}
+                value={formData.spa_id}
+                onChange={(value) => setFormData((prev) => ({ ...prev, spa_id: value }))}
+                placeholder="Search SPA by name, code, city, or state"
+              />
+              {user?.spa_id && (
+                <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
+                  Current: {user.spa_name || `SPA #${user.spa_id}`} - ID {user.spa_id}
+                  {user.spa_code ? `, Code ${user.spa_code}` : ''}
+                </p>
+              )}
+            </div>
+          </div>
 
             <div className="flex gap-4">
               <label className="flex items-center">

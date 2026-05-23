@@ -10,6 +10,8 @@ export const API_ENDPOINTS = {
     LOGIN_WITH_EMAIL: '/users/auth/login_with_email/',
     LOGIN_WITH_OTP: '/users/auth/login_with_otp/',
     REQUEST_OTP: '/users/auth/request_login_otp/',
+    LOGIN_WITH_PHONE_OTP: '/users/auth/login_with_phone_otp/',
+    REQUEST_PHONE_OTP: '/users/auth/request_phone_login_otp/',
     CURRENT_USER: '/users/auth/user/',
   },
 

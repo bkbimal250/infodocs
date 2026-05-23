@@ -44,76 +44,106 @@ const ForgotPassword = () => {
     }
   };
 
-  return (
-    <div
-      className="min-h-screen bg-[var(--color-bg-secondary)] flex items-center justify-center py-8 px-4"
-      style={{
-        backgroundImage: `url(${backgroundImage})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-      }}
-    >
-      <div className="w-full max-w-md">
-        <div className="bg-[var(--color-bg-primary)] rounded-lg shadow-sm border border-[var(--color-border-primary)] p-6">
-          <h1 className="text-2xl font-bold text-[var(--color-text-primary)] mb-2 text-center">
+return (
+  <div
+    className="min-h-screen relative flex items-center justify-center px-4 py-8 overflow-hidden">
+    {/* Dark Overlay */}
+    <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+
+    {/* Card */}
+    <div className="relative z-10 w-full max-w-md">
+      <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-8">
+
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-black flex items-center justify-center">
+            <svg
+              className="w-8 h-8 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 15v2m-6 4h12a2 2 0 002-2V9a2 2 0 00-2-2h-1V5a5 5 0 00-10 0v2H6a2 2 0 00-2 2v10a2 2 0 002 2z"
+              />
+            </svg>
+          </div>
+
+          <h1 className="text-3xl font-bold text-slate-900">
             Forgot Password
           </h1>
-          <p className="text-sm text-[var(--color-text-secondary)] mb-6 text-center">
-            Enter your email address and we will send you a verification code.
+
+          <p className="text-slate-500 mt-3 text-sm leading-relaxed">
+            Enter your registered email address to receive a secure verification code.
           </p>
+        </div>
 
-          {error && (
-            <div className="mb-4 p-3 bg-[var(--color-error-light)] border border-[var(--color-error-light)] rounded text-sm text-[var(--color-error-dark)]">
-              {error}
-            </div>
-          )}
-
-          {success && (
-            <div className="mb-4 p-3 bg-[var(--color-success-light)] border border-[var(--color-success-light)] rounded text-sm text-[var(--color-success-dark)]">
-              {success}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">
-                Email address
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  if (error) setError(null);
-                  if (success) setSuccess(null);
-                }}
-                placeholder="youremail@gmail.com"
-                required
-                className="w-full px-4 py-2.5 border border-[var(--color-border-primary)] rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-[var(--color-primary)] text-[var(--color-text-inverse)] py-2.5 px-4 rounded-md font-semibold hover:bg-[var(--color-primary-dark)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {loading ? 'Sending code...' : 'Send reset code'}
-            </button>
-          </form>
-
-          <div className="mt-6 pt-6 border-t border-[var(--color-border-primary)] text-center">
-            <p className="text-sm text-[var(--color-text-secondary)]">
-              Remember your password?{' '}
-              <Link to="/login" className="text-[var(--color-primary)] hover:underline font-medium">
-                Back to login
-              </Link>
-            </p>
+        {/* Error */}
+        {error && (
+          <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+            {error}
           </div>
+        )}
+
+        {/* Success */}
+        {success && (
+          <div className="mb-5 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-600">
+            {success}
+          </div>
+        )}
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-5">
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Email Address
+            </label>
+
+            <input
+              type="email"
+              name="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (error) setError(null);
+                if (success) setSuccess(null);
+              }}
+              placeholder="you@example.com"
+              required
+              className="w-full h-12 px-4 rounded-xl border border-slate-300 bg-white focus:border-black focus:ring-0 outline-none transition-all"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full h-12 rounded-xl bg-black text-white font-medium hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? 'Sending Code...' : 'Send Reset Code'}
+          </button>
+        </form>
+
+        {/* Footer */}
+        <div className="mt-8 pt-6 border-t border-slate-200 text-center">
+          <p className="text-sm text-slate-500">
+            Remember your password?{' '}
+            <Link
+              to="/login"
+              className="font-semibold text-black hover:underline"
+            >
+              Back to Login
+            </Link>
+          </p>
         </div>
       </div>
     </div>
-  );
+  </div>
+);
+
 };
 
 export default ForgotPassword;

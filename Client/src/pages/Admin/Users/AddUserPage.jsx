@@ -1,8 +1,10 @@
-import { useState } from 'react';
+/* eslint-disable react-hooks/set-state-in-effect */
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminApi } from '../../../api/Admin/adminApi';
 import { FaArrowLeft } from 'react-icons/fa';
 import OneTimeCredentialsCard from './OneTimeCredentialsCard';
+import SearchSelect from '../../../ui/SearchSelect';
 
 /**
  * Add User Page
@@ -17,12 +19,34 @@ const AddUserPage = () => {
     last_name: '',
     role: 'user',
     phone_number: '',
+    spa_id: '',
     is_active: true,
     is_verified: false,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [credentialResponse, setCredentialResponse] = useState(null);
+  const [spas, setSpas] = useState([]);
+
+  const spaOptions = spas.map((spa) => ({
+    label: `${spa.name}${spa.code ? ` (${spa.code})` : ''} - ID ${spa.id}`,
+    value: String(spa.id),
+    city: spa.city,
+    state: spa.state,
+  }));
+
+  async function loadSpas() {
+    try {
+      const response = await adminApi.forms.getAllSpas({ minimal: true });
+      setSpas(response.data || []);
+    } catch (err) {
+      console.error('Failed to load SPAs', err);
+    }
+  }
+
+  useEffect(() => {
+    loadSpas();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -38,7 +62,11 @@ const AddUserPage = () => {
     setError(null);
 
     try {
-      const response = await adminApi.users.createUser(formData);
+      const payload = {
+        ...formData,
+        spa_id: formData.spa_id ? Number(formData.spa_id) : null,
+      };
+      const response = await adminApi.users.createUser(payload);
       setCredentialResponse(response.data);
     } catch (err) {
       setError(
@@ -180,6 +208,18 @@ const AddUserPage = () => {
                 <option value="admin">Admin</option>
                 <option value="super_admin">Super Admin</option>
               </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-[var(--color-text-primary)] mb-2">
+                Associated SPA
+              </label>
+              <SearchSelect
+                options={spaOptions}
+                value={formData.spa_id}
+                onChange={(value) => setFormData((prev) => ({ ...prev, spa_id: value }))}
+                placeholder="Search SPA by name, code, city, or state"
+              />
             </div>
           </div>
 

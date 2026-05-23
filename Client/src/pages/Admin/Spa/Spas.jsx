@@ -22,34 +22,24 @@ const Spas = () => {
   const currentPage = parseInt(searchParams.get('page') || '1', 10);
   const itemsPerPage = 50;
 
-  useEffect(() => {
-    // Initial load to get all data (for stats and filter options)
-    loadAllSpas();
-  }, []);
-
-  useEffect(() => {
-    // Fetch filtered data whenever filters change
-    loadFilteredSpas();
-  }, [searchParams]);
-
-  const loadAllSpas = async () => {
+  async function loadAllSpas() {
     try {
       const response = await adminApi.forms.getAllSpas();
       setAllSpas(response.data || []);
     } catch (err) {
       console.error('Failed to load all SPAs for metadata:', err);
     }
-  };
+  }
 
-  const loadFilteredSpas = async () => {
+  async function loadFilteredSpas() {
     try {
       setLoading(true);
-      const response = await adminApi.forms.getAllSpas({
-        search: filters.search,
-        city: filters.city,
-        state: filters.state,
-        status: filters.status
-      });
+      const params = Object.fromEntries(
+        Object.entries(filters)
+          .map(([key, value]) => [key, String(value ?? '').trim()])
+          .filter(([, value]) => value)
+      );
+      const response = await adminApi.forms.getAllSpas(params);
       setSpas(response.data || []);
       setError(null);
     } catch (err) {
@@ -58,7 +48,17 @@ const Spas = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }
+
+  useEffect(() => {
+    // Initial load to get all data (for stats and filter options)
+    Promise.resolve().then(loadAllSpas);
+  }, []);
+
+  useEffect(() => {
+    // Fetch filtered data whenever filters change
+    Promise.resolve().then(loadFilteredSpas);
+  }, [searchParams]);
 
   const handleAdd = () => {
     navigate('/admin/spas/add');
@@ -81,10 +81,14 @@ const Spas = () => {
 
   const handleFilterChange = (newFilters) => {
     const params = new URLSearchParams();
-    if (newFilters.search) params.set('search', newFilters.search);
-    if (newFilters.city) params.set('city', newFilters.city);
-    if (newFilters.state) params.set('state', newFilters.state);
-    if (newFilters.status) params.set('status', newFilters.status);
+    const cleanedFilters = Object.fromEntries(
+      Object.entries(newFilters).map(([key, value]) => [key, String(value ?? '').trim()])
+    );
+
+    if (cleanedFilters.search) params.set('search', cleanedFilters.search);
+    if (cleanedFilters.city) params.set('city', cleanedFilters.city);
+    if (cleanedFilters.state) params.set('state', cleanedFilters.state);
+    if (cleanedFilters.status) params.set('status', cleanedFilters.status);
     params.set('page', '1'); // Reset to page 1 on filter change
     setSearchParams(params);
   };
@@ -102,6 +106,14 @@ const Spas = () => {
   // Extract unique cities and states from allSpas for the filter dropdowns
   const uniqueCities = [...new Set(allSpas.map(s => s.city).filter(Boolean))].sort();
   const uniqueStates = [...new Set(allSpas.map(s => s.state).filter(Boolean))].sort();
+
+  const totalPages = Math.max(1, Math.ceil(spas.length / itemsPerPage));
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      handlePageChange(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   // Paginated view of filtered SPAs
   const paginatedSpas = spas.slice(
@@ -213,7 +225,7 @@ const Spas = () => {
             onDelete={handleDelete}
             loading={loading}
             currentPage={currentPage}
-            totalPages={Math.ceil(spas.length / itemsPerPage)}
+            totalPages={totalPages}
             onPageChange={handlePageChange}
             totalItems={spas.length}
             itemsPerPage={itemsPerPage}
