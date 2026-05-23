@@ -13,6 +13,8 @@ from apps.users.schemas import (
     EmailLoginSchema,
     OTPRequestSchema,
     OTPLoginSchema,
+    PhoneOTPRequestSchema,
+    PhoneOTPLoginSchema,
     PasswordResetRequestSchema,
     PasswordResetConfirmSchema,
     UserUpdateSchema,
@@ -24,6 +26,7 @@ from apps.users.services.user_service import (
     create_user,
     authenticate_user,
     get_user_by_email,
+    get_user_by_phone_number,
     get_user_by_id,
     update_user,
     get_all_users,
@@ -31,7 +34,7 @@ from apps.users.services.user_service import (
 )
 from apps.users.services.auth_service import create_token_response, create_access_token
 from apps.notifications.services.notification_service import handle_login_tracking_task
-from apps.users.services.otp_service import generate_otp, verify_otp
+from apps.users.services.otp_service import generate_otp, generate_phone_otp, verify_otp
 from core.dependencies import get_current_user, get_current_active_user, require_role
 from apps.users.models import User
 from core.exceptions import AuthenticationError, ValidationError, NotFoundError
@@ -419,6 +422,140 @@ async def login_with_otp(
     return await create_token_response(user)
 
 
+@auth_router.post("/request_phone_login_otp", response_model=MessageResponseSchema)
+async def request_phone_login_otp(
+    otp_request: PhoneOTPRequestSchema,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """Request OTP for login using phone number."""
+    try:
+        user = await get_user_by_phone_number(db, otp_request.phone_number)
+    except ValidationError as e:
+        error_detail = getattr(e, 'message', str(e))
+        raise HTTPException(status_code=422, detail=error_detail)
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    try:
+        await generate_phone_otp(db, user.id, "phone_login")
+
+        try:
+            from apps.notifications.services.activity_service import log_activity
+            from apps.notifications.services.notification_service import create_otp_notification
+            ip_address = request.client.host if request.client else None
+
+            await log_activity(
+                db=db,
+                user_id=user.id,
+                activity_type="phone_otp_requested",
+                activity_description=f"Phone login OTP requested by user #{user.id}",
+                entity_type="otp",
+                ip_address=ip_address,
+                user_agent=request.headers.get("user-agent")
+            )
+            await create_otp_notification(db=db, user_id=user.id, purpose="phone_login", status="requested", ip_address=ip_address)
+        except Exception:
+            pass
+
+        return MessageResponseSchema(message="OTP sent to phone")
+    except ValidationError as e:
+        error_detail = getattr(e, 'message', str(e))
+        raise HTTPException(status_code=422, detail=error_detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to send OTP: {str(e)}")
+
+
+@auth_router.post("/login_with_phone_otp", response_model=TokenResponseSchema)
+async def login_with_phone_otp(
+    otp_data: PhoneOTPLoginSchema,
+    request: Request,
+    response: Response,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
+    """Login with phone number and OTP."""
+    try:
+        user = await get_user_by_phone_number(db, otp_data.phone_number)
+    except ValidationError as e:
+        error_detail = getattr(e, 'message', str(e))
+        raise HTTPException(status_code=422, detail=error_detail)
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if not await verify_otp(db, user.id, otp_data.otp, "phone_login"):
+        try:
+            from apps.notifications.services.activity_service import log_login_activity, log_activity
+            from apps.notifications.services.notification_service import create_otp_notification
+            ip_address = request.client.host if request.client else None
+            user_agent = request.headers.get("user-agent")
+            await log_login_activity(
+                db=db,
+                user_id=user.id,
+                ip_address=ip_address,
+                user_agent=user_agent,
+                status="failed",
+                failure_reason="Invalid or expired phone OTP"
+            )
+            await log_activity(
+                db=db,
+                user_id=user.id,
+                activity_type="phone_otp_verification_failed",
+                activity_description=f"Phone login OTP verification failed for user #{user.id}",
+                entity_type="otp",
+                ip_address=ip_address,
+                user_agent=user_agent
+            )
+            await create_otp_notification(db=db, user_id=user.id, purpose="phone_login", status="failed", ip_address=ip_address)
+        except Exception:
+            pass
+
+        raise AuthenticationError("Invalid or expired OTP")
+
+    try:
+        from datetime import datetime, timezone
+
+        ip_address = request.client.host if request.client else None
+        user_agent = request.headers.get("user-agent")
+
+        user.last_login_at = datetime.now(timezone.utc)
+        await db.commit()
+        await db.refresh(user)
+
+        background_tasks.add_task(
+            handle_login_tracking_task,
+            user_id=user.id,
+            user_email=user.email,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            status="success"
+        )
+    except Exception:
+        pass
+
+    try:
+        await db.refresh(user)
+    except Exception:
+        pass
+
+    user_id = str(user.id)
+    access_token = await create_access_token(data={"sub": user_id})
+
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=not settings.DEBUG,
+        samesite="lax" if settings.DEBUG else "none",
+        max_age=30 * 24 * 60 * 60,
+        path="/",
+    )
+
+    return await create_token_response(user)
+
+
 @auth_router.post("/request_password_reset", response_model=MessageResponseSchema)
 async def request_password_reset(
     payload: PasswordResetRequestSchema,
@@ -773,3 +910,4 @@ async def delete_user(
     await db.execute(stmt)
     await db.commit()
     return None
+

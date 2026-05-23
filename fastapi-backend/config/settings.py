@@ -110,6 +110,19 @@ class Settings(BaseSettings):
     SERVER_EMAIL: str = Field(default="no-reply@dishaonlinesolution.in", description="REQUIRED: Set in .env file")
     SKIP_EMAIL: bool = False  # Set to False in production to enable email sending
 
+    # ------------------------------------------------------------------
+    # SMS / Phone OTP Settings
+    # ------------------------------------------------------------------
+    SKIP_SMS: bool = False
+    SMS_API_URL: str = ""
+    SMS_USERNAME: str = ""
+    SMS_API_KEY: str = ""
+    SMS_SENDER_ID: str = ""
+    SMS_TEMPLATE_ID: str = ""
+    SMS_API_REQUEST: str = "Text"
+    SMS_ROUTE: str = "ServiceImplicit"
+    SMS_VERIFY_SSL: bool = False
+
     @field_validator("SMTP_USE_TLS", mode="before")
     @classmethod
     def parse_tls(cls, value):
@@ -119,6 +132,16 @@ class Settings(BaseSettings):
         if isinstance(value, str):
             return value.lower() in ("true", "1", "yes", "on")
         return True
+
+    @field_validator("SKIP_SMS", "SMS_VERIFY_SSL", mode="before")
+    @classmethod
+    def parse_sms_booleans(cls, value):
+        """Convert string SMS boolean settings."""
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            return value.lower() in ("true", "1", "yes", "on")
+        return bool(value)
 
     # ------------------------------------------------------------------
     # Redis Cache (Optional but Recommended for Production)

@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession as Session
 from sqlalchemy import select, and_
 from apps.users.models import OTP, User
 from core.exceptions import ValidationError
-from core.utils import send_email
+from core.utils import send_email, send_sms
 
 
 def _ensure_timezone_aware(dt: datetime) -> datetime:
@@ -109,6 +109,65 @@ async def generate_otp(db: Session, user_id: int, purpose: str) -> str:
             "Registration/OTP generation succeeded despite email failure. OTP: %s",
             code,
         )
+
+    return code
+
+
+async def generate_phone_otp(db: Session, user_id: int, purpose: str = "phone_login") -> str:
+    """Generate and send an OTP to a user's phone number."""
+    stmt = select(User).where(User.id == user_id)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+    if not user:
+        raise ValidationError("User not found")
+    if not user.phone_number:
+        raise ValidationError("Phone number is not linked to this user")
+
+    code = str(random.randint(100000, 999999))
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
+
+    otp = OTP(
+        user_id=user_id,
+        code=code,
+        purpose=purpose,
+        is_used=False,
+        expires_at=expires_at,
+    )
+
+    db.add(otp)
+    await db.commit()
+    await db.refresh(otp)
+
+    import logging
+    from config.settings import settings
+    logger = logging.getLogger(__name__)
+
+    logger.info(
+        "Generated phone OTP id=%s for user=%s purpose=%s",
+        otp.id,
+        user.id,
+        purpose,
+    )
+
+    if settings.SKIP_SMS:
+        logger.info(
+            "SKIP_SMS is enabled. Phone OTP generated for user=%s purpose=%s but SMS not sent.",
+            user.id,
+            purpose,
+        )
+        return code
+
+    message = (
+        f"Dear Customer, your Code for login to Spa Advisor is {code}. "
+        "This Code is valid for 1 minutes. Do not share this OTP with anyone. Thank You"
+    )
+
+    try:
+        await send_sms(user.phone_number, message)
+        logger.info("Phone OTP sent successfully to user=%s otp_id=%s", user.id, otp.id)
+    except Exception as e:
+        logger.exception("Failed to send phone OTP for otp_id=%s user=%s", otp.id, user.id)
+        raise ValidationError(f"Failed to send phone OTP: {str(e)}")
 
     return code
 

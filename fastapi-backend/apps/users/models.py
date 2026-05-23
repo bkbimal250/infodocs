@@ -51,7 +51,7 @@ class User(Base):
     # Use native_enum=False to store as VARCHAR and handle enum values properly
     role = Column(SQLEnum(UserRole, native_enum=False, length=20), default=UserRole.USER, nullable=False)
 
-    phone_number = Column(String(20), nullable=True)
+    phone_number = Column(String(20), unique=True, index=True, nullable=True)
     
     # Link to SPA branch (optional for all, self-assignable by managers)
     spa_id = Column(Integer, ForeignKey("spas.id", ondelete="SET NULL"), nullable=True, index=True)

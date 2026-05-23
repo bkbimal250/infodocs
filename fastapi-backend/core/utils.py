@@ -6,6 +6,8 @@ import logging
 from datetime import datetime, timezone
 from typing import Iterable, Union, Optional, Tuple, List
 import smtplib
+import requests
+import urllib3
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from config.settings import settings
@@ -163,4 +165,74 @@ async def send_smtp_test_email(recipient: str) -> str:
     await send_email(subject, body, recipient, html_body=html_body)
     logger.info("SMTP test email sent successfully to %s", recipient)
     return f"SMTP test email sent successfully to {recipient}"
+
+
+def validate_sms_settings() -> Tuple[bool, Optional[str]]:
+    """Validate SMS settings for phone OTP delivery."""
+    if settings.SKIP_SMS:
+        return True, None
+    if not settings.SMS_API_URL:
+        return False, "SMS_API_URL is not configured"
+    if not settings.SMS_USERNAME:
+        return False, "SMS_USERNAME is not configured"
+    if not settings.SMS_API_KEY:
+        return False, "SMS_API_KEY is not configured"
+    if not settings.SMS_SENDER_ID:
+        return False, "SMS_SENDER_ID is not configured"
+    if not settings.SMS_TEMPLATE_ID:
+        return False, "SMS_TEMPLATE_ID is not configured"
+    return True, None
+
+
+def _send_sms_sync(phone_number: str, message: str) -> None:
+    """Send an SMS using the Hilite Multimedia HTTP SMS gateway."""
+    params = {
+        "username": settings.SMS_USERNAME,
+        "apikey": settings.SMS_API_KEY,
+        "apirequest": settings.SMS_API_REQUEST,
+        "route": settings.SMS_ROUTE,
+        "TemplateID": settings.SMS_TEMPLATE_ID,
+        "sender": settings.SMS_SENDER_ID,
+        "mobile": phone_number,
+        "message": message,
+    }
+
+    if not settings.SMS_VERIFY_SSL:
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        logger.warning("SMS SSL certificate verification is disabled for provider request.")
+
+    response = requests.get(
+        settings.SMS_API_URL,
+        params=params,
+        timeout=30,
+        verify=settings.SMS_VERIFY_SSL,
+    )
+    response.raise_for_status()
+
+
+async def send_sms(phone_number: str, message: str) -> None:
+    """
+    Send an SMS for phone OTP login.
+
+    The gateway URL/key can be added later in environment variables without changing routes.
+    """
+    phone_number = str(phone_number).strip()
+    message = str(message)
+    if not phone_number:
+        raise ValueError("Phone number is required")
+
+    is_valid, error_msg = validate_sms_settings()
+    if not is_valid:
+        logger.error("SMS configuration error: %s", error_msg)
+        raise ValueError(error_msg)
+
+    if settings.SKIP_SMS:
+        logger.info("SKIP_SMS is enabled. SMS not sent to %s.", phone_number)
+        return
+
+    try:
+        await asyncio.to_thread(_send_sms_sync, phone_number, message)
+    except Exception as exc:
+        logger.exception("Failed to send SMS: %s", exc)
+        raise ValueError(f"Failed to send SMS: {str(exc)}")
 

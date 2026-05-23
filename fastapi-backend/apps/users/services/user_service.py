@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 import secrets
 import string
 from sqlalchemy.ext.asyncio import AsyncSession as Session
-from sqlalchemy import select, or_
+from sqlalchemy import select, or_, func
 from sqlalchemy.orm import selectinload
 from passlib.context import CryptContext
 from apps.users.models import User, UserRole
@@ -91,6 +91,8 @@ async def  create_user(
     
     if existing_user:
         raise ValidationError("Username or email already exists")
+
+    normalized_phone = await ensure_phone_number_unique(db, phone_number)
     
     # Create user
     user = User(
@@ -100,7 +102,7 @@ async def  create_user(
         first_name=first_name,
         last_name=last_name,
         role=role,
-        phone_number=phone_number,
+        phone_number=normalized_phone,
         spa_id=spa_id,
         is_active=True,
         is_verified=False,
@@ -146,6 +148,78 @@ async def get_user_by_email(db: Session, email: str) -> Optional[User]:
     return result.scalar_one_or_none()
 
 
+def normalize_phone_number(phone_number: str) -> str:
+    """Normalize phone input for lookup without changing stored values."""
+    return "".join(ch for ch in str(phone_number or "").strip() if ch.isdigit() or ch == "+")
+
+
+def normalize_phone_number_for_storage(phone_number: Optional[str]) -> Optional[str]:
+    """Store a stable phone value so uniqueness works predictably."""
+    clean_phone = normalize_phone_number(phone_number or "")
+    if not clean_phone:
+        return None
+
+    digits_only = "".join(ch for ch in clean_phone if ch.isdigit())
+    if len(digits_only) == 12 and digits_only.startswith("91"):
+        return digits_only[-10:]
+    if len(digits_only) == 10:
+        return digits_only
+    return clean_phone
+
+
+async def get_user_by_phone_number(db: Session, phone_number: str) -> Optional[User]:
+    """Get one user by phone number, matching common formatted variants."""
+    clean_phone = normalize_phone_number(phone_number)
+    if not clean_phone:
+        return None
+
+    digits_only = "".join(ch for ch in clean_phone if ch.isdigit())
+    candidates = {clean_phone, digits_only}
+    if len(digits_only) == 10:
+        candidates.add(f"+91{digits_only}")
+        candidates.add(f"91{digits_only}")
+    if len(digits_only) == 12 and digits_only.startswith("91"):
+        last_ten = digits_only[-10:]
+        candidates.add(last_ten)
+        candidates.add(f"+91{last_ten}")
+
+    normalized_column = func.replace(
+        func.replace(func.replace(func.replace(User.phone_number, " ", ""), "-", ""), "(", ""),
+        ")",
+        "",
+    )
+    stmt = select(User).where(
+        or_(
+            User.phone_number.in_(list(candidates)),
+            normalized_column.in_(list(candidates)),
+        )
+    )
+    result = await db.execute(stmt)
+    users = list(result.scalars().all())
+
+    if len(users) > 1:
+        raise ValidationError("Multiple users found with this phone number. Please contact admin.")
+
+    return users[0] if users else None
+
+
+async def ensure_phone_number_unique(
+    db: Session,
+    phone_number: Optional[str],
+    exclude_user_id: Optional[int] = None,
+) -> Optional[str]:
+    """Normalize and verify a phone number is not already linked to another user."""
+    normalized_phone = normalize_phone_number_for_storage(phone_number)
+    if not normalized_phone:
+        return None
+
+    existing_user = await get_user_by_phone_number(db, normalized_phone)
+    if existing_user and existing_user.id != exclude_user_id:
+        raise ValidationError("Phone number already exists")
+
+    return normalized_phone
+
+
 async def authenticate_user(db: Session, username_or_email: str, password: str) -> Optional[User]:
     """Authenticate user with username/email and password (Optimized to single query)"""
     stmt = select(User).where(
@@ -185,6 +259,13 @@ async def update_user(db: Session, user_id: int, update_data: dict) -> User:
         existing_user = result.scalar_one_or_none()
         if existing_user:
             raise ValidationError("Username or email already exists")
+
+    if 'phone_number' in update_data:
+        update_data['phone_number'] = await ensure_phone_number_unique(
+            db,
+            update_data.get('phone_number'),
+            exclude_user_id=user_id,
+        )
     
     # Update user fields
     for key, value in update_data.items():

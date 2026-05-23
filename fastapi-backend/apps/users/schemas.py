@@ -74,6 +74,27 @@ class OTPLoginSchema(BaseModel):
     otp: str
 
 
+class PhoneOTPRequestSchema(BaseModel):
+    """Phone OTP request schema"""
+    phone_number: str
+
+    @field_validator("phone_number")
+    @classmethod
+    def clean_phone_number(cls, v: str) -> str:
+        return str(v or "").strip()
+
+
+class PhoneOTPLoginSchema(BaseModel):
+    """Phone OTP login schema"""
+    phone_number: str
+    otp: str
+
+    @field_validator("phone_number", "otp")
+    @classmethod
+    def clean_phone_otp_fields(cls, v: str) -> str:
+        return str(v or "").strip()
+
+
 class PasswordResetRequestSchema(BaseModel):
     """Request password reset via email"""
     email: EmailStr
