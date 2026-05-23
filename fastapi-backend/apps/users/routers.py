@@ -19,6 +19,7 @@ from apps.users.schemas import (
     PasswordResetConfirmSchema,
     UserUpdateSchema,
     UserResponseSchema,
+    SpaUserCountSchema,
     TokenResponseSchema,
     MessageResponseSchema,
 )
@@ -30,6 +31,7 @@ from apps.users.services.user_service import (
     get_user_by_id,
     update_user,
     get_all_users,
+    get_spa_user_counts,
     generate_secure_password,
 )
 from apps.users.services.auth_service import create_token_response, create_access_token
@@ -804,6 +806,15 @@ async def list_users(
         raise HTTPException(status_code=500, detail=f"Failed to retrieve users: {str(e)}")
 
 
+@users_router.get("/spa-counts", response_model=list[SpaUserCountSchema])
+async def list_spa_user_counts(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "super_admin"))
+):
+    """List SPAs with how many users are associated with each SPA."""
+    return await get_spa_user_counts(db)
+
+
 @users_router.post("", response_model=CredentialResponseSchema, status_code=status.HTTP_201_CREATED)
 async def  create_user_by_admin(
     user_data: AdminUserCreateSchema,
@@ -910,4 +921,3 @@ async def delete_user(
     await db.execute(stmt)
     await db.commit()
     return None
-

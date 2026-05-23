@@ -167,6 +167,8 @@ class UserResponseSchema(BaseModel):
     is_active: bool
     is_verified: bool
     spa_id: Optional[int] = None
+    spa_name: Optional[str] = None
+    spa_code: Optional[int] = None
     last_login_at: Optional[datetime] = None
     created_at: datetime
     
@@ -186,6 +188,15 @@ class TokenResponseSchema(BaseModel):
 class MessageResponseSchema(BaseModel):
     """Generic message response schema"""
     message: str
+
+
+class SpaUserCountSchema(BaseModel):
+    """Associated user count by SPA."""
+    spa_id: int
+    spa_name: str
+    spa_code: Optional[int] = None
+    city: Optional[str] = None
+    user_count: int
 
 
 class OneTimeCredentialSchema(BaseModel):

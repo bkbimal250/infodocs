@@ -89,6 +89,16 @@ class User(Base):
         """Return full name of the user."""
         return f"{self.first_name} {self.last_name}".strip()
 
+    @property
+    def spa_name(self) -> str | None:
+        """Return the linked SPA name when loaded."""
+        return self.branch.name if self.branch else None
+
+    @property
+    def spa_code(self) -> int | None:
+        """Return the linked SPA code when loaded."""
+        return self.branch.code if self.branch else None
+
 
 class OTP(Base):
     """OTP SQLAlchemy model for email/phone/login verification"""

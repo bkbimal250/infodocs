@@ -11,6 +11,7 @@ from sqlalchemy import select, or_, func
 from sqlalchemy.orm import selectinload
 from passlib.context import CryptContext
 from apps.users.models import User, UserRole
+from apps.forms_app.models import SPA
 from core.exceptions import NotFoundError, ValidationError
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -129,7 +130,7 @@ async def  create_user(
 
 async def get_user_by_id(db: Session, user_id: int) -> Optional[User]:
     """Get user by ID"""
-    stmt = select(User).where(User.id == user_id)
+    stmt = select(User).options(selectinload(User.branch)).where(User.id == user_id)
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -294,7 +295,34 @@ async def update_user(db: Session, user_id: int, update_data: dict) -> User:
 
 async def get_all_users(db: Session, skip: int = 0, limit: int = 1000) -> List[User]:
     """Get all users with pagination"""
-    stmt = select(User).offset(skip).limit(limit)
+    stmt = select(User).options(selectinload(User.branch)).offset(skip).limit(limit)
     result = await db.execute(stmt)
     return list(result.scalars().all())
+
+
+async def get_spa_user_counts(db: Session) -> List[dict]:
+    """Return how many users are associated with each SPA."""
+    stmt = (
+        select(
+            SPA.id,
+            SPA.name,
+            SPA.code,
+            SPA.city,
+            func.count(User.id),
+        )
+        .outerjoin(User, User.spa_id == SPA.id)
+        .group_by(SPA.id, SPA.name, SPA.code, SPA.city)
+        .order_by(SPA.name)
+    )
+    result = await db.execute(stmt)
+    return [
+        {
+            "spa_id": spa_id,
+            "spa_name": spa_name,
+            "spa_code": spa_code,
+            "city": city,
+            "user_count": user_count,
+        }
+        for spa_id, spa_name, spa_code, city, user_count in result.all()
+    ]
 

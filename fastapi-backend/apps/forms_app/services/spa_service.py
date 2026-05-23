@@ -5,7 +5,7 @@ Business logic for SPA operations
 from typing import Optional, List
 from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession as Session
-from sqlalchemy import select, func
+from sqlalchemy import String, cast, or_, select, func
 from sqlalchemy.orm import load_only
 from apps.forms_app.models import SPA
 from apps.forms_app.schemas import SPACreate, SPAUpdate
@@ -16,7 +16,15 @@ import asyncio
 _SPA_CACHE = {}
 _CACHE_LOCK = asyncio.Lock()
 
-async def _get_cache_key(active_only, minimal, search, city, state, status):
+def _normalize_filter(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+
+    value = value.strip()
+    return value or None
+
+
+def _get_cache_key(active_only, minimal, search, city, state, status):
     return f"{active_only}:{minimal}:{search}:{city}:{state}:{status}"
 
 async def clear_spa_cache():
@@ -73,6 +81,12 @@ async def get_all_spas(
     status: Optional[str] = None,
 ) -> List[SPA]:
     """Get all SPAs with optional filtering and column-specific loading"""
+    search = _normalize_filter(search)
+    city = _normalize_filter(city)
+    state = _normalize_filter(state)
+    status = _normalize_filter(status)
+    if status:
+        status = status.lower()
     # 🚀 Performance Optimization: Cache Check
     cache_key = _get_cache_key(active_only, minimal, search, city, state, status)
     async with _CACHE_LOCK:
@@ -95,20 +109,26 @@ async def get_all_spas(
     if search:
         term = f"%{search}%"
         stmt = stmt.where(
-            SPA.name.ilike(term)
-            | SPA.code.cast(func.text()).ilike(term)  # cast int code to text for LIKE
-            | SPA.address.ilike(term)
-            | SPA.city.ilike(term)
-            | SPA.state.ilike(term)
-            | SPA.email.ilike(term)
-            | SPA.phone_number.ilike(term)
+            or_(
+                SPA.name.ilike(term),
+                cast(SPA.code, String).ilike(term),
+                SPA.address.ilike(term),
+                SPA.area.ilike(term),
+                SPA.city.ilike(term),
+                SPA.state.ilike(term),
+                SPA.email.ilike(term),
+                SPA.phone_number.ilike(term),
+                SPA.alternate_number.ilike(term),
+                SPA.gst_number.ilike(term),
+                SPA.pincode.ilike(term),
+            )
         )
 
     if city:
-        stmt = stmt.where(func.lower(SPA.city) == city.lower())
+        stmt = stmt.where(func.lower(func.trim(SPA.city)) == city.lower())
 
     if state:
-        stmt = stmt.where(func.lower(SPA.state) == state.lower())
+        stmt = stmt.where(func.lower(func.trim(SPA.state)) == state.lower())
 
     stmt = stmt.order_by(SPA.name)
     result = await db.execute(stmt)
