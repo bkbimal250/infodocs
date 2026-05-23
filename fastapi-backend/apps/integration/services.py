@@ -1,4 +1,8 @@
+import base64
+import binascii
 import logging
+import uuid
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy import false, func, or_, select
@@ -10,6 +14,12 @@ from apps.StaffManagement.models import (
     Staff,
     VerificationStatusEnum,
 )
+from apps.StaffManagement.repositories.document_repository import DocumentRepository
+from apps.StaffManagement.schemas import StaffCreate
+from apps.StaffManagement.services.staff_service import StaffService
+from apps.forms_app.models import SPA
+from core.exceptions import ValidationError
+from config.settings import settings
 
 
 logger = logging.getLogger(__name__)
@@ -41,10 +51,12 @@ def _enum_value(value) -> str:
 
 
 def _serialize_staff(staff: Staff) -> Dict[str, Any]:
+    spa_code = _staff_spacode(staff)
     return {
         "full_name": staff.full_name,
         "phone": staff.phone,
-        "spacode": _staff_spacode(staff),
+        "spacode": spa_code,
+        "spa_code": spa_code,
         "spa_id": staff.current_spa.id if staff.current_spa else None,
         "spaname": staff.current_spa.name if staff.current_spa else None,
         "spa_city": staff.current_spa.city if staff.current_spa else None,
@@ -54,10 +66,24 @@ def _serialize_staff(staff: Staff) -> Dict[str, Any]:
     }
 
 
+def _serialize_spa(spa: SPA) -> Dict[str, Any]:
+    return {
+        "id": spa.id,
+        "name": spa.name,
+        "code": spa.code,
+        "area": spa.area,
+        "city": spa.city,
+        "state": spa.state,
+        "address": spa.address,
+        "is_active": spa.is_active,
+    }
+
+
 def _serialize_document(document) -> Dict[str, Any]:
     return {
         "id": document.id,
         "document_type": _enum_value(document.document_type),
+        "document_number": document.document_number,
         "file_url": document.file_url,
         "verification_status": _enum_value(document.verification_status),
         "created_at": document.created_at,
@@ -123,8 +149,253 @@ def _apply_spacode_filter(stmt, spacode: str):
     return stmt.where(false())
 
 
+def _extension_from_content_type(content_type: str) -> str:
+    content_type = content_type.lower().strip()
+    extension_map = {
+        "image/jpeg": ".jpg",
+        "image/jpg": ".jpg",
+        "image/png": ".png",
+        "image/webp": ".webp",
+        "application/pdf": ".pdf",
+    }
+    return extension_map.get(content_type, "")
+
+
+def _save_base64_document(document) -> Optional[str]:
+    if not document.file_base64:
+        return document.file_url
+
+    raw_value = document.file_base64.strip()
+    content_type = ""
+    if raw_value.startswith("data:") and "," in raw_value:
+        meta, raw_value = raw_value.split(",", 1)
+        content_type = meta[5:].split(";", 1)[0]
+
+    try:
+        file_bytes = base64.b64decode(raw_value, validate=True)
+    except (binascii.Error, ValueError) as exc:
+        raise ValidationError("Invalid base64 document content.") from exc
+
+    if len(file_bytes) > settings.MAX_UPLOAD_SIZE:
+        raise ValidationError(
+            f"Document too large. Maximum size is {settings.MAX_UPLOAD_SIZE / (1024 * 1024)} MB."
+        )
+
+    file_name = Path(document.file_name or "").name
+    extension = Path(file_name).suffix.lower()
+    if not extension:
+        extension = _extension_from_content_type(content_type) or ".bin"
+
+    upload_dir = Path("uploads") / "staff"
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    file_path = upload_dir / f"{uuid.uuid4()}{extension}"
+    file_path.write_bytes(file_bytes)
+
+    return f"/uploads/staff/{file_path.name}"
+
+
+async def _resolve_spa_id(
+    db: AsyncSession,
+    spa_id: Optional[int] = None,
+    spacode: Optional[str] = None,
+    spa_name: Optional[str] = None,
+) -> Optional[int]:
+    if spa_id:
+        result = await db.execute(
+            select(SPA).where(SPA.id == spa_id, SPA.is_active.is_(True))
+        )
+        spa = result.scalar_one_or_none()
+        if not spa:
+            raise ValidationError(f"SPA with ID '{spa_id}' was not found or is inactive.")
+        return spa.id
+
+    if spacode:
+        if not str(spacode).isdigit():
+            raise ValidationError("SPA code must be numeric.")
+        result = await db.execute(
+            select(SPA).where(
+                SPA.code == int(spacode),
+                SPA.is_active.is_(True),
+            )
+        )
+        spa = result.scalar_one_or_none()
+        if not spa:
+            raise ValidationError(f"SPA code '{spacode}' was not found or is inactive.")
+        return spa.id
+
+    if spa_name:
+        clean_name = spa_name.strip()
+        exact_result = await db.execute(
+            select(SPA)
+            .where(
+                func.lower(SPA.name) == clean_name.lower(),
+                SPA.is_active.is_(True),
+            )
+            .order_by(SPA.name)
+            .limit(1)
+        )
+        exact_spa = exact_result.scalars().first()
+        if exact_spa:
+            return exact_spa.id
+
+        search_result = await db.execute(
+            select(SPA)
+            .where(
+                SPA.name.ilike(f"%{clean_name}%"),
+                SPA.is_active.is_(True),
+            )
+            .order_by(SPA.name)
+            .limit(2)
+        )
+        matches = list(search_result.scalars().all())
+        if len(matches) == 1:
+            return matches[0].id
+        if len(matches) > 1:
+            raise ValidationError(
+                "Multiple SPAs match this name. Send spa_id or spacode from /api/integration/spas."
+            )
+        raise ValidationError(f"SPA name '{spa_name}' was not found or is inactive.")
+
+    return None
+
+
 class IntegrationStaffVerificationService:
-    """Read-only staff verification service for internal systems."""
+    """Staff verification and entry service for trusted API-key integrations."""
+
+    @staticmethod
+    async def list_spas(
+        db: AsyncSession,
+        api_key_fingerprint: str,
+        limit: int,
+        offset: int,
+        search: Optional[str] = None,
+        code: Optional[str] = None,
+        city: Optional[str] = None,
+        active_only: bool = True,
+    ) -> Dict[str, Any]:
+
+        logger.info(
+            "Integration SPA list access key=%s limit=%s offset=%s search=%s code=%s",
+            api_key_fingerprint,
+            limit,
+            offset,
+            search,
+            code,
+        )
+
+        base_stmt = select(SPA)
+        if active_only:
+            base_stmt = base_stmt.where(SPA.is_active.is_(True))
+
+        if search:
+            pattern = f"%{search}%"
+            conditions = [
+                SPA.name.ilike(pattern),
+                SPA.area.ilike(pattern),
+                SPA.city.ilike(pattern),
+                SPA.state.ilike(pattern),
+                SPA.address.ilike(pattern),
+            ]
+            if search.isdigit():
+                conditions.append(SPA.code == int(search))
+            base_stmt = base_stmt.where(or_(*conditions))
+
+        if code:
+            if not code.isdigit():
+                raise ValidationError("SPA code must be numeric.")
+            base_stmt = base_stmt.where(SPA.code == int(code))
+
+        if city:
+            base_stmt = base_stmt.where(SPA.city.ilike(f"%{city}%"))
+
+        count_stmt = select(func.count()).select_from(base_stmt.order_by(None).subquery())
+        count_result = await db.execute(count_stmt)
+        total = count_result.scalar_one()
+
+        stmt = base_stmt.order_by(SPA.name).offset(offset).limit(limit)
+        result = await db.execute(stmt)
+        spas = list(result.scalars().all())
+
+        return {
+            "success": True,
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "items": [_serialize_spa(spa) for spa in spas],
+        }
+
+    @staticmethod
+    async def create_staff_entry(
+        db: AsyncSession,
+        payload,
+        api_key_fingerprint: str,
+    ) -> Dict[str, Any]:
+
+        logger.info(
+            "Integration staff entry create key=%s phone=%s spa_id=%s spacode=%s",
+            api_key_fingerprint,
+            _mask_phone(payload.phone),
+            payload.spa_id,
+            payload.spacode,
+        )
+
+        resolved_spa_id = await _resolve_spa_id(
+            db=db,
+            spa_id=payload.spa_id,
+            spacode=payload.spacode,
+            spa_name=payload.spa_name,
+        )
+
+        staff_payload = StaffCreate(
+            full_name=payload.full_name,
+            gender=payload.gender,
+            profile_photo=payload.profile_photo,
+            phone=payload.phone,
+            address=payload.address,
+            city=payload.city,
+            state=payload.state,
+            pincode=payload.pincode,
+            designation=payload.designation,
+            current_spa_id=resolved_spa_id,
+            joining_date=payload.joining_date,
+        )
+
+        staff = await StaffService.create_staff(
+            db=db,
+            data=staff_payload,
+            creator_id=None,
+        )
+
+        documents_added = 0
+        for document in payload.documents:
+            file_url = _save_base64_document(document)
+            await DocumentRepository.create(
+                db=db,
+                staff_id=staff.id,
+                document_type=document.document_type,
+                file_url=file_url,
+                document_number=document.document_number,
+            )
+            documents_added += 1
+
+        refreshed = await db.execute(
+            select(Staff)
+            .options(
+                selectinload(Staff.current_spa),
+                selectinload(Staff.documents),
+            )
+            .where(Staff.id == staff.id)
+        )
+        staff = refreshed.scalar_one()
+
+        return {
+            "success": True,
+            "message": "Staff entry created",
+            "staff": _serialize_staff(staff),
+            "staff_id": staff.id,
+            "staff_uuid": staff.staff_uuid,
+            "documents_added": documents_added,
+        }
 
     @staticmethod
     async def verify_staff_by_mobile(

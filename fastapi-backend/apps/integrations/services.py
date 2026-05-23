@@ -38,6 +38,8 @@ def serialize_api_key(model: IntegrationApiKey) -> dict:
         "key_prefix": model.key_prefix,
         "key_preview": f"{model.key_prefix}_****",
         "is_active": model.is_active,
+        "never_expires": True,
+        "expires_at": None,
         "description": model.description,
         "created_by": model.created_by,
         "last_used_at": model.last_used_at,

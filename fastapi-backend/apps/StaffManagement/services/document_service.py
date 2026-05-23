@@ -36,6 +36,7 @@ class DocumentService:
             staff_id=staff.id,
             document_type=data.document_type,
             file_url=data.file_url,
+            document_number=data.document_number,
         )
 
         return doc

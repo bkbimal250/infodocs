@@ -23,6 +23,8 @@ class IntegrationApiKeyResponse(BaseModel):
     key_prefix: str
     key_preview: str
     is_active: bool
+    never_expires: bool = True
+    expires_at: Optional[datetime] = None
     description: Optional[str]
     created_by: Optional[int]
     last_used_at: Optional[datetime]

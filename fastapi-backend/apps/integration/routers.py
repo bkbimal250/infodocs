@@ -9,6 +9,9 @@ from apps.integration.dependencies import (
     verify_internal_api_key,
 )
 from apps.integration.schemas import (
+    IntegrationSpaListResponse,
+    IntegrationStaffEntryRequest,
+    IntegrationStaffEntryResponse,
     IntegrationStaffDocumentListResponse,
     IntegrationStaffListResponse,
     StaffVerifyRequest,
@@ -22,6 +25,54 @@ router = APIRouter(
     prefix="",
     tags=["Internal Integration"],
 )
+
+
+@router.get(
+    "/spas",
+    response_model=IntegrationSpaListResponse,
+    response_model_exclude_none=True,
+    status_code=status.HTTP_200_OK,
+    summary="Search/select SPA branches for trusted integrations",
+)
+async def list_spas_endpoint(
+    search: Optional[str] = Query(None, description="Search by SPA name, code, area, city, state, or address"),
+    code: Optional[str] = Query(None, description="Exact SPA code"),
+    city: Optional[str] = Query(None, description="Filter by city"),
+    active_only: bool = Query(True, description="Return active SPAs only"),
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    db: AsyncSession = Depends(get_db),
+    internal_client: InternalApiClient = Depends(verify_internal_api_key),
+):
+    return await IntegrationStaffVerificationService.list_spas(
+        db=db,
+        api_key_fingerprint=internal_client.key_fingerprint,
+        search=search.strip() if search else None,
+        code=code.strip() if code else None,
+        city=city.strip() if city else None,
+        active_only=active_only,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.post(
+    "/staff",
+    response_model=IntegrationStaffEntryResponse,
+    response_model_exclude_none=True,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create staff entry with optional documents for trusted integrations",
+)
+async def create_staff_entry_endpoint(
+    payload: IntegrationStaffEntryRequest,
+    db: AsyncSession = Depends(get_db),
+    internal_client: InternalApiClient = Depends(verify_internal_api_key),
+):
+    return await IntegrationStaffVerificationService.create_staff_entry(
+        db=db,
+        payload=payload,
+        api_key_fingerprint=internal_client.key_fingerprint,
+    )
 
 
 @router.post(
