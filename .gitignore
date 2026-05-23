@@ -80,9 +80,9 @@ htmlcov/
 fastapi-backend/scripts_archived/
 fastapi-backend/media/
 fastapi-backend/uploads/
-fastapi-backend\benchmark_endpoints.py
-fastapi-backend\check_db_simple.py
-fastapi-backend\check_db.py
+fastapi-backend/benchmark_endpoints.py
+fastapi-backend/check_db_simple.py
+fastapi-backend/check_db.py
 
 
 ############################
@@ -92,10 +92,12 @@ fastapi-backend\check_db.py
 node_modules/
 dist/
 build/
+dist-ssr/
 .vite/
 .next/
 .eslintcache
 coverage/
+*.local
 
 
 # Developer Notes & Fix Logs
@@ -116,6 +118,7 @@ coverage/
 *_START_*.md
 *_PLAN.md
 *_SCHEMA.md
+*_SQL.sql
 IMPLEMENTATION_PLAN.md
 ANALYTICS_500_ERROR_FIX.md
 WEASYPRINT_PDF_ERROR_FIX.md
