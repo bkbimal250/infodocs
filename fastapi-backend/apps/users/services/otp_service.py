@@ -13,7 +13,7 @@ from core.exceptions import ValidationError
 from core.utils import send_email
 
 
-async def _ensure_timezone_aware(dt: datetime) -> datetime:
+def _ensure_timezone_aware(dt: datetime) -> datetime:
     """
     Ensure a datetime is timezone-aware (UTC).
     If it's timezone-naive, assume it's UTC and make it aware.
@@ -53,43 +53,67 @@ async def generate_otp(db: Session, user_id: int, purpose: str) -> str:
     subject = _get_otp_subject(purpose)
     body = _build_otp_body(user.full_name, code, purpose)
     html_body = _build_otp_html_template(user.full_name, code, purpose)
-    
-    # Try to send email, but don't fail if it doesn't work (for development/testing)
+
     import logging
+    import time
     from config.settings import settings
     logger = logging.getLogger(__name__)
-    
+
+    logger.info(
+        "Generated OTP id=%s for user=%s purpose=%s",
+        otp.id,
+        user.email,
+        purpose,
+    )
+    logger.debug(
+        "Preparing OTP email: recipient=%s subject=%s body_type=%s html_type=%s smtp_host=%s smtp_port=%s",
+        user.email,
+        subject,
+        type(body),
+        type(html_body),
+        settings.SMTP_HOST,
+        settings.SMTP_PORT,
+    )
+
     # Check if email should be skipped (development mode)
     if settings.SKIP_EMAIL:
         logger.info(
-            f"SKIP_EMAIL is enabled. OTP code {code} generated for user {user.email} "
-            f"(purpose: {purpose}) but email not sent."
+            "SKIP_EMAIL is enabled. OTP code %s generated for user %s (purpose: %s) but email not sent.",
+            code,
+            user.email,
+            purpose,
         )
         return code
-    
+
+    send_start = time.perf_counter()
     try:
-        send_email(subject, body, user.email, html_body=html_body)
-        logger.info(f"OTP email sent successfully to {user.email}")
-    except Exception as e:
-        # Log the error but don't fail - OTP is still generated and stored
-        error_msg = str(e)
-        logger.error(
-            f"Failed to send OTP email to {user.email}: {error_msg}. "
-            f"OTP code {code} is still valid and stored in database. "
-            f"User can verify using the OTP code directly.",
-            exc_info=True
+        await send_email(subject, body, user.email, html_body=html_body)
+        send_duration = time.perf_counter() - send_start
+        logger.info(
+            "OTP email sent successfully to %s | otp_id=%s | purpose=%s | duration=%.3fs",
+            user.email,
+            otp.id,
+            purpose,
+            send_duration,
         )
-        # Only raise error for critical purposes like login OTP and password reset
-        # For email verification, allow registration to succeed
+    except Exception as e:
+        logger.exception(
+            "Failed to send OTP email for otp_id=%s to %s",
+            otp.id,
+            user.email,
+        )
+        error_msg = str(e)
         if purpose in ("login", "password_reset"):
             raise ValidationError(f"Failed to send OTP email: {error_msg}")
-        # For other purposes (like email_verification), just log and continue
-        logger.info(f"Registration/OTP generation succeeded despite email failure. OTP: {code}")
-    
+        logger.info(
+            "Registration/OTP generation succeeded despite email failure. OTP: %s",
+            code,
+        )
+
     return code
 
 
-async def _get_otp_subject(purpose: str) -> str:
+def _get_otp_subject(purpose: str) -> str:
     """Return email subject based on OTP purpose."""
     subject_map = {
         "email_verification": "Verify your email address",
@@ -99,7 +123,7 @@ async def _get_otp_subject(purpose: str) -> str:
     return subject_map.get(purpose, "One Time Password (OTP)")
 
 
-async def _build_otp_body(full_name: str, code: str, purpose: str) -> str:
+def _build_otp_body(full_name: str, code: str, purpose: str) -> str:
     """Create the OTP email body (plain text)."""
     return (
         f"Hello {full_name},\n\n"
@@ -110,7 +134,7 @@ async def _build_otp_body(full_name: str, code: str, purpose: str) -> str:
     )
 
 
-async def _build_otp_html_template(full_name: str, code: str, purpose: str) -> str:
+def _build_otp_html_template(full_name: str, code: str, purpose: str) -> str:
     """
     Create the OTP email HTML template.
  

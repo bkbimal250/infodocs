@@ -75,6 +75,15 @@ async def lifespan(app: FastAPI):
         logger.info(
             "Database initialized successfully"
         )
+        logger.info(
+            "SMTP startup configuration: host=%s port=%s ssl=%s tls=%s sender=%s skip_email=%s",
+            settings.SMTP_HOST,
+            settings.SMTP_PORT,
+            settings.SMTP_USE_SSL,
+            settings.SMTP_USE_TLS,
+            settings.SMTP_FROM_EMAIL or settings.SERVER_EMAIL,
+            settings.SKIP_EMAIL,
+        )
 
         yield
 

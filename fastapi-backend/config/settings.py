@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------
     # Security & JWT
     # ------------------------------------------------------------------
-    SECRET_KEY: str = Field(default="", description="REQUIRED: Set in .env file. Generate with: python -c 'import secrets; print(secrets.token_urlsafe(32))'")
+    SECRET_KEY: str = Field(default="Jyv_grJiXsJ6G2E_TaVKeMxnuzvRkVEb813XxgRlRsA", description="REQUIRED: Set in .env file. Generate with: python -c 'import secrets; print(secrets.token_urlsafe(32))'")
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30 * 24 * 60  # 30 days
 
@@ -100,13 +100,14 @@ class Settings(BaseSettings):
     # Email Settings
     # ------------------------------------------------------------------
     EMAIL_BACKEND: str = "smtp"
-    SMTP_HOST: str = "smtp.gmail.com"
-    SMTP_PORT: int = 587
-    SMTP_USE_TLS: Union[bool, str] = True
-    SMTP_USER: str = Field(default="info.dishaonlinesoution@gmail.com", description="REQUIRED: Set in .env file")
-    SMTP_PASSWORD: str = Field(default="uxtk jguy lzob vkoq", description="REQUIRED: Set in .env file (use Gmail App Password)")
-    SMTP_FROM_EMAIL: str = Field(default="info.dishaonlinesoution@gmail.com", description="REQUIRED: Set in .env file")
-    SERVER_EMAIL: str = Field(default="info.dishaonlinesoution@gmail.com", description="REQUIRED: Set in .env file")
+    SMTP_HOST: str = "smtp.hostinger.com"
+    SMTP_PORT: int = 465
+    SMTP_USE_TLS: Union[bool, str] = False
+    SMTP_USE_SSL: Union[bool, str] = True
+    SMTP_USER: str = Field(default="no-reply@dishaonlinesolution.in", description="REQUIRED: Set in .env file")
+    SMTP_PASSWORD: str = Field(default="gfhw-7qc5-oi8r-8gzh", description="REQUIRED: Set in .env file")
+    SMTP_FROM_EMAIL: str = Field(default="Document Generator <no-reply@dishaonlinesolution.in>", description="REQUIRED: Set in .env file")
+    SERVER_EMAIL: str = Field(default="no-reply@dishaonlinesolution.in", description="REQUIRED: Set in .env file")
     SKIP_EMAIL: bool = False  # Set to False in production to enable email sending
 
     @field_validator("SMTP_USE_TLS", mode="before")
