@@ -3,6 +3,7 @@ OTP Service
 Handles OTP generation and verification using SQLAlchemy
 """
 from datetime import datetime, timedelta, timezone
+import logging
 import random
 from typing import Optional
 from pathlib import Path
@@ -11,6 +12,13 @@ from sqlalchemy import select, and_
 from apps.users.models import OTP, User
 from core.exceptions import ValidationError
 from core.utils import send_email, send_sms
+
+logger = logging.getLogger(__name__)
+
+
+def normalize_otp_code(code: str) -> str:
+    """Keep only OTP digits so mobile autofill formats still verify."""
+    return "".join(ch for ch in str(code or "").strip() if ch.isdigit())
 
 
 def _ensure_timezone_aware(dt: datetime) -> datetime:
@@ -317,18 +325,28 @@ def _build_otp_html_template(full_name: str, code: str, purpose: str) -> str:
 
 async def verify_otp(db: Session, user_id: int, code: str, purpose: str) -> bool:
     """Verify OTP"""
+    normalized_code = normalize_otp_code(code)
+    if not normalized_code:
+        return False
+
     stmt = select(OTP).where(
         and_(
             OTP.user_id == user_id,
-            OTP.code == code,
+            OTP.code == normalized_code,
             OTP.purpose == purpose,
             OTP.is_used == False
         )
-    )
+    ).order_by(OTP.created_at.desc(), OTP.id.desc())
     result = await db.execute(stmt)
-    otp = result.scalar_one_or_none()
+    otp = result.scalars().first()
     
     if not otp:
+        logger.info(
+            "OTP verification failed: no active match user_id=%s purpose=%s code_length=%s",
+            user_id,
+            purpose,
+            len(normalized_code),
+        )
         return False
     
     # Check expiration - ensure both datetimes are timezone-aware
@@ -336,6 +354,12 @@ async def verify_otp(db: Session, user_id: int, code: str, purpose: str) -> bool
     expires_at = _ensure_timezone_aware(otp.expires_at)
     
     if now > expires_at:
+        logger.info(
+            "OTP verification failed: expired otp_id=%s user_id=%s purpose=%s",
+            otp.id,
+            user_id,
+            purpose,
+        )
         return False
     
     # Mark as used

@@ -26,8 +26,10 @@ const AddSpa = ({ isOpen, onCancel, onSuccess }) => {
 
   useEffect(() => {
     if (isOpen) {
-      setFormData(emptyForm);
-      setMsg({ type: "", text: "" });
+      Promise.resolve().then(() => {
+        setFormData(emptyForm);
+        setMsg({ type: "", text: "" });
+      });
     }
   }, [isOpen]);
 
@@ -70,16 +72,6 @@ const AddSpa = ({ isOpen, onCancel, onSuccess }) => {
       // Append logo file if present
       if (formData.logo instanceof File) {
         data.append("logo", formData.logo);
-      }
-
-      // Log form data for debugging
-      console.log("FormData being sent to backend:");
-      for (let [key, value] of data.entries()) {
-        if (value instanceof File) {
-          console.log(`  ${key}: File(${value.name}, ${value.type}, ${value.size} bytes)`);
-        } else {
-          console.log(`  ${key}: ${value}`);
-        }
       }
 
       await adminApi.forms.createSpa(data);

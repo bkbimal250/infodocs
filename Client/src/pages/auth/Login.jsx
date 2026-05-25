@@ -14,11 +14,13 @@ const Login = () => {
   const [error, setError] = useState(null);
   const [otpSent, setOtpSent] = useState(false);
 
+  const cleanOtp = (value) => String(value || '').replace(/\D/g, '').slice(0, 6);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: name === 'otp' ? cleanOtp(value) : value,
     }));
     if (error) setError(null);
   };
@@ -122,8 +124,16 @@ const Login = () => {
     setLoading(true);
     setError(null);
 
-    if (!formData.otp.trim()) {
+    const otp = cleanOtp(formData.otp);
+
+    if (!otp) {
       setError('Please enter the OTP');
+      setLoading(false);
+      return;
+    }
+
+    if (otp.length !== 6) {
+      setError('Please enter the 6 digit OTP');
       setLoading(false);
       return;
     }
@@ -134,11 +144,11 @@ const Login = () => {
         loginMethod === 'phone'
           ? await authApi.loginWithPhoneOTP({
               phone_number: identifier,
-              otp: formData.otp.trim(),
+              otp,
             })
           : await authApi.loginWithOTP({
               email: identifier,
-              otp: formData.otp.trim(),
+              otp,
             });
 
       await finishLogin(response);
@@ -220,7 +230,7 @@ const Login = () => {
                   onChange={handleInputChange}
                   placeholder="000000"
                   required
-                  maxLength={6}
+                  maxLength={8}
                   inputMode="numeric"
                   autoComplete="one-time-code"
                   className="w-full h-12 px-4 rounded-xl border border-slate-300 text-center tracking-[8px] text-lg font-semibold focus:border-black focus:ring-0 outline-none transition-all"

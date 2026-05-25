@@ -59,10 +59,12 @@ apiClient.interceptors.response.use(
     }
 
     if (error.code === 'ERR_SSL_PROTOCOL_ERROR') {
-      console.error('SSL Error - Make sure backend is using http:// not https://');
+      if (import.meta.env.DEV) {
+        console.error('SSL Error - check API protocol configuration');
+      }
       return Promise.reject({
         ...error,
-        message: 'SSL Protocol Error. Please ensure the backend is running on http://localhost:8009',
+        message: 'SSL protocol error. Please check the configured API URL.',
       });
     }
 
