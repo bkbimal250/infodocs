@@ -205,10 +205,12 @@ def _sms_log_payload(payload: dict) -> dict:
     safe_payload = dict(payload)
     if "apikey" in safe_payload:
         safe_payload["apikey"] = _mask_secret(safe_payload["apikey"])
-    if "mobile" in safe_payload:
-        safe_payload["mobile"] = _mask_phone_number(safe_payload["mobile"])
-    if "message" in safe_payload:
-        safe_payload["message"] = f"<redacted length={len(str(safe_payload['message']))}>"
+    mobile_param = str(settings.SMS_MOBILE_PARAM or "mobile")
+    message_param = str(settings.SMS_MESSAGE_PARAM or "message")
+    if mobile_param in safe_payload:
+        safe_payload[mobile_param] = _mask_phone_number(safe_payload[mobile_param])
+    if message_param in safe_payload:
+        safe_payload[message_param] = f"<redacted length={len(str(safe_payload[message_param]))}>"
     return safe_payload
 
 
@@ -293,7 +295,7 @@ def _sms_provider_accepted(response: httpx.Response) -> bool:
         logger.error(
             "SMS provider rejected request status=%s body=%s",
             response.status_code,
-            body[:500],
+            body,
         )
         return False
 
@@ -312,7 +314,7 @@ def _sms_provider_accepted(response: httpx.Response) -> bool:
     logger.error(
         "SMS provider returned HTTP %s with unclassified body=%s",
         response.status_code,
-        body[:500],
+        body,
     )
     return False
 
@@ -320,17 +322,21 @@ def _sms_provider_accepted(response: httpx.Response) -> bool:
 async def _send_sms_request(phone_number: str, message: str) -> None:
     """Send an SMS through the provider without blocking the FastAPI event loop."""
     masked_phone = _mask_phone_number(phone_number)
-    # Hilite provided this exact GET query-string template. Keep these field names
-    # and request shape unchanged so DLT/template matching stays provider-compatible.
+    mobile_param = str(settings.SMS_MOBILE_PARAM or "mobile").strip()
+    message_param = str(settings.SMS_MESSAGE_PARAM or "message").strip()
+    template_param = str(settings.SMS_TEMPLATE_ID_PARAM or "TemplateID").strip()
+    # Hilite is sensitive to gateway field names. These are configurable so we
+    # can switch between message/text, mobile/mobiles, and TemplateID/templateid
+    # without changing the async request implementation.
     payload = {
         "username": settings.SMS_USERNAME,
         "apikey": settings.SMS_API_KEY,
         "apirequest": settings.SMS_API_REQUEST,
         "route": settings.SMS_ROUTE,
-        "TemplateID": settings.SMS_TEMPLATE_ID,
+        template_param: settings.SMS_TEMPLATE_ID,
         "sender": settings.SMS_SENDER_ID,
-        "mobile": phone_number,
-        "message": message,
+        mobile_param: phone_number,
+        message_param: message,
     }
 
     method = "GET"
@@ -352,6 +358,12 @@ async def _send_sms_request(phone_number: str, message: str) -> None:
                 settings.SMS_TIMEOUT_SECONDS,
                 _sms_log_payload(payload),
             )
+            logger.info(
+                "SMS provider parameter names mobile=%s message=%s template=%s",
+                mobile_param,
+                message_param,
+                template_param,
+            )
             logger.info("SMS provider request URL template=%s", _sms_log_url(payload))
 
             response = await client.get(settings.SMS_API_URL, params=payload)
@@ -362,7 +374,7 @@ async def _send_sms_request(phone_number: str, message: str) -> None:
                 masked_phone,
                 response.status_code,
                 attempt + 1,
-                response_body[:1000],
+                response_body,
             )
             response.raise_for_status()
 
@@ -385,7 +397,7 @@ async def _send_sms_request(phone_number: str, message: str) -> None:
                     masked_phone,
                     status_code,
                     attempt + 1,
-                    response_body[:1000],
+                    response_body,
                 )
                 raise ValueError(
                     f"SMS provider HTTP error status={status_code} body={response_body[:250]}"
@@ -396,7 +408,7 @@ async def _send_sms_request(phone_number: str, message: str) -> None:
                 status_code,
                 masked_phone,
                 attempt + 1,
-                response_body[:500],
+                response_body,
             )
         except httpx.TimeoutException as exc:
             if attempt >= retry_count:

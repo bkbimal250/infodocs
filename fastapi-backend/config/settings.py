@@ -121,6 +121,9 @@ class Settings(BaseSettings):
     SMS_TEMPLATE_ID: str = ""
     SMS_API_REQUEST: str = "Text"
     SMS_ROUTE: str = "ServiceImplicit"
+    SMS_MOBILE_PARAM: str = "mobile"
+    SMS_MESSAGE_PARAM: str = "message"
+    SMS_TEMPLATE_ID_PARAM: str = "TemplateID"
     SMS_VERIFY_SSL: bool = True
     SMS_HTTP_METHOD: str = "GET"
     SMS_TIMEOUT_SECONDS: float = 20.0
