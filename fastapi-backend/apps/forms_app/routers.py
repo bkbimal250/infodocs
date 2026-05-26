@@ -178,7 +178,7 @@ async def  create_spa_test(
     
     try:
         # Helper to convert empty strings or None to None
-        async def to_none_if_empty(value):
+        def to_none_if_empty(value):
             if value is None:
                 return None
             if isinstance(value, str) and value.strip() == "":
@@ -259,7 +259,7 @@ async def  create_spa_location(
     
     try:
         # Helper to convert empty strings or None to None
-        async def to_none_if_empty(value):
+        def to_none_if_empty(value):
             if value is None:
                 return None
             if isinstance(value, str) and value.strip() == "":

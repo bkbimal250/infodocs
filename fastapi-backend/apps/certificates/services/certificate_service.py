@@ -1352,7 +1352,7 @@ async def  _user_certificates(db: Session, user_id: int, skip: int = 0, limit: i
         all_certificates.extend(cert_list)
 
     # Sort certificates by date, handling None values and different date field names
-    async def get_sort_date(cert):
+    def get_sort_date(cert):
         if hasattr(cert, 'generated_at') and cert.generated_at:
             return cert.generated_at
         elif hasattr(cert, 'created_at') and cert.created_at:
