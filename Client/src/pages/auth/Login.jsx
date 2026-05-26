@@ -8,6 +8,8 @@ const Login = () => {
   const [formData, setFormData] = useState({
     phone_number: '',
     email: '',
+    usernameOrEmail: '',
+    password: '',
     otp: '',
   });
   const [loading, setLoading] = useState(false);
@@ -29,7 +31,7 @@ const Login = () => {
     setLoginMethod(method);
     setOtpSent(false);
     setError(null);
-    setFormData((prev) => ({ ...prev, otp: '' }));
+    setFormData((prev) => ({ ...prev, otp: '', password: '' }));
   };
 
   const getActiveIdentifier = () => {
@@ -52,9 +54,9 @@ const Login = () => {
     }
   };
 
-  const finishLogin = async (response) => {
+  const finishLogin = async (response, failureMessage = 'Login failed. Please try again.') => {
     if (response.data.message !== 'Login successful') {
-      setError('Login failed. Please check the OTP and try again.');
+      setError(failureMessage);
       return;
     }
 
@@ -79,6 +81,40 @@ const Login = () => {
     } catch (profileErr) {
       console.error('Error fetching profile after login:', profileErr);
       setError('Verification failed. Please refresh and try again.');
+    }
+  };
+
+  const handlePasswordLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    const identifier = formData.usernameOrEmail.trim();
+    const password = formData.password;
+
+    if (!identifier) {
+      setError('Please enter your email or username');
+      setLoading(false);
+      return;
+    }
+
+    if (!password) {
+      setError('Please enter your password');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const credentials = identifier.includes('@')
+        ? { email: identifier, password }
+        : { username: identifier, password };
+      const response = await authApi.login(credentials);
+
+      await finishLogin(response, 'Login failed. Please check your email or username and password.');
+    } catch (err) {
+      setError(getErrorMessage(err, 'Login failed. Please check your email or username and password.'));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -151,7 +187,7 @@ const Login = () => {
               otp,
             });
 
-      await finishLogin(response);
+      await finishLogin(response, 'Login failed. Please check the OTP and try again.');
     } catch (err) {
       setError(getErrorMessage(err, 'Login failed. Please try again.'));
     } finally {
@@ -171,7 +207,7 @@ const Login = () => {
         <div className="bg-white rounded-3xl shadow-xl border border-slate-200 p-8">
           <div className="mb-8 text-center">
             <h1 className="text-3xl font-bold text-slate-900">Welcome Back</h1>
-            <p className="text-slate-500 mt-2 text-sm">Sign in securely with OTP</p>
+            <p className="text-slate-500 mt-2 text-sm">Sign in securely to continue</p>
           </div>
 
           {error && (
@@ -200,46 +236,95 @@ const Login = () => {
             >
               Email OTP
             </button>
+
+            <button
+              type="button"
+              onClick={() => switchMethod('password')}
+              className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                loginMethod === 'password' ? 'bg-white shadow text-slate-900' : 'text-slate-500'
+              }`}
+            >
+              Password
+            </button>
           </div>
 
-          <form onSubmit={otpSent ? handleLogin : handleRequestOTP} className="space-y-5">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">{activeLabel}</label>
+          <form
+            onSubmit={loginMethod === 'password' ? handlePasswordLogin : otpSent ? handleLogin : handleRequestOTP}
+            className="space-y-5"
+          >
+            {loginMethod === 'password' ? (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Email or Username</label>
 
-              <input
-                type={activeType}
-                name={activeName}
-                value={activeValue}
-                onChange={handleInputChange}
-                placeholder={activePlaceholder}
-                required
-                disabled={otpSent}
-                autoComplete={loginMethod === 'phone' ? 'tel' : 'email'}
-                className="w-full h-12 px-4 rounded-xl border border-slate-300 focus:border-black focus:ring-0 outline-none transition-all disabled:bg-slate-100"
-              />
-            </div>
+                  <input
+                    type="text"
+                    name="usernameOrEmail"
+                    value={formData.usernameOrEmail}
+                    onChange={handleInputChange}
+                    placeholder="Enter email or username"
+                    required
+                    autoComplete="username"
+                    className="w-full h-12 px-4 rounded-xl border border-slate-300 focus:border-black focus:ring-0 outline-none transition-all"
+                  />
+                </div>
 
-            {otpSent && (
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">OTP Code</label>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Password</label>
 
-                <input
-                  type="text"
-                  name="otp"
-                  value={formData.otp}
-                  onChange={handleInputChange}
-                  placeholder="000000"
-                  required
-                  maxLength={8}
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  className="w-full h-12 px-4 rounded-xl border border-slate-300 text-center tracking-[8px] text-lg font-semibold focus:border-black focus:ring-0 outline-none transition-all"
-                />
+                  <input
+                    type="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    placeholder="Enter password"
+                    required
+                    autoComplete="current-password"
+                    className="w-full h-12 px-4 rounded-xl border border-slate-300 focus:border-black focus:ring-0 outline-none transition-all"
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">{activeLabel}</label>
 
-                <p className="text-xs text-slate-500 mt-2">
-                  OTP sent to {getActiveIdentifier()}
-                </p>
-              </div>
+                  <input
+                    type={activeType}
+                    name={activeName}
+                    value={activeValue}
+                    onChange={handleInputChange}
+                    placeholder={activePlaceholder}
+                    required
+                    disabled={otpSent}
+                    autoComplete={loginMethod === 'phone' ? 'tel' : 'email'}
+                    className="w-full h-12 px-4 rounded-xl border border-slate-300 focus:border-black focus:ring-0 outline-none transition-all disabled:bg-slate-100"
+                  />
+                </div>
+
+                {otpSent && (
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">OTP Code</label>
+
+                    <input
+                      type="text"
+                      name="otp"
+                      value={formData.otp}
+                      onChange={handleInputChange}
+                      placeholder="000000"
+                      required
+                      maxLength={8}
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      className="w-full h-12 px-4 rounded-xl border border-slate-300 text-center tracking-[8px] text-lg font-semibold focus:border-black focus:ring-0 outline-none transition-all"
+                    />
+
+                    <p className="text-xs text-slate-500 mt-2">
+                      OTP sent to {getActiveIdentifier()}
+                    </p>
+                  </div>
+                )}
+              </>
             )}
 
             <button
@@ -247,10 +332,10 @@ const Login = () => {
               disabled={loading}
               className="w-full h-12 rounded-xl bg-black text-white font-medium hover:opacity-90 transition-all disabled:opacity-50"
             >
-              {loading ? 'Processing...' : otpSent ? 'Verify OTP' : 'Send OTP'}
+              {loading ? 'Processing...' : loginMethod === 'password' ? 'Login' : otpSent ? 'Verify OTP' : 'Send OTP'}
             </button>
 
-            {otpSent && (
+            {loginMethod !== 'password' && otpSent && (
               <button
                 type="button"
                 onClick={() => {
