@@ -121,7 +121,9 @@ class Settings(BaseSettings):
     SMS_TEMPLATE_ID: str = ""
     SMS_API_REQUEST: str = "Text"
     SMS_ROUTE: str = "ServiceImplicit"
-    SMS_VERIFY_SSL: bool = False
+    SMS_VERIFY_SSL: bool = True
+    SMS_TIMEOUT_SECONDS: float = 10.0
+    SMS_MAX_RETRIES: int = 1
 
     @field_validator("SMTP_USE_TLS", mode="before")
     @classmethod

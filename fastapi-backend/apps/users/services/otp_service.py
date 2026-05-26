@@ -175,6 +175,8 @@ async def generate_phone_otp(db: Session, user_id: int, purpose: str = "phone_lo
         logger.info("Phone OTP sent successfully to user=%s otp_id=%s", user.id, otp.id)
     except Exception as e:
         logger.exception("Failed to send phone OTP for otp_id=%s user=%s", otp.id, user.id)
+        otp.is_used = True
+        await db.commit()
         raise ValidationError(f"Failed to send phone OTP: {str(e)}")
 
     return code

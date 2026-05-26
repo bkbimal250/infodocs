@@ -2,6 +2,8 @@
 User Routers
 API endpoints for user management and authentication
 """
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Response, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession as Session
 from config.database import get_db
@@ -44,6 +46,7 @@ from config.settings import settings
 
 auth_router = APIRouter()
 users_router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 @auth_router.post("/register", response_model=MessageResponseSchema, status_code=status.HTTP_201_CREATED)
@@ -459,13 +462,14 @@ async def request_phone_login_otp(
             )
             await create_otp_notification(db=db, user_id=user.id, purpose="phone_login", status="requested", ip_address=ip_address)
         except Exception:
-            pass
+            logger.exception("Failed to record phone OTP request activity for user=%s", user.id)
 
         return MessageResponseSchema(message="OTP sent to phone")
     except ValidationError as e:
         error_detail = getattr(e, 'message', str(e))
         raise HTTPException(status_code=422, detail=error_detail)
     except Exception as e:
+        logger.exception("Phone OTP request failed for user=%s", user.id)
         raise HTTPException(status_code=500, detail=f"Failed to send OTP: {str(e)}")
 
 

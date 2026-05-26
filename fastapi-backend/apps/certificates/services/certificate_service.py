@@ -1174,9 +1174,7 @@ async def   create_generated_certificate(
         html_content = template.template_html
         rendered_html = await render_html_template(html_content, data)
         try:
-            # Optimized: Use run_in_threadpool to avoid blocking event loop
-            from starlette.concurrency import run_in_threadpool
-            pdf_bytes = await run_in_threadpool(html_to_pdf, rendered_html)
+            pdf_bytes = await html_to_pdf(rendered_html)
             certificate.certificate_pdf = await save_certificate_file(certificate.id, pdf_bytes, "pdf")
             await db.commit()
             await db.refresh(certificate)

@@ -6,10 +6,9 @@ import logging
 from datetime import datetime, timezone
 from typing import Iterable, Union, Optional, Tuple, List
 import smtplib
-import requests
-import urllib3
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+import httpx
 from config.settings import settings
 
 logger = logging.getLogger(__name__)
@@ -184,8 +183,69 @@ def validate_sms_settings() -> Tuple[bool, Optional[str]]:
     return True, None
 
 
-def _send_sms_sync(phone_number: str, message: str) -> None:
-    """Send an SMS using the Hilite Multimedia HTTP SMS gateway."""
+def _mask_phone_number(phone_number: str) -> str:
+    digits = "".join(ch for ch in str(phone_number) if ch.isdigit())
+    if len(digits) <= 4:
+        return "****"
+    return f"****{digits[-4:]}"
+
+
+def _sms_provider_accepted(response: httpx.Response) -> bool:
+    """Return True only when the SMS provider response looks successful."""
+    body = response.text.strip()
+    body_lower = body.lower()
+
+    failure_markers = (
+        "fail",
+        "failed",
+        "error",
+        "invalid",
+        "unauthorized",
+        "denied",
+        "reject",
+        "rejected",
+        "insufficient",
+        "not sent",
+        "1702",
+        "1703",
+        "1704",
+        "1705",
+        "1706",
+        "1707",
+        "1708",
+        "1709",
+    )
+    if any(marker in body_lower for marker in failure_markers):
+        logger.error(
+            "SMS provider rejected request status=%s body=%s",
+            response.status_code,
+            body[:500],
+        )
+        return False
+
+    success_markers = (
+        "success",
+        "sent",
+        "submit",
+        "submitted",
+        "accepted",
+        "ok",
+        "1701",
+    )
+    if not body or any(marker in body_lower for marker in success_markers):
+        return True
+
+    logger.error(
+        "SMS provider returned HTTP %s with unclassified body=%s",
+        response.status_code,
+        body[:500],
+    )
+    return False
+
+
+async def _send_sms_request(phone_number: str, message: str) -> None:
+    """Send an SMS using the configured HTTP SMS gateway."""
+    masked_phone = _mask_phone_number(phone_number)
     params = {
         "username": settings.SMS_USERNAME,
         "apikey": settings.SMS_API_KEY,
@@ -198,16 +258,66 @@ def _send_sms_sync(phone_number: str, message: str) -> None:
     }
 
     if not settings.SMS_VERIFY_SSL:
-        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-        logger.warning("SMS SSL certificate verification is disabled for provider request.")
+        logger.warning("SMS SSL certificate verification is disabled by SMS_VERIFY_SSL=false.")
 
-    response = requests.get(
-        settings.SMS_API_URL,
-        params=params,
-        timeout=30,
+    timeout_seconds = max(float(settings.SMS_TIMEOUT_SECONDS), 1.0)
+    retry_count = max(int(settings.SMS_MAX_RETRIES), 0)
+    timeout = httpx.Timeout(timeout_seconds, connect=min(5.0, timeout_seconds))
+    limits = httpx.Limits(max_connections=100, max_keepalive_connections=20)
+
+    async with httpx.AsyncClient(
+        timeout=timeout,
         verify=settings.SMS_VERIFY_SSL,
-    )
-    response.raise_for_status()
+        limits=limits,
+        follow_redirects=False,
+    ) as client:
+        for attempt in range(retry_count + 1):
+            try:
+                response = await client.get(settings.SMS_API_URL, params=params)
+                response.raise_for_status()
+
+                if not _sms_provider_accepted(response):
+                    raise ValueError("SMS provider rejected the message")
+
+                logger.info(
+                    "SMS provider accepted OTP message phone=%s status=%s attempt=%s",
+                    masked_phone,
+                    response.status_code,
+                    attempt + 1,
+                )
+                return
+            except httpx.HTTPStatusError as exc:
+                status_code = exc.response.status_code
+                if status_code < 500 or attempt >= retry_count:
+                    logger.exception(
+                        "SMS provider HTTP error phone=%s status=%s attempt=%s",
+                        masked_phone,
+                        status_code,
+                        attempt + 1,
+                    )
+                    raise ValueError(f"SMS provider HTTP error: {status_code}") from exc
+
+                logger.warning(
+                    "Retrying SMS after provider HTTP %s phone=%s attempt=%s",
+                    status_code,
+                    masked_phone,
+                    attempt + 1,
+                )
+            except (httpx.TimeoutException, httpx.TransportError) as exc:
+                if attempt >= retry_count:
+                    logger.exception(
+                        "SMS provider request failed phone=%s attempt=%s",
+                        masked_phone,
+                        attempt + 1,
+                    )
+                    raise ValueError("SMS provider request failed or timed out") from exc
+
+                logger.warning(
+                    "Retrying SMS after transport error phone=%s attempt=%s error=%s",
+                    masked_phone,
+                    attempt + 1,
+                    exc,
+                )
 
 
 async def send_sms(phone_number: str, message: str) -> None:
@@ -227,12 +337,12 @@ async def send_sms(phone_number: str, message: str) -> None:
         raise ValueError(error_msg)
 
     if settings.SKIP_SMS:
-        logger.info("SKIP_SMS is enabled. SMS not sent to %s.", phone_number)
+        logger.info("SKIP_SMS is enabled. SMS not sent to %s.", _mask_phone_number(phone_number))
         return
 
     try:
-        await asyncio.to_thread(_send_sms_sync, phone_number, message)
+        await _send_sms_request(phone_number, message)
     except Exception as exc:
-        logger.exception("Failed to send SMS: %s", exc)
-        raise ValueError(f"Failed to send SMS: {str(exc)}")
+        logger.exception("Failed to send SMS to %s", _mask_phone_number(phone_number))
+        raise ValueError(f"Failed to send SMS: {str(exc)}") from exc
 

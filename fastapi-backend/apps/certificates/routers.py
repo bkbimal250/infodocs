@@ -10,7 +10,6 @@ from sqlalchemy.ext.asyncio import AsyncSession as Session
 from pathlib import Path
 import io
 import logging
-from starlette.concurrency import run_in_threadpool
 
 from config.database import get_db
 from config.settings import settings
@@ -911,8 +910,7 @@ async def  download_certificate_pdf(
     data = await prepare_certificate_data(template, cert_data, certificate_name, use_http_urls=False)
     html_content = template.template_html
     rendered_html = await render_html_template(html_content, data)
-    # Run blocking PDF generation in a thread pool
-    pdf_bytes = run_in_threadpool(html_to_pdf, rendered_html)
+    pdf_bytes = await html_to_pdf(rendered_html)
 
     return StreamingResponse(io.BytesIO(pdf_bytes), media_type="application/pdf",
                              headers={"Content-Disposition": f"attachment; filename=certificate_{certificate_id}.pdf"})
