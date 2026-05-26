@@ -16,9 +16,10 @@ class RedisClient:
     async def get_instance(cls):
         if cls._instance is None:
             try:
-                import redis
+                import redis.asyncio as redis
                 redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
                 cls._instance = redis.from_url(redis_url, decode_responses=True)
+                await cls._instance.ping()
             except ImportError:
                 logger.warning("redis-py not installed, caching disabled")
                 cls._instance = None
@@ -30,10 +31,10 @@ class RedisClient:
     @classmethod
     async def close(cls):
         if cls._instance:
-            cls._instance.close()
+            await cls._instance.aclose()
             cls._instance = None
 
 async def get_redis():
-    return RedisClient.get_instance()
+    return await RedisClient.get_instance()
 
 
