@@ -434,6 +434,13 @@ async def request_phone_login_otp(
     db: Session = Depends(get_db)
 ):
     """Request OTP for login using phone number."""
+    ip_address = request.client.host if request.client else None
+    logger.info(
+        "Phone OTP request received phone=%s ip=%s user_agent=%s",
+        otp_request.phone_number,
+        ip_address,
+        request.headers.get("user-agent"),
+    )
     try:
         user = await get_user_by_phone_number(db, otp_request.phone_number)
     except ValidationError as e:
@@ -449,7 +456,6 @@ async def request_phone_login_otp(
         try:
             from apps.notifications.services.activity_service import log_activity
             from apps.notifications.services.notification_service import create_otp_notification
-            ip_address = request.client.host if request.client else None
 
             await log_activity(
                 db=db,
@@ -482,6 +488,14 @@ async def login_with_phone_otp(
     db: Session = Depends(get_db)
 ):
     """Login with phone number and OTP."""
+    ip_address = request.client.host if request.client else None
+    logger.info(
+        "Phone OTP verification request received phone=%s entered_otp=%s ip=%s user_agent=%s",
+        otp_data.phone_number,
+        otp_data.otp,
+        ip_address,
+        request.headers.get("user-agent"),
+    )
     try:
         user = await get_user_by_phone_number(db, otp_data.phone_number)
     except ValidationError as e:

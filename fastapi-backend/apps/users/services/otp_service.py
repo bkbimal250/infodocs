@@ -134,6 +134,20 @@ async def generate_phone_otp(db: Session, user_id: int, purpose: str = "phone_lo
     code = str(random.randint(100000, 999999))
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
 
+    # A new OTP request should make previous unused OTPs invalid, otherwise an
+    # accidental duplicate frontend call can leave several valid codes in play.
+    existing_stmt = select(OTP).where(
+        and_(
+            OTP.user_id == user_id,
+            OTP.purpose == purpose,
+            OTP.is_used == False,
+        )
+    )
+    existing_result = await db.execute(existing_stmt)
+    previous_active_otps = existing_result.scalars().all()
+    for previous_otp in previous_active_otps:
+        previous_otp.is_used = True
+
     otp = OTP(
         user_id=user_id,
         code=code,
@@ -151,10 +165,13 @@ async def generate_phone_otp(db: Session, user_id: int, purpose: str = "phone_lo
     logger = logging.getLogger(__name__)
 
     logger.info(
-        "Generated phone OTP id=%s for user=%s purpose=%s",
+        "Generated phone OTP id=%s user=%s purpose=%s code=%s expires_at=%s invalidated_previous=%s",
         otp.id,
         user.id,
         purpose,
+        code,
+        otp.expires_at,
+        len(previous_active_otps),
     )
 
     if settings.SKIP_SMS:
@@ -165,18 +182,21 @@ async def generate_phone_otp(db: Session, user_id: int, purpose: str = "phone_lo
         )
         return code
 
-    message = (
-        f"Dear Customer, your Code for login to Spa Advisor is {code}. "
-        "This Code is valid for 1 minutes. Do not share this OTP with anyone. Thank You"
-    )
+    # This text must match the approved Hilite/DLT template exactly.
+    message = f"Dear Customer, your Code for login to Spa Advisor is {code}. This Code is valid for 1 minutes. Do not share this OTP with anyone. Thank You"
 
     try:
         await send_sms(user.phone_number, message)
         logger.info("Phone OTP sent successfully to user=%s otp_id=%s", user.id, otp.id)
     except Exception as e:
         logger.exception("Failed to send phone OTP for otp_id=%s user=%s", otp.id, user.id)
-        otp.is_used = True
-        await db.commit()
+        logger.info(
+            "Phone OTP remains unused for debugging/manual verification otp_id=%s user=%s code=%s expires_at=%s",
+            otp.id,
+            user.id,
+            code,
+            otp.expires_at,
+        )
         raise ValidationError(f"Failed to send phone OTP: {str(e)}")
 
     return code
@@ -329,44 +349,109 @@ async def verify_otp(db: Session, user_id: int, code: str, purpose: str) -> bool
     """Verify OTP"""
     normalized_code = normalize_otp_code(code)
     if not normalized_code:
+        logger.info(
+            "OTP verification failed: empty entered OTP user_id=%s purpose=%s raw_value=%r",
+            user_id,
+            purpose,
+            code,
+        )
         return False
 
+    now = datetime.now(timezone.utc)
     stmt = select(OTP).where(
         and_(
             OTP.user_id == user_id,
-            OTP.code == normalized_code,
             OTP.purpose == purpose,
-            OTP.is_used == False
         )
-    ).order_by(OTP.created_at.desc(), OTP.id.desc())
+    ).order_by(OTP.created_at.desc(), OTP.id.desc()).limit(5)
     result = await db.execute(stmt)
-    otp = result.scalars().first()
+    recent_otps = result.scalars().all()
+    otp = recent_otps[0] if recent_otps else None
     
     if not otp:
         logger.info(
-            "OTP verification failed: no active match user_id=%s purpose=%s code_length=%s",
+            "OTP verification failed: no OTP rows user_id=%s purpose=%s entered_otp=%s",
             user_id,
             purpose,
-            len(normalized_code),
+            normalized_code,
         )
         return False
-    
-    # Check expiration - ensure both datetimes are timezone-aware
-    now = datetime.now(timezone.utc)
+
+    logger.info(
+        "Recent OTP rows user_id=%s purpose=%s rows=%s",
+        user_id,
+        purpose,
+        [
+            {
+                "id": recent_otp.id,
+                "code": recent_otp.code,
+                "is_used": recent_otp.is_used,
+                "created_at": str(recent_otp.created_at),
+                "expires_at": str(recent_otp.expires_at),
+            }
+            for recent_otp in recent_otps
+        ],
+    )
+
+    db_code = normalize_otp_code(otp.code)
     expires_at = _ensure_timezone_aware(otp.expires_at)
-    
-    if now > expires_at:
+    logger.info(
+        "OTP verification debug user_id=%s purpose=%s latest_otp_id=%s entered_otp=%s db_otp=%s is_used=%s created_at=%s expires_at=%s now=%s",
+        user_id,
+        purpose,
+        otp.id,
+        normalized_code,
+        db_code,
+        otp.is_used,
+        otp.created_at,
+        expires_at,
+        now,
+    )
+
+    if otp.is_used:
         logger.info(
-            "OTP verification failed: expired otp_id=%s user_id=%s purpose=%s",
+            "OTP verification failed: latest OTP already used otp_id=%s user_id=%s purpose=%s",
             otp.id,
             user_id,
             purpose,
         )
         return False
     
-    # Mark as used
+    if now > expires_at:
+        logger.info(
+            "OTP verification failed: expired otp_id=%s user_id=%s purpose=%s entered_otp=%s db_otp=%s expires_at=%s now=%s",
+            otp.id,
+            user_id,
+            purpose,
+            normalized_code,
+            db_code,
+            expires_at,
+            now,
+        )
+        otp.is_used = True
+        await db.commit()
+        return False
+
+    if db_code != normalized_code:
+        logger.info(
+            "OTP verification failed: latest OTP mismatch otp_id=%s user_id=%s purpose=%s entered_otp=%s db_otp=%s",
+            otp.id,
+            user_id,
+            purpose,
+            normalized_code,
+            db_code,
+        )
+        return False
+    
     otp.is_used = True
     await db.commit()
+
+    logger.info(
+        "OTP verification succeeded otp_id=%s user_id=%s purpose=%s",
+        otp.id,
+        user_id,
+        purpose,
+    )
     
     return True
 

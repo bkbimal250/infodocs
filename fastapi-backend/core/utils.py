@@ -9,6 +9,7 @@ from typing import Iterable, Union, Optional, Tuple, List
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from urllib.parse import urlencode
 import httpx
 from config.settings import settings
 
@@ -211,6 +212,10 @@ def _sms_log_payload(payload: dict) -> dict:
     return safe_payload
 
 
+def _sms_log_url(payload: dict) -> str:
+    return f"{settings.SMS_API_URL}?{urlencode(_sms_log_payload(payload))}"
+
+
 def _is_ssl_error(exc: BaseException) -> bool:
     current: Optional[BaseException] = exc
     while current:
@@ -301,7 +306,7 @@ def _sms_provider_accepted(response: httpx.Response) -> bool:
         "ok",
         "1701",
     )
-    if not body or any(marker in body_lower for marker in success_markers):
+    if any(marker in body_lower for marker in success_markers):
         return True
 
     logger.error(
@@ -315,6 +320,8 @@ def _sms_provider_accepted(response: httpx.Response) -> bool:
 async def _send_sms_request(phone_number: str, message: str) -> None:
     """Send an SMS through the provider without blocking the FastAPI event loop."""
     masked_phone = _mask_phone_number(phone_number)
+    # Hilite provided this exact GET query-string template. Keep these field names
+    # and request shape unchanged so DLT/template matching stays provider-compatible.
     payload = {
         "username": settings.SMS_USERNAME,
         "apikey": settings.SMS_API_KEY,
@@ -326,9 +333,10 @@ async def _send_sms_request(phone_number: str, message: str) -> None:
         "message": message,
     }
 
-    method = str(settings.SMS_HTTP_METHOD or "GET").strip().upper()
-    if method not in ("GET", "POST"):
-        raise ValueError("SMS_HTTP_METHOD must be GET or POST")
+    method = "GET"
+    configured_method = str(settings.SMS_HTTP_METHOD or "GET").strip().upper()
+    if configured_method != "GET":
+        logger.warning("Hilite SMS template requires GET; ignoring SMS_HTTP_METHOD=%s", configured_method)
 
     retry_count = max(int(settings.SMS_MAX_RETRIES), 0)
     client = await get_sms_client()
@@ -344,14 +352,9 @@ async def _send_sms_request(phone_number: str, message: str) -> None:
                 settings.SMS_TIMEOUT_SECONDS,
                 _sms_log_payload(payload),
             )
+            logger.info("SMS provider request URL template=%s", _sms_log_url(payload))
 
-            # Hilite's configured /websms/api/http/index.php endpoint is an HTTP API
-            # that receives the SMS fields as query parameters. POST remains configurable
-            # for provider-side changes without touching the OTP routes.
-            if method == "POST":
-                response = await client.post(settings.SMS_API_URL, data=payload)
-            else:
-                response = await client.get(settings.SMS_API_URL, params=payload)
+            response = await client.get(settings.SMS_API_URL, params=payload)
 
             response_body = response.text.strip()
             logger.info(
