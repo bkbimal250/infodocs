@@ -3,6 +3,7 @@ Utility Functions
 """
 import asyncio
 import logging
+import ssl
 from datetime import datetime, timezone
 from typing import Iterable, Union, Optional, Tuple, List
 import smtplib
@@ -12,6 +13,8 @@ import httpx
 from config.settings import settings
 
 logger = logging.getLogger(__name__)
+_sms_client: Optional[httpx.AsyncClient] = None
+_sms_client_lock = asyncio.Lock()
 
 
 async def get_current_timestamp() -> datetime:
@@ -190,6 +193,72 @@ def _mask_phone_number(phone_number: str) -> str:
     return f"****{digits[-4:]}"
 
 
+def _mask_secret(value: str) -> str:
+    value = str(value or "")
+    if len(value) <= 4:
+        return "****"
+    return f"{value[:2]}****{value[-2:]}"
+
+
+def _sms_log_payload(payload: dict) -> dict:
+    safe_payload = dict(payload)
+    if "apikey" in safe_payload:
+        safe_payload["apikey"] = _mask_secret(safe_payload["apikey"])
+    if "mobile" in safe_payload:
+        safe_payload["mobile"] = _mask_phone_number(safe_payload["mobile"])
+    if "message" in safe_payload:
+        safe_payload["message"] = f"<redacted length={len(str(safe_payload['message']))}>"
+    return safe_payload
+
+
+def _is_ssl_error(exc: BaseException) -> bool:
+    current: Optional[BaseException] = exc
+    while current:
+        if isinstance(current, ssl.SSLError):
+            return True
+        current = current.__cause__ or current.__context__
+    return False
+
+
+def _sms_timeout() -> httpx.Timeout:
+    total_timeout = max(float(settings.SMS_TIMEOUT_SECONDS), 1.0)
+    connect_timeout = max(float(settings.SMS_CONNECT_TIMEOUT_SECONDS), 1.0)
+    return httpx.Timeout(
+        total_timeout,
+        connect=min(connect_timeout, total_timeout),
+    )
+
+
+async def get_sms_client() -> httpx.AsyncClient:
+    """Reuse one async HTTP client per worker so concurrent OTP requests do not block or reconnect repeatedly."""
+    global _sms_client
+    if _sms_client and not _sms_client.is_closed:
+        return _sms_client
+
+    async with _sms_client_lock:
+        if _sms_client and not _sms_client.is_closed:
+            return _sms_client
+
+        if not settings.SMS_VERIFY_SSL:
+            logger.warning("SMS SSL certificate verification is disabled by SMS_VERIFY_SSL=false.")
+
+        _sms_client = httpx.AsyncClient(
+            timeout=_sms_timeout(),
+            verify=settings.SMS_VERIFY_SSL,
+            limits=httpx.Limits(max_connections=100, max_keepalive_connections=20),
+            follow_redirects=False,
+        )
+        return _sms_client
+
+
+async def close_sms_client() -> None:
+    """Close the per-worker SMS HTTP client during FastAPI/Gunicorn worker shutdown."""
+    global _sms_client
+    if _sms_client and not _sms_client.is_closed:
+        await _sms_client.aclose()
+    _sms_client = None
+
+
 def _sms_provider_accepted(response: httpx.Response) -> bool:
     """Return True only when the SMS provider response looks successful."""
     body = response.text.strip()
@@ -244,9 +313,9 @@ def _sms_provider_accepted(response: httpx.Response) -> bool:
 
 
 async def _send_sms_request(phone_number: str, message: str) -> None:
-    """Send an SMS using the configured HTTP SMS gateway."""
+    """Send an SMS through the provider without blocking the FastAPI event loop."""
     masked_phone = _mask_phone_number(phone_number)
-    params = {
+    payload = {
         "username": settings.SMS_USERNAME,
         "apikey": settings.SMS_API_KEY,
         "apirequest": settings.SMS_API_REQUEST,
@@ -257,67 +326,119 @@ async def _send_sms_request(phone_number: str, message: str) -> None:
         "message": message,
     }
 
-    if not settings.SMS_VERIFY_SSL:
-        logger.warning("SMS SSL certificate verification is disabled by SMS_VERIFY_SSL=false.")
+    method = str(settings.SMS_HTTP_METHOD or "GET").strip().upper()
+    if method not in ("GET", "POST"):
+        raise ValueError("SMS_HTTP_METHOD must be GET or POST")
 
-    timeout_seconds = max(float(settings.SMS_TIMEOUT_SECONDS), 1.0)
     retry_count = max(int(settings.SMS_MAX_RETRIES), 0)
-    timeout = httpx.Timeout(timeout_seconds, connect=min(5.0, timeout_seconds))
-    limits = httpx.Limits(max_connections=100, max_keepalive_connections=20)
+    client = await get_sms_client()
 
-    async with httpx.AsyncClient(
-        timeout=timeout,
-        verify=settings.SMS_VERIFY_SSL,
-        limits=limits,
-        follow_redirects=False,
-    ) as client:
-        for attempt in range(retry_count + 1):
-            try:
-                response = await client.get(settings.SMS_API_URL, params=params)
-                response.raise_for_status()
+    for attempt in range(retry_count + 1):
+        try:
+            logger.info(
+                "Sending SMS provider request method=%s url=%s phone=%s attempt=%s timeout=%s payload=%s",
+                method,
+                settings.SMS_API_URL,
+                masked_phone,
+                attempt + 1,
+                settings.SMS_TIMEOUT_SECONDS,
+                _sms_log_payload(payload),
+            )
 
-                if not _sms_provider_accepted(response):
-                    raise ValueError("SMS provider rejected the message")
+            # Hilite's configured /websms/api/http/index.php endpoint is an HTTP API
+            # that receives the SMS fields as query parameters. POST remains configurable
+            # for provider-side changes without touching the OTP routes.
+            if method == "POST":
+                response = await client.post(settings.SMS_API_URL, data=payload)
+            else:
+                response = await client.get(settings.SMS_API_URL, params=payload)
 
-                logger.info(
-                    "SMS provider accepted OTP message phone=%s status=%s attempt=%s",
+            response_body = response.text.strip()
+            logger.info(
+                "SMS provider response phone=%s status=%s attempt=%s body=%s",
+                masked_phone,
+                response.status_code,
+                attempt + 1,
+                response_body[:1000],
+            )
+            response.raise_for_status()
+
+            if not _sms_provider_accepted(response):
+                raise ValueError(f"SMS provider rejected or returned unknown response: {response_body[:250]}")
+
+            logger.info(
+                "SMS provider accepted OTP message phone=%s status=%s attempt=%s",
+                masked_phone,
+                response.status_code,
+                attempt + 1,
+            )
+            return
+        except httpx.HTTPStatusError as exc:
+            status_code = exc.response.status_code
+            response_body = exc.response.text.strip()
+            if status_code < 500 or attempt >= retry_count:
+                logger.exception(
+                    "SMS provider HTTP error phone=%s status=%s attempt=%s body=%s",
                     masked_phone,
-                    response.status_code,
-                    attempt + 1,
-                )
-                return
-            except httpx.HTTPStatusError as exc:
-                status_code = exc.response.status_code
-                if status_code < 500 or attempt >= retry_count:
-                    logger.exception(
-                        "SMS provider HTTP error phone=%s status=%s attempt=%s",
-                        masked_phone,
-                        status_code,
-                        attempt + 1,
-                    )
-                    raise ValueError(f"SMS provider HTTP error: {status_code}") from exc
-
-                logger.warning(
-                    "Retrying SMS after provider HTTP %s phone=%s attempt=%s",
                     status_code,
-                    masked_phone,
                     attempt + 1,
+                    response_body[:1000],
                 )
-            except (httpx.TimeoutException, httpx.TransportError) as exc:
-                if attempt >= retry_count:
-                    logger.exception(
-                        "SMS provider request failed phone=%s attempt=%s",
-                        masked_phone,
-                        attempt + 1,
-                    )
-                    raise ValueError("SMS provider request failed or timed out") from exc
+                raise ValueError(
+                    f"SMS provider HTTP error status={status_code} body={response_body[:250]}"
+                ) from exc
 
-                logger.warning(
-                    "Retrying SMS after transport error phone=%s attempt=%s error=%s",
+            logger.warning(
+                "Retrying SMS after provider HTTP %s phone=%s attempt=%s body=%s",
+                status_code,
+                masked_phone,
+                attempt + 1,
+                response_body[:500],
+            )
+        except httpx.TimeoutException as exc:
+            if attempt >= retry_count:
+                logger.exception(
+                    "SMS provider timeout phone=%s attempt=%s timeout=%s",
                     masked_phone,
                     attempt + 1,
-                    exc,
+                    settings.SMS_TIMEOUT_SECONDS,
                 )
+                raise ValueError(
+                    f"SMS provider timed out after {settings.SMS_TIMEOUT_SECONDS}s"
+                ) from exc
+
+            logger.warning(
+                "Retrying SMS after timeout phone=%s attempt=%s timeout=%s",
+                masked_phone,
+                attempt + 1,
+                settings.SMS_TIMEOUT_SECONDS,
+            )
+        except httpx.TransportError as exc:
+            if _is_ssl_error(exc):
+                logger.exception(
+                    "SMS provider SSL error phone=%s verify_ssl=%s attempt=%s",
+                    masked_phone,
+                    settings.SMS_VERIFY_SSL,
+                    attempt + 1,
+                )
+                raise ValueError(
+                    "SMS provider SSL verification failed. Check provider certificate chain or SMS_VERIFY_SSL."
+                ) from exc
+
+            if attempt >= retry_count:
+                logger.exception(
+                    "SMS provider transport error phone=%s attempt=%s",
+                    masked_phone,
+                    attempt + 1,
+                )
+                raise ValueError(f"SMS provider transport error: {str(exc)}") from exc
+
+            logger.warning(
+                "Retrying SMS after transport error phone=%s attempt=%s error=%s",
+                masked_phone,
+                attempt + 1,
+                exc,
+            )
 
 
 async def send_sms(phone_number: str, message: str) -> None:

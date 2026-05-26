@@ -122,8 +122,10 @@ class Settings(BaseSettings):
     SMS_API_REQUEST: str = "Text"
     SMS_ROUTE: str = "ServiceImplicit"
     SMS_VERIFY_SSL: bool = True
-    SMS_TIMEOUT_SECONDS: float = 10.0
-    SMS_MAX_RETRIES: int = 1
+    SMS_HTTP_METHOD: str = "GET"
+    SMS_TIMEOUT_SECONDS: float = 20.0
+    SMS_CONNECT_TIMEOUT_SECONDS: float = 10.0
+    SMS_MAX_RETRIES: int = 2
 
     @field_validator("SMTP_USE_TLS", mode="before")
     @classmethod
@@ -138,11 +140,15 @@ class Settings(BaseSettings):
     @field_validator("SKIP_SMS", "SMS_VERIFY_SSL", mode="before")
     @classmethod
     def parse_sms_booleans(cls, value):
-        """Convert string SMS boolean settings."""
+        """Parse environment booleans such as SMS_VERIFY_SSL=true/false safely."""
         if isinstance(value, bool):
             return value
         if isinstance(value, str):
-            return value.lower() in ("true", "1", "yes", "on")
+            normalized = value.strip().lower()
+            if normalized in ("true", "1", "yes", "on"):
+                return True
+            if normalized in ("false", "0", "no", "off"):
+                return False
         return bool(value)
 
     # ------------------------------------------------------------------

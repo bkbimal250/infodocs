@@ -50,6 +50,7 @@ from core.middleware import (
     ErrorHandlerMiddleware,
     PerformanceMiddleware,
 )
+from core.utils import close_sms_client
 
 
 # =========================================================
@@ -84,6 +85,16 @@ async def lifespan(app: FastAPI):
             settings.SMTP_FROM_EMAIL or settings.SERVER_EMAIL,
             settings.SKIP_EMAIL,
         )
+        logger.info(
+            "SMS startup configuration: provider=%s method=%s verify_ssl=%s timeout=%ss connect_timeout=%ss retries=%s skip_sms=%s",
+            settings.SMS_API_URL,
+            settings.SMS_HTTP_METHOD,
+            settings.SMS_VERIFY_SSL,
+            settings.SMS_TIMEOUT_SECONDS,
+            settings.SMS_CONNECT_TIMEOUT_SECONDS,
+            settings.SMS_MAX_RETRIES,
+            settings.SKIP_SMS,
+        )
 
         yield
 
@@ -107,6 +118,7 @@ async def lifespan(app: FastAPI):
         try:
 
             await close_db_connection()
+            await close_sms_client()
 
             logger.info(
                 "Database connection closed"
