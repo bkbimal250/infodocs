@@ -105,10 +105,9 @@ const Login = () => {
     }
 
     try {
-      const credentials = identifier.includes('@')
-        ? { email: identifier, password }
-        : { username: identifier, password };
-      const response = await authApi.login(credentials);
+      const response = identifier.includes('@')
+        ? await authApi.loginWithEmail({ email: identifier, password })
+        : await authApi.login({ username: identifier, password });
 
       await finishLogin(response, 'Login failed. Please check your email or username and password.');
     } catch (err) {

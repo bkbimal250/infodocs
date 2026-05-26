@@ -54,7 +54,7 @@ const SignatureUpload = ({ value, onChange, label = 'Signature', required = fals
 
       // Call backend API to remove background with timeout
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timeout')), 25000)
+        setTimeout(() => reject(new Error('Request timeout')), 60000)
       );
       
       const apiPromise = certificateApi.removeBackground(file, 'PNG');
@@ -135,7 +135,7 @@ const SignatureUpload = ({ value, onChange, label = 'Signature', required = fals
 
       // Use base64 endpoint since we already have the image as data URL
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timeout')), 25000)
+        setTimeout(() => reject(new Error('Request timeout')), 60000)
       );
       
       const apiPromise = certificateApi.removeBackgroundFromBase64(value, 'PNG');

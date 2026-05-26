@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import ImageCrop from './ImageCrop';
 import { HiUpload, HiX, HiSparkles } from 'react-icons/hi';
 import toast from 'react-hot-toast';
+import { certificateApi } from '../../api/Certificates/certificateApi';
 
 /**
  * Image Upload Component with Crop and Optional Background Removal
@@ -64,34 +65,32 @@ const ImageUpload = ({
       setProcessing(true);
       toast.loading('Removing background...', { id: 'bg-removal' });
 
-      // Dynamically import background removal library (large ONNX Runtime)
-      // Handle both named and default exports for compatibility
-      const backgroundRemovalModule = await import('@imgly/background-removal');
-      const removeBackgroundFn = backgroundRemovalModule.removeBackground || 
-                                (backgroundRemovalModule.default && backgroundRemovalModule.default.removeBackground) ||
-                                backgroundRemovalModule.default;
-
       // Convert data URL to blob
       const response = await fetch(croppedImageUrl);
       const blob = await response.blob();
+      const file = new File([blob], `${name || 'image'}.png`, { type: 'image/png' });
 
-      // Remove background
-      const blobWithoutBg = await removeBackgroundFn(blob);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Request timeout')), 60000)
+      );
+      const result = await Promise.race([
+        certificateApi.removeBackground(file, 'PNG'),
+        timeoutPromise,
+      ]);
 
-      // Convert blob to data URL
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result;
-        onChange({ target: { name, value: base64String } });
-        setShowCrop(false);
-        setTempImageSrc(null);
-        setProcessing(false);
-        toast.success('Background removed successfully!', { id: 'bg-removal' });
-      };
-      reader.readAsDataURL(blobWithoutBg);
+      if (!result.data?.success || !result.data?.image) {
+        throw new Error('Invalid response from server');
+      }
+
+      onChange({ target: { name, value: result.data.image } });
+      setShowCrop(false);
+      setTempImageSrc(null);
+      setProcessing(false);
+      toast.success('Background removed successfully!', { id: 'bg-removal' });
     } catch (error) {
       console.error('Background removal error:', error);
-      toast.error('Failed to remove background. Using original image.', { id: 'bg-removal' });
+      const backendMessage = error.response?.data?.detail || error.message || 'Failed to remove background.';
+      toast.error(`${backendMessage} Using original image.`, { id: 'bg-removal', duration: 6000 });
       // Fallback to cropped image without background removal
       onChange({ target: { name, value: croppedImageUrl } });
       setShowCrop(false);
