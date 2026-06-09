@@ -53,6 +53,52 @@ _template_cache = {}
 _template_list_cache = None
 _cache_lock = None
 
+CERTIFICATE_MODELS = [
+    {"model": SpaTherapistCertificate, "type": "spa_therapist", "has_spa": False},
+    {"model": ManagerSalaryCertificate, "type": "manager_salary", "has_spa": True},
+    {"model": ExperienceLetterCertificate, "type": "experience_letter", "has_spa": True},
+    {"model": AppointmentLetterCertificate, "type": "appointment_letter", "has_spa": True},
+    {"model": InvoiceSpaBillCertificate, "type": "invoice_spa_bill", "has_spa": True},
+    {"model": IDCardCertificate, "type": "id_card", "has_spa": True},
+    {"model": DailySheetCertificate, "type": "daily_sheet", "has_spa": True},
+    {"model": UndertakingSheet, "type": "under_taking_sheet", "has_spa": True},
+    {"model": JobformSheet, "type": "job_form_sheet", "has_spa": True},
+    {"model": GeneratedCertificate, "type": "generated", "has_spa": False},
+]
+
+IMAGE_DATA_KEYS = {
+    "passport_size_photo",
+    "candidate_signature",
+    "candidate_photo",
+    "employee_photo",
+    "employee_signature",
+    "manager_signature",
+    "photo",
+    "signature",
+    "logo",
+}
+
+
+def sanitize_certificate_payload(payload: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    """Return a DB-safe payload with base64 image blobs removed."""
+    if not payload:
+        return {}
+
+    def sanitize_value(key: str, value: Any) -> Any:
+        if isinstance(value, dict):
+            return {k: sanitize_value(k, v) for k, v in value.items()}
+        if isinstance(value, list):
+            return [sanitize_value(key, item) for item in value]
+        if isinstance(value, str):
+            stripped = value.lstrip()
+            if stripped.startswith("data:image") or (
+                key in IMAGE_DATA_KEYS and len(stripped) > 2048
+            ):
+                return None
+        return value
+
+    return {k: sanitize_value(k, v) for k, v in payload.items()}
+
 async def _get_cache_lock():
     """Get or create cache lock for thread-safe operations"""
     global _cache_lock
@@ -923,7 +969,8 @@ async def   create_generated_certificate(
     created_by: Optional[int] = None,
     is_public: bool = False,  # Certificates are private by default - only authenticated users can access
     ip_address: Optional[str] = None,
-    user_agent: Optional[str] = None
+    user_agent: Optional[str] = None,
+    generate_pdf: bool = True
 ):
     """Create a generated certificate with tracking"""
     template = await getget_template_by_id(db, template_id)
@@ -933,7 +980,8 @@ async def   create_generated_certificate(
         raise ValidationError("Certificate template is not available for public use")
 
     CertificateModel = await get_certificate_model(template.category)
-    certificate_payload = certificate_data or {}
+    original_payload = dict(certificate_data or {})
+    certificate_payload = sanitize_certificate_payload(original_payload)
 
     spa_payload = certificate_payload.get("spa") or {}
     spa_id = certificate_payload.get("spa_id") or spa_payload.get("id")
@@ -1081,8 +1129,8 @@ async def   create_generated_certificate(
     
     # Save base64 images as files for SPA_THERAPIST category
     if template.category == CertificateCategory.SPA_THERAPIST:
-        passport_photo = certificate_payload.get("passport_size_photo")
-        signature = certificate_payload.get("candidate_signature")
+        passport_photo = original_payload.get("passport_size_photo")
+        signature = original_payload.get("candidate_signature")
         
         if passport_photo:
             photo_path = await save_base64_image(passport_photo, certificate.id, "photo")
@@ -1096,8 +1144,8 @@ async def   create_generated_certificate(
 
     # Save base64 images as files for UNDER_TAKING_SHEET and JOB_FORM_SHEET categories
     elif template.category in (CertificateCategory.UNDER_TAKING_SHEET, CertificateCategory.JOB_FORM_SHEET):
-        employee_photo = certificate_payload.get("employee_photo")
-        employee_signature = certificate_payload.get("employee_signature")
+        employee_photo = original_payload.get("employee_photo")
+        employee_signature = original_payload.get("employee_signature")
         
         if employee_photo:
             photo_path = await save_base64_image(employee_photo, certificate.id, "photo")
@@ -1111,29 +1159,25 @@ async def   create_generated_certificate(
     
     # Save base64 images as files for ID_CARD category
     elif template.category == CertificateCategory.ID_CARD:
-        candidate_photo = certificate_payload.get("candidate_photo")
+        candidate_photo = original_payload.get("candidate_photo")
         
         if candidate_photo:
             photo_path = await save_base64_image(candidate_photo, certificate.id, "id_card_photo")
             if photo_path:
                 certificate.candidate_photo = photo_path
+
+    elif template.category == CertificateCategory.APPOINTMENT_LETTER:
+        manager_signature = original_payload.get("manager_signature")
+
+        if manager_signature:
+            signature_path = await save_base64_image(
+                manager_signature,
+                certificate.id,
+                "manager_signature"
+            )
+            if signature_path:
+                certificate.manager_signature = signature_path
     
-    await db.commit()
-    await db.refresh(certificate)
-
-    # Determine display name
-    display_name_field = {
-        CertificateCategory.SPA_THERAPIST: "candidate_name",
-        CertificateCategory.EXPERIENCE_LETTER: "candidate_name",
-        CertificateCategory.APPOINTMENT_LETTER: "employee_name",
-        CertificateCategory.ID_CARD: "candidate_name",
-        CertificateCategory.UNDER_TAKING_SHEET: "employee_name",
-        CertificateCategory.JOB_FORM_SHEET: "first_name",
-    }.get(template.category, None)
-    display_name = getattr(certificate, display_name_field, name) if display_name_field else name
-
-    # Prepare template data (use file:// URLs for PDF generation)
-    # Update certificate_payload with saved image paths from certificate
     if template.category == CertificateCategory.SPA_THERAPIST:
         if certificate.passport_size_photo:
             certificate_payload["passport_size_photo"] = certificate.passport_size_photo
@@ -1147,39 +1191,43 @@ async def   create_generated_certificate(
             certificate_payload["employee_signature"] = certificate.employee_signature
     
     if template.category == CertificateCategory.ID_CARD:
-        # Use saved photo path from database if available
         if certificate.candidate_photo:
             certificate_payload["candidate_photo"] = certificate.candidate_photo
             logger.info(f"Using saved candidate_photo from database: {certificate.candidate_photo}")
-        # If still base64 in payload (shouldn't happen after save, but handle it)
-        elif certificate_payload.get("candidate_photo") and certificate_payload["candidate_photo"].startswith("data:image"):
-            # Convert base64 to file path if not already saved
-            logger.warning("Base64 candidate_photo found in payload during PDF generation, converting to file...")
-            photo_path = await save_base64_image(certificate_payload["candidate_photo"], certificate.id, "id_card_photo")
-            if photo_path:
-                certificate.candidate_photo = photo_path
-                certificate_payload["candidate_photo"] = photo_path
-                await db.commit()
-                await db.refresh(certificate)
-                logger.info(f"Converted base64 to file path: {photo_path}")
-            else:
-                logger.error("Failed to save base64 candidate_photo to file")
-    
-    data = await prepare_certificate_data(template, certificate_payload, display_name, use_http_urls=False)
 
-    # Render PDF if HTML template
-    if template.template_type == TemplateType.HTML:
-        if not template.template_html:
-            raise ValidationError("HTML template requires template_html content. Please provide HTML in the template.")
-        html_content = template.template_html
-        rendered_html = await render_html_template(html_content, data)
-        try:
-            pdf_bytes = await html_to_pdf(rendered_html)
-            certificate.certificate_pdf = await save_certificate_file(certificate.id, pdf_bytes, "pdf")
-            await db.commit()
-            await db.refresh(certificate)
-        except Exception as e:
-            logger.error(f"Error generating PDF: {e}", exc_info=True)
+    if template.category == CertificateCategory.APPOINTMENT_LETTER:
+        if certificate.manager_signature:
+            certificate_payload["manager_signature"] = certificate.manager_signature
+
+    certificate.certificate_data = certificate_payload
+    await db.commit()
+
+    # Determine display name
+    display_name_field = {
+        CertificateCategory.SPA_THERAPIST: "candidate_name",
+        CertificateCategory.EXPERIENCE_LETTER: "candidate_name",
+        CertificateCategory.APPOINTMENT_LETTER: "employee_name",
+        CertificateCategory.ID_CARD: "candidate_name",
+        CertificateCategory.UNDER_TAKING_SHEET: "employee_name",
+        CertificateCategory.JOB_FORM_SHEET: "first_name",
+    }.get(template.category, None)
+    display_name = getattr(certificate, display_name_field, name) if display_name_field else name
+
+    if generate_pdf:
+        data = await prepare_certificate_data(template, certificate_payload, display_name, use_http_urls=False)
+
+        # Render PDF if HTML template
+        if template.template_type == TemplateType.HTML:
+            if not template.template_html:
+                raise ValidationError("HTML template requires template_html content. Please provide HTML in the template.")
+            html_content = template.template_html
+            rendered_html = await render_html_template(html_content, data)
+            try:
+                pdf_bytes = await html_to_pdf(rendered_html)
+                certificate.certificate_pdf = await save_certificate_file(certificate.id, pdf_bytes, "pdf")
+                await db.commit()
+            except Exception as e:
+                logger.error(f"Error generating PDF: {e}", exc_info=True)
 
     # Track activity and create notification if user is authenticated
     if created_by:
@@ -1231,37 +1279,29 @@ async def  _generated_certificate_by_id(db: Session, certificate_id: int):
     Get a certificate by ID from any certificate table.
     🚀 Optimized: Parallelized searching across all certificate models.
     """
-    import asyncio
-    models = [
-        SpaTherapistCertificate,
-        ManagerSalaryCertificate,
-        ExperienceLetterCertificate,
-        AppointmentLetterCertificate,
-        InvoiceSpaBillCertificate,
-        IDCardCertificate,
-        DailySheetCertificate,
-        GeneratedCertificate,
-        UndertakingSheet,
-        JobformSheet
-    ]
-    
-    async def  check_model(model):
+    for config in CERTIFICATE_MODELS:
+        model = config["model"]
         try:
-            # Eager load SPA details as it's almost always needed in the frontend
-            stmt = select(model).options(joinedload(model.spa)).where(model.id == certificate_id)
-            result = await db.execute(stmt)
-            return result.scalar_one_or_none()
-        except Exception as e:
-            logger.warning(f"Error searching {model.__tablename__} for certificate {certificate_id}: {e}")
-            return None
+            logger.info("Searching %s for certificate %s", model.__name__, certificate_id)
+            stmt = select(model).where(model.id == certificate_id)
+            if config["has_spa"]:
+                stmt = stmt.options(joinedload(model.spa))
 
-    # Search all certificate tables in parallel
-    results = await asyncio.gather(*[check_model(m) for m in models])
-    
-    # Return the first one found
-    for certificate in results:
-        if certificate:
-            return certificate
+            result = await db.execute(stmt)
+            certificate = result.scalar_one_or_none()
+            if certificate:
+                setattr(certificate, "_certificate_type", config["type"])
+                logger.info("Certificate %s found in %s", certificate_id, model.__name__)
+                return certificate
+        except Exception as e:
+            logger.error(
+                "Error searching %s for certificate %s: %s",
+                getattr(model, "__tablename__", model.__name__),
+                certificate_id,
+                e,
+                exc_info=True,
+            )
+            continue
     
     return None
 

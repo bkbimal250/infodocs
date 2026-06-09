@@ -5,6 +5,7 @@ Author: Bimal Developer (Enhanced)
 """
 import os
 import re
+import asyncio
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 from io import BytesIO
@@ -13,6 +14,8 @@ from config.settings import settings
 import logging
 
 logger = logging.getLogger(__name__)
+PDF_HEADER = b"%PDF-"
+MIN_PDF_SIZE_BYTES = 128
 
 # PDF Generation Libraries Check
 WEASYPRINT_AVAILABLE = False
@@ -72,20 +75,24 @@ async def html_to_pdf(
             logger.info("Generating PDF with WeasyPrint")
 
             # FIXED: await added
-            return await _html_to_pdf_weasyprint(
+            pdf_bytes = await _html_to_pdf_weasyprint(
                 html_content,
                 output_path
             )
+            validate_pdf_bytes(pdf_bytes)
+            return pdf_bytes
 
         elif XHTML2PDF_AVAILABLE:
 
             logger.info("Generating PDF with xhtml2pdf")
 
             # FIXED: await added
-            return await _html_to_pdf_xhtml2pdf(
+            pdf_bytes = await _html_to_pdf_xhtml2pdf(
                 html_content,
                 output_path
             )
+            validate_pdf_bytes(pdf_bytes)
+            return pdf_bytes
 
         else:
 
@@ -161,12 +168,13 @@ async def _html_to_pdf_weasyprint(html_content: str, output_path: Optional[str] 
     
     try:
         html = HTML(string=html_content)
-        pdf_bytes = html.write_pdf(
-            stylesheets=[css], 
+        pdf_bytes = await asyncio.to_thread(
+            html.write_pdf,
+            stylesheets=[css],
             font_config=_FONT_CONFIG,
-            optimize_images=True,  # Reduce image size
-            jpeg_quality=75,       # Aggressive compression for <5MB target
-            optimize_size=('fonts', 'images')  # Enable full optimization
+            optimize_images=True,
+            jpeg_quality=72,
+            optimize_size=('fonts', 'images')
         )
         
         # Save to file if path provided
@@ -176,7 +184,8 @@ async def _html_to_pdf_weasyprint(html_content: str, output_path: Optional[str] 
                 f.write(pdf_bytes)
             logger.info(f"PDF saved to: {output_path}")
         
-        logger.info(f"PDF generated successfully ({len(pdf_bytes)} bytes)")
+        validate_pdf_bytes(pdf_bytes)
+        logger.info("PDF generated successfully (%s bytes)", len(pdf_bytes))
         return pdf_bytes
         
     except Exception as e:
@@ -216,7 +225,8 @@ async def _html_to_pdf_xhtml2pdf(html_content: str, output_path: Optional[str] =
                 f.write(pdf_bytes)
             logger.info(f"PDF saved to: {output_path}")
         
-        logger.info(f"PDF generated successfully ({len(pdf_bytes)} bytes)")
+        validate_pdf_bytes(pdf_bytes)
+        logger.info("PDF generated successfully (%s bytes)", len(pdf_bytes))
         return pdf_bytes
         
     except Exception as e:
@@ -483,24 +493,13 @@ async def save_base64_image(base64_data: str, certificate_id: int, image_type: s
     
     try:
         import base64
+        start_time = datetime.now()
         
         # Remove data:image prefix if present
         if ',' in base64_data:
             header, data = base64_data.split(',', 1)
-            # Extract file extension from header
-            if 'jpeg' in header or 'jpg' in header:
-                ext = 'jpg'
-            elif 'png' in header:
-                ext = 'png'
-            elif 'gif' in header:
-                ext = 'gif'
-            elif 'webp' in header:
-                ext = 'webp'
-            else:
-                ext = 'jpg'  # default
         else:
             data = base64_data
-            ext = 'jpg'  # default
         
         # Decode base64
         try:
@@ -509,9 +508,34 @@ async def save_base64_image(base64_data: str, certificate_id: int, image_type: s
             logger.warning(f"Invalid base64 data for {image_type}: {e}")
             return None
         
+        def optimize_image(raw_bytes: bytes) -> bytes:
+            from PIL import Image, ImageOps
+
+            with Image.open(BytesIO(raw_bytes)) as img:
+                img = ImageOps.exif_transpose(img)
+                has_alpha = img.mode in ("RGBA", "LA") or (
+                    img.mode == "P" and "transparency" in img.info
+                )
+                img = img.convert("RGBA" if has_alpha else "RGB")
+
+                max_size = (900, 360) if "signature" in image_type else (512, 512)
+                img.thumbnail(max_size, Image.Resampling.LANCZOS)
+
+                output = BytesIO()
+                img.save(
+                    output,
+                    format="WEBP",
+                    quality=72 if "signature" not in image_type else 78,
+                    method=6,
+                    lossless=False,
+                )
+                return output.getvalue()
+
+        image_bytes = await asyncio.to_thread(optimize_image, image_bytes)
+
         # Create unique filename
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"cert_{certificate_id}_{image_type}_{timestamp}.{ext}"
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        filename = f"cert_{certificate_id}_{image_type}_{timestamp}.webp"
         file_path = MEDIA_DIR / filename
         
         # Ensure directory exists (async if available)
@@ -528,7 +552,8 @@ async def save_base64_image(base64_data: str, certificate_id: int, image_type: s
             with open(file_path, 'wb') as f:
                 f.write(image_bytes)
         
-        logger.info(f"Image saved: {filename} ({len(image_bytes)} bytes)")
+        duration = (datetime.now() - start_time).total_seconds()
+        logger.info("[%.3fs] Upload %s (%s bytes): %s", duration, image_type, len(image_bytes), filename)
         
         # Return relative path for HTTP access (matches MEDIA_DIR structure)
         # MEDIA_DIR is settings.UPLOAD_DIR / "certificates"
@@ -558,12 +583,16 @@ async def save_certificate_file(
     """
     if not file_bytes:
         raise ValueError("File bytes cannot be empty")
+
+    if file_type.lower() == "pdf":
+        validate_pdf_bytes(file_bytes)
     
     try:
         # Create unique filename
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
         filename = f"certificate_{certificate_id}_{timestamp}.{file_type}"
         file_path = MEDIA_DIR / filename
+        temp_path = file_path.with_suffix(f"{file_path.suffix}.tmp")
         
         # Ensure directory exists (async if available)
         if AIOFILES_AVAILABLE:
@@ -573,13 +602,18 @@ async def save_certificate_file(
         
         # Write file (async if available, fallback to sync)
         if AIOFILES_AVAILABLE:
-            async with aiofiles.open(file_path, 'wb') as f:
+            async with aiofiles.open(temp_path, 'wb') as f:
                 await f.write(file_bytes)
         else:
-            with open(file_path, 'wb') as f:
+            with open(temp_path, 'wb') as f:
                 f.write(file_bytes)
+
+        temp_path.replace(file_path)
+
+        if file_type.lower() == "pdf":
+            validate_pdf_file(file_path)
         
-        logger.info(f"Certificate saved: {filename} ({len(file_bytes)} bytes)")
+        logger.info("PDF saved: %s (%s bytes)", file_path, len(file_bytes))
         
         # Return relative path
         return f"certificates/{filename}"
@@ -597,6 +631,40 @@ def get_certificate_path(
     """
 
     return Path(settings.UPLOAD_DIR) / relative_path
+
+
+def validate_pdf_bytes(pdf_bytes: bytes) -> None:
+    """Reject empty, truncated, or non-PDF responses before they are saved/served."""
+    if not pdf_bytes:
+        raise ValueError("PDF generation returned empty bytes")
+    if len(pdf_bytes) < MIN_PDF_SIZE_BYTES:
+        raise ValueError(f"PDF is too small to be valid: {len(pdf_bytes)} bytes")
+    if not pdf_bytes.startswith(PDF_HEADER):
+        preview = pdf_bytes[:32]
+        raise ValueError(f"Generated file is not a PDF. Header={preview!r}")
+    if b"%%EOF" not in pdf_bytes[-2048:]:
+        raise ValueError("Generated PDF is missing EOF marker")
+
+
+def validate_pdf_file(file_path: Path) -> int:
+    """Validate a PDF on disk and return its size in bytes."""
+    if not file_path.exists():
+        raise FileNotFoundError(f"PDF file does not exist: {file_path}")
+    size = file_path.stat().st_size
+    if size < MIN_PDF_SIZE_BYTES:
+        raise ValueError(f"PDF file is too small: {file_path} ({size} bytes)")
+
+    with open(file_path, "rb") as f:
+        header = f.read(5)
+        f.seek(max(size - 2048, 0))
+        tail = f.read()
+
+    if header != PDF_HEADER:
+        raise ValueError(f"Stored file is not a PDF: {file_path}, header={header!r}")
+    if b"%%EOF" not in tail:
+        raise ValueError(f"Stored PDF is missing EOF marker: {file_path}")
+
+    return size
 
 
 async def delete_certificate_file(

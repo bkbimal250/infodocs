@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession as Session
 from pathlib import Path
 import io
 import logging
+import time
 
 from config.database import get_db
 from config.settings import settings
@@ -41,10 +42,14 @@ from apps.certificates.services.certificate_service import (
     get_certificate_statistics,
     prepare_certificate_data,
     delete_certificate,
+    get_certificate_model,
 )
 from apps.certificates.services.pdf_generator import (
     render_html_template, 
-    html_to_pdf, 
+    html_to_pdf,
+    save_certificate_file,
+    validate_pdf_bytes,
+    validate_pdf_file,
 )
 from apps.certificates.services.background_removal import (
     remove_background_from_image,
@@ -377,8 +382,8 @@ from fastapi import BackgroundTasks
 
 async def generate_pdf_background_task(
     certificate_id: int,
-    template_html: str,
-    data: dict,
+    template_id: int,
+    category: CertificateCategory,
     db_session_factory
 ):
     """Background task to generate PDF and update database"""
@@ -388,38 +393,61 @@ async def generate_pdf_background_task(
         try:
 
             from sqlalchemy import update
-            from apps.certificates.models import GeneratedCertificate
             from apps.certificates.services.pdf_generator import (
                 save_certificate_file
             )
+
+            timings = []
+            total_start = time.perf_counter()
 
             logger.info(
                 f"Starting background PDF generation "
                 f"for certificate {certificate_id}"
             )
 
-            # Render HTML
-            rendered_html = await render_html_template(
-                template_html,
-                data
-            )
+            CertificateModel = await get_certificate_model(category)
+            certificate = await db.get(CertificateModel, certificate_id)
+            template = await getget_template_by_id(db, template_id)
+            if not certificate or not template or not template.template_html:
+                logger.error(
+                    "Background PDF generation skipped for certificate %s: missing certificate/template",
+                    certificate_id,
+                )
+                return
 
-            # FIXED
-            pdf_bytes = await html_to_pdf(
-                rendered_html
-            )
+            cert_data = certificate.certificate_data or {}
+            display_name = await get_certificate_name(certificate)
 
-            # Save file
+            start = time.perf_counter()
+            data = await prepare_certificate_data(
+                template,
+                cert_data,
+                display_name,
+                use_http_urls=False
+            )
+            timings.append(("Template data", time.perf_counter() - start))
+
+            start = time.perf_counter()
+            rendered_html = await render_html_template(template.template_html, data)
+            timings.append(("Render certificate", time.perf_counter() - start))
+
+            start = time.perf_counter()
+            pdf_bytes = await html_to_pdf(rendered_html)
+            timings.append(("Generate PDF", time.perf_counter() - start))
+
+            start = time.perf_counter()
             filename = await save_certificate_file(
                 certificate_id,
-                pdf_bytes
+                pdf_bytes,
+                "pdf"
             )
+            timings.append(("Save PDF", time.perf_counter() - start))
 
-            # Update DB
+            start = time.perf_counter()
             stmt = (
-                update(GeneratedCertificate)
+                update(CertificateModel)
                 .where(
-                    GeneratedCertificate.id == certificate_id
+                    CertificateModel.id == certificate_id
                 )
                 .values(
                     certificate_pdf=filename
@@ -428,6 +456,15 @@ async def generate_pdf_background_task(
 
             await db.execute(stmt)
             await db.commit()
+            timings.append(("Save database", time.perf_counter() - start))
+
+            for label, duration in timings:
+                logger.info("[%.3fs] %s for certificate %s", duration, label, certificate_id)
+            logger.info(
+                "Total background certificate generation for %s: %.3fs",
+                certificate_id,
+                time.perf_counter() - total_start,
+            )
 
             logger.info(
                 f"Background PDF generation complete "
@@ -461,15 +498,20 @@ async def  generate_certificate_async(
         user_agent = request.headers.get("user-agent")
         
         # 1. Create DB Record (Fast)
+        payload = dict(certificate_data.certificate_data or {})
+        if certificate_data.spa_id and not payload.get("spa_id"):
+            payload["spa_id"] = certificate_data.spa_id
+
         certificate = await create_generated_certificate(
             db=db,
             template_id=certificate_data.template_id,
             name=certificate_data.name,
-            certificate_data=certificate_data.certificate_data,
+            certificate_data=payload,
             created_by=current_user.id,
             is_public=False,
             ip_address=ip_address,
-            user_agent=user_agent
+            user_agent=user_agent,
+            generate_pdf=False
         )
 
         template = await getget_template_by_id(db, certificate.template_id)
@@ -479,46 +521,14 @@ async def  generate_certificate_async(
         if not template.template_html:
              raise HTTPException(status_code=400, detail="Template HTML missing")
 
-        # 2. Prepare Data (Fast)
-        display_name = await get_certificate_name(certificate)
-        
-        # Helper to load SPA data (similar to sync endpoint)
-        cert_data = certificate.certificate_data or {}
-        # Skip SPA fetch for therapist certificates (not needed)
-        if certificate_data.spa_id and template.category != CertificateCategory.SPA_THERAPIST:
-            from apps.forms_app.models import SPA
-            from sqlalchemy import select
-            spa_stmt = select(SPA).where(SPA.id == certificate_data.spa_id)
-            spa_result = await db.execute(spa_stmt)
-            spa_obj = spa_result.scalar_one_or_none()
-            if spa_obj:
-                if cert_data.get("spa"):
-                     cert_data["spa"]["logo"] = spa_obj.logo or cert_data["spa"].get("logo", "")
-                     cert_data["spa"]["id"] = spa_obj.id
-                     cert_data["spa"]["name"] = spa_obj.name or ""
-                     cert_data["spa"]["address"] = spa_obj.address or ""
-                     cert_data["spa"]["gst_number"] = spa_obj.gst_number or ""
-                else:
-                    cert_data["spa"] = {
-                        "id": spa_obj.id,
-                        "name": spa_obj.name or "",
-                        "address": spa_obj.address or "",
-                        "logo": spa_obj.logo or "",
-                        "gst_number": spa_obj.gst_number or "",
-                        # Add other fields as needed
-                    }
-                cert_data["spa_id"] = spa_obj.id
-
-        data = await prepare_certificate_data(template, cert_data, display_name, use_http_urls=False)
-
         # 3. Queue Background Task
         # Need session factory to create new session in background task
         from config.database import async_session
         background_tasks.add_task(
             generate_pdf_background_task, 
             certificate.id, 
-            template.template_html, 
-            data,
+            template.id,
+            template.category,
             async_session
         )
 
@@ -538,106 +548,74 @@ async def  generate_certificate_async(
 @certificates_router.post("/generate")
 async def  generate_certificate(
     certificate_data: PublicCertificateCreate,
+    background_tasks: BackgroundTasks,
     request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    """Generate a certificate and return PDF for download (Authentication required)"""
+    """Generate a certificate quickly and render the PDF in the background."""
     try:
+        total_start = time.perf_counter()
+        timings = []
         # Get IP address and user agent for activity tracking
         ip_address = request.client.host if request.client else None
         user_agent = request.headers.get("user-agent")
-        
+
+        db_start = time.perf_counter()
+        payload = dict(certificate_data.certificate_data or {})
+        if certificate_data.spa_id and not payload.get("spa_id"):
+            payload["spa_id"] = certificate_data.spa_id
+
         certificate = await create_generated_certificate(
             db=db,
             template_id=certificate_data.template_id,
             name=certificate_data.name,
-            certificate_data=certificate_data.certificate_data,
+            certificate_data=payload,
             created_by=current_user.id,
             is_public=False,  # Certificates are never public - only authenticated users can access
             ip_address=ip_address,
-            user_agent=user_agent
+            user_agent=user_agent,
+            generate_pdf=False
         )
+        timings.append(("Save database and images", time.perf_counter() - db_start))
 
         template = await getget_template_by_id(db, certificate.template_id)
         if not template:
             raise HTTPException(status_code=404, detail="Template not found")
-
-        display_name = getattr(certificate, 'therapist_name', None) \
-                       or getattr(certificate, 'employee_name', None) \
-                       or certificate_data.name
-        
-        # Load SPA data from database if spa_id is provided but spa object is missing
-        cert_data = certificate.certificate_data or {}
-        # Always load SPA from database if spa_id is provided to ensure logo is included
-        # Skip for therapist certificates (not needed)
-        if certificate_data.spa_id and template.category != CertificateCategory.SPA_THERAPIST:
-            from apps.forms_app.models import SPA
-            from sqlalchemy import select
-            spa_stmt = select(SPA).where(SPA.id == certificate_data.spa_id)
-            spa_result = await db.execute(spa_stmt)
-            spa_obj = spa_result.scalar_one_or_none()
-            if spa_obj:
-                # If spa object already exists, merge logo from database
-                # Otherwise, create full spa object from database
-                if cert_data.get("spa"):
-                    # Merge logo from database into existing spa object
-                    cert_data["spa"]["logo"] = spa_obj.logo or cert_data["spa"].get("logo", "")
-                    # Also ensure other fields are up to date from database
-                    cert_data["spa"]["id"] = spa_obj.id
-                    cert_data["spa"]["name"] = spa_obj.name or cert_data["spa"].get("name", "")
-                    cert_data["spa"]["address"] = spa_obj.address or cert_data["spa"].get("address", "")
-                    cert_data["spa"]["gst_number"] = spa_obj.gst_number or cert_data["spa"].get("gst_number", "")
-                else:
-                    # Create full spa object from database
-                    cert_data["spa"] = {
-                        "id": spa_obj.id,
-                        "name": spa_obj.name or "",
-                        "address": spa_obj.address or "",
-                        "area": spa_obj.area or "",
-                        "city": spa_obj.city or "",
-                        "state": spa_obj.state or "",
-                        "country": spa_obj.country or "",
-                        "pincode": spa_obj.pincode or "",
-                        "phone_number": spa_obj.phone_number or "",
-                        "alternate_number": spa_obj.alternate_number or "",
-                        "email": spa_obj.email or "",
-                        "website": spa_obj.website or "",
-                        "logo": spa_obj.logo or "",
-                        "gst_number": spa_obj.gst_number or "",
-                    }
-                cert_data["spa_id"] = spa_obj.id
-        
-        # For PDF generation, use file:// paths (not HTTP URLs)
-        data = await prepare_certificate_data(template, cert_data, display_name, use_http_urls=False)
 
         if template.template_type != TemplateType.HTML:
             raise HTTPException(status_code=400, detail="PDF generation not available for this template type")
 
         if not template.template_html:
             raise HTTPException(status_code=400, detail="HTML template requires template_html content. Please provide HTML in the template.")
-        
-        html_content = template.template_html
-        rendered_html = await render_html_template(html_content, data)
-        
-        # Generate PDF with detailed error logging
-        try:
-            logger.info(f"Generating PDF for certificate {certificate.id}")
-            # Run blocking PDF generation in a thread pool
-            pdf_bytes = await html_to_pdf(rendered_html)
-            logger.info(f"PDF generated successfully: {len(pdf_bytes)} bytes")
-        except Exception as pdf_error:
-            logger.error(f"PDF generation failed: {pdf_error}", exc_info=True)
-            raise HTTPException(
-                status_code=500,
-                detail=f"PDF generation failed: {str(pdf_error)}. Please check server logs and ensure WeasyPrint dependencies are installed."
-            )
 
-        return StreamingResponse(
-            io.BytesIO(pdf_bytes),
-            media_type="application/pdf",
-            headers={"Content-Disposition": f"attachment; filename=certificate_{certificate.id}.pdf"}
+        from config.database import async_session
+        queue_start = time.perf_counter()
+        background_tasks.add_task(
+            generate_pdf_background_task,
+            certificate.id,
+            template.id,
+            template.category,
+            async_session
         )
+        timings.append(("Queue PDF generation", time.perf_counter() - queue_start))
+
+        for label, duration in timings:
+            logger.info("[%.3fs] %s for certificate %s", duration, label, certificate.id)
+        logger.info(
+            "Total certificate generate response for %s: %.3fs",
+            certificate.id,
+            time.perf_counter() - total_start,
+        )
+
+        return {
+            "status": "processing",
+            "message": "Certificate generation started",
+            "certificate_id": certificate.id,
+            "pdf_url": None,
+            "status_url": f"/api/certificates/generated/{certificate.id}/status",
+            "download_url": f"/api/certificates/generated/{certificate.id}/download/pdf",
+        }
     except HTTPException:
         raise
     except ValidationError as e:
@@ -661,6 +639,63 @@ async def  list_public_certificates(
     # This endpoint now requires authentication - redirect to my-certificates for consistency
     # Or return empty list since we don't want public certificates
     return []
+
+
+@certificates_router.get("/generated/{certificate_id}/status")
+async def certificate_generation_status(
+    certificate_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Return lightweight PDF generation status for frontend polling."""
+    certificate = await get_generated_certificate_by_id(db, certificate_id)
+    if not certificate:
+        raise HTTPException(status_code=404, detail="Certificate not found")
+
+    is_admin = current_user.role in ["admin", "super_admin"]
+    is_hr = current_user.role == "hr"
+    is_manager = current_user.role == "spa_manager"
+    is_owner = getattr(certificate, "created_by", None) == current_user.id
+
+    if not (is_admin or is_hr or is_manager or is_owner):
+        raise HTTPException(status_code=403, detail="You don't have permission to access this certificate")
+
+    pdf_path = getattr(certificate, "certificate_pdf", None)
+    status_value = "processing"
+    pdf_size = None
+    pdf_ready = False
+    if pdf_path:
+        try:
+            pdf_size = validate_pdf_file(Path(settings.UPLOAD_DIR) / pdf_path)
+            status_value = "completed"
+            pdf_ready = True
+        except Exception as e:
+            logger.error(
+                "Certificate %s has invalid PDF path %s: %s",
+                certificate.id,
+                pdf_path,
+                e,
+                exc_info=True,
+            )
+            pdf_path = None
+
+    certificate_type = getattr(certificate, "_certificate_type", None)
+    if not certificate_type:
+        category = getattr(certificate, "category", None)
+        certificate_type = category.value if hasattr(category, "value") else str(category or "unknown")
+
+    pdf_url = f"/api/certificates/generated/{certificate.id}/download/pdf" if pdf_ready else None
+
+    return {
+        "id": certificate.id,
+        "certificate_id": certificate.id,
+        "certificate_type": certificate_type,
+        "status": status_value,
+        "pdf_ready": pdf_ready,
+        "pdf_url": pdf_url,
+        "pdf_size": pdf_size,
+        "download_url": pdf_url,
+    }
 
 
 async def get_certificate_name(certificate) -> str:
@@ -789,6 +824,7 @@ async def  download_certificate_pdf(
     current_user: User = Depends(get_current_active_user)
 ):
     """Download certificate as PDF - requires authentication (no public access)"""
+    total_start = time.perf_counter()
     certificate = await get_generated_certificate_by_id(db, certificate_id)
     if not certificate:
         raise HTTPException(status_code=404, detail="Certificate not found")
@@ -806,13 +842,38 @@ async def  download_certificate_pdf(
 
     if certificate.certificate_pdf:
         pdf_path = Path(settings.UPLOAD_DIR) / certificate.certificate_pdf
-        if pdf_path.exists():
-            return FileResponse(str(pdf_path), media_type="application/pdf",
-                                filename=f"certificate_{certificate_id}.pdf")
+        try:
+            pdf_size = validate_pdf_file(pdf_path)
+            logger.info(
+                "[%.3fs] PDF served: certificate=%s path=%s size=%s bytes",
+                time.perf_counter() - total_start,
+                certificate_id,
+                pdf_path,
+                pdf_size,
+            )
+            return FileResponse(
+                str(pdf_path),
+                media_type="application/pdf",
+                filename=f"certificate_{certificate_id}.pdf",
+                headers={
+                    "Content-Disposition": f'inline; filename="certificate_{certificate_id}.pdf"',
+                    "X-Content-Type-Options": "nosniff",
+                },
+            )
+        except Exception as e:
+            logger.error(
+                "Stored PDF is invalid for certificate %s at %s: %s",
+                certificate_id,
+                pdf_path,
+                e,
+                exc_info=True,
+            )
 
+    start = time.perf_counter()
     template = await getget_template_by_id(db, certificate.template_id)
     if not template:
         raise HTTPException(status_code=404, detail="Template not found")
+    logger.info("[%.3fs] Template loaded for certificate %s", time.perf_counter() - start, certificate_id)
     
     if not template.template_html:
         raise HTTPException(status_code=400, detail="HTML template requires template_html content.")
@@ -907,13 +968,40 @@ async def  download_certificate_pdf(
     
     # Get the name for this certificate type
     certificate_name = await get_certificate_name(certificate)
+    start = time.perf_counter()
     data = await prepare_certificate_data(template, cert_data, certificate_name, use_http_urls=False)
+    logger.info("[%.3fs] Template data prepared for certificate %s", time.perf_counter() - start, certificate_id)
     html_content = template.template_html
+    start = time.perf_counter()
     rendered_html = await render_html_template(html_content, data)
+    logger.info("[%.3fs] Certificate rendered for certificate %s", time.perf_counter() - start, certificate_id)
+    start = time.perf_counter()
     pdf_bytes = await html_to_pdf(rendered_html)
+    validate_pdf_bytes(pdf_bytes)
+    logger.info("[%.3fs] PDF generated for certificate %s", time.perf_counter() - start, certificate_id)
 
-    return StreamingResponse(io.BytesIO(pdf_bytes), media_type="application/pdf",
-                             headers={"Content-Disposition": f"attachment; filename=certificate_{certificate_id}.pdf"})
+    start = time.perf_counter()
+    certificate.certificate_pdf = await save_certificate_file(certificate.id, pdf_bytes, "pdf")
+    await db.commit()
+    pdf_path = Path(settings.UPLOAD_DIR) / certificate.certificate_pdf
+    pdf_size = validate_pdf_file(pdf_path)
+    logger.info("[%.3fs] PDF saved for certificate %s: %s", time.perf_counter() - start, certificate_id, pdf_path)
+    logger.info(
+        "Total PDF download generation for %s: %.3fs, size=%s bytes",
+        certificate_id,
+        time.perf_counter() - total_start,
+        pdf_size,
+    )
+
+    return FileResponse(
+        str(pdf_path),
+        media_type="application/pdf",
+        filename=f"certificate_{certificate_id}.pdf",
+        headers={
+            "Content-Disposition": f'inline; filename="certificate_{certificate_id}.pdf"',
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
 
 
 
