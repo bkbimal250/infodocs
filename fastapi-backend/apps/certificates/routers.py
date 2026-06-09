@@ -416,6 +416,10 @@ async def generate_pdf_background_task(
                 return
 
             cert_data = certificate.certificate_data or {}
+            if getattr(certificate, "passport_size_photo", None):
+                cert_data["passport_size_photo"] = certificate.passport_size_photo
+            if getattr(certificate, "candidate_signature", None):
+                cert_data["candidate_signature"] = certificate.candidate_signature
             display_name = await get_certificate_name(certificate)
 
             start = time.perf_counter()
@@ -766,6 +770,11 @@ async def convert_certificate_to_response(certificate):
         "candidate_name": candidate_name,
         "candidate_email": None,  # Not stored in most certificate types
         "spa_id": spa_id,
+        "passport_size_photo": getattr(certificate, "passport_size_photo", None),
+        "candidate_signature": getattr(certificate, "candidate_signature", None),
+        "candidate_photo": getattr(certificate, "candidate_photo", None),
+        "employee_photo": getattr(certificate, "employee_photo", None),
+        "employee_signature": getattr(certificate, "employee_signature", None),
         "certificate_pdf": certificate_pdf,
         "is_public": is_public,
         "generated_at": generated_at,
@@ -880,6 +889,11 @@ async def  download_certificate_pdf(
     
     # Load SPA data from database if spa_id exists but spa object is missing
     cert_data = certificate.certificate_data or {}
+
+    if getattr(certificate, "passport_size_photo", None):
+        cert_data["passport_size_photo"] = certificate.passport_size_photo
+    if getattr(certificate, "candidate_signature", None):
+        cert_data["candidate_signature"] = certificate.candidate_signature
     
     # For MANAGER_SALARY certificates, merge model fields into cert_data
     if hasattr(certificate, 'manager_name'):

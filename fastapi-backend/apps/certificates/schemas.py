@@ -75,6 +75,11 @@ class GeneratedCertificateResponse(BaseModel):
     first_name: Optional[str] = None    # For Job Form sheets
     last_name: Optional[str] = None     # For Job Form sheets
     customer_name: Optional[str] = None  # For Invoice/Bills
+    passport_size_photo: Optional[str] = None
+    candidate_signature: Optional[str] = None
+    candidate_photo: Optional[str] = None
+    employee_photo: Optional[str] = None
+    employee_signature: Optional[str] = None
     certificate_pdf: Optional[str] = None
     is_public: bool
     generated_at: datetime

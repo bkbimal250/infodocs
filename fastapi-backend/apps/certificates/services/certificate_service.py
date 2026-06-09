@@ -13,6 +13,7 @@ from pathlib import Path
 from sqlalchemy.ext.asyncio import AsyncSession as Session
 from sqlalchemy import select, and_, delete, func
 from sqlalchemy.orm import joinedload, selectinload, defer
+from sqlalchemy.orm.attributes import flag_modified
 
 from apps.certificates.models import (
     CertificateTemplate,
@@ -1199,7 +1200,8 @@ async def   create_generated_certificate(
         if certificate.manager_signature:
             certificate_payload["manager_signature"] = certificate.manager_signature
 
-    certificate.certificate_data = certificate_payload
+    certificate.certificate_data = dict(certificate_payload)
+    flag_modified(certificate, "certificate_data")
     await db.commit()
 
     # Determine display name
