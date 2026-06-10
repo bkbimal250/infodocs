@@ -1313,7 +1313,6 @@ async def  _public_certificates(db: Session, skip: int = 0, limit: int = 100):
     
     Optimized: Executes queries in parallel and uses database-level sorting where possible
     """
-    import asyncio
     models = [
         SpaTherapistCertificate,
         ManagerSalaryCertificate,
@@ -1327,7 +1326,6 @@ async def  _public_certificates(db: Session, skip: int = 0, limit: int = 100):
         GeneratedCertificate,
     ]
     
-    # Execute all queries in parallel for better performance
     async def  fetch_certificates(model):
         try:
             stmt = select(model).where(model.is_public.is_(True))
@@ -1337,8 +1335,9 @@ async def  _public_certificates(db: Session, skip: int = 0, limit: int = 100):
             logger.warning(f"Error fetching certificates from {model.__tablename__}: {e}")
             return []
     
-    # Execute all queries concurrently
-    results = await asyncio.gather(*[fetch_certificates(model) for model in models])
+    results = []
+    for model in models:
+        results.append(await fetch_certificates(model))
     
     # Flatten results
     all_certificates = []
@@ -1360,7 +1359,6 @@ async def  _user_certificates(db: Session, user_id: int, skip: int = 0, limit: i
     
     Optimized: Executes queries in parallel for better performance
     """
-    import asyncio
     models = [
         SpaTherapistCertificate,
         ManagerSalaryCertificate,
@@ -1374,7 +1372,6 @@ async def  _user_certificates(db: Session, user_id: int, skip: int = 0, limit: i
         GeneratedCertificate,
     ]
     
-    # Execute all queries in parallel
     async def  fetch_user_certificates(model):
         try:
             # Optimized: Added limit to avoid fetching all user certificates
@@ -1385,8 +1382,9 @@ async def  _user_certificates(db: Session, user_id: int, skip: int = 0, limit: i
             logger.warning(f"Error fetching certificates from {model.__tablename__}: {e}")
             return []
     
-    # Execute all queries concurrently
-    results = await asyncio.gather(*[fetch_user_certificates(model) for model in models])
+    results = []
+    for model in models:
+        results.append(await fetch_user_certificates(model))
     
     # Flatten results
     all_certificates = []
@@ -1414,9 +1412,6 @@ async def  _all_certificates_with_users(db: Session, skip: int = 0, limit: int =
     1. Uses selectinload for eager loading of creators (no N+1).
     2. Limits per-table fetch to (skip + limit) instead of global 10,000.
     """
-    import asyncio
-    
-    
     models = [
         SpaTherapistCertificate,
         ManagerSalaryCertificate,
@@ -1430,7 +1425,6 @@ async def  _all_certificates_with_users(db: Session, skip: int = 0, limit: int =
         GeneratedCertificate,
     ]
     
-    # Execute all queries in parallel
     async def  fetch_certificates(model):
         try:
             # Fetch only enough to potentially satisfy the pagination after sorting
@@ -1453,8 +1447,9 @@ async def  _all_certificates_with_users(db: Session, skip: int = 0, limit: int =
             logger.warning(f"Error fetching certificates from {model.__tablename__}: {e}")
             return []
     
-    # Execute all queries concurrently
-    results = await asyncio.gather(*[fetch_certificates(model) for model in models])
+    results = []
+    for model in models:
+        results.append(await fetch_certificates(model))
     
     # Flatten results
     all_certificates = []
@@ -1467,7 +1462,7 @@ async def  _all_certificates_with_users(db: Session, skip: int = 0, limit: int =
         reverse=True
     )
     
-    return all_certificates
+    return all_certificates[skip:skip + limit]
 
 
 

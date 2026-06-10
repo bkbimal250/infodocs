@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Response, Query, UploadFile, File, Form
 from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession as Session
+from sqlalchemy import inspect as sqlalchemy_inspect
 from pathlib import Path
 import io
 import logging
@@ -719,23 +720,33 @@ async def get_certificate_name(certificate) -> str:
 
 async def convert_certificate_to_response(certificate):
     """Convert any certificate model to GeneratedCertificateResponse format"""
+    def safe_getattr(obj, attr, default=None):
+        """Avoid async lazy-loads for deferred columns in list responses."""
+        try:
+            state = sqlalchemy_inspect(obj)
+            if attr in state.unloaded:
+                return default
+        except Exception:
+            pass
+        return getattr(obj, attr, default)
+
     # Get candidate name based on certificate type
     candidate_name = await get_certificate_name(certificate)
     
     # Get spa_id
-    spa_id = getattr(certificate, 'spa_id', None)
+    spa_id = safe_getattr(certificate, 'spa_id', None)
     
     # Get template_id
-    template_id = getattr(certificate, 'template_id', None) or 0
+    template_id = safe_getattr(certificate, 'template_id', None) or 0
     
     # Get certificate_pdf
-    certificate_pdf = getattr(certificate, 'certificate_pdf', None)
+    certificate_pdf = safe_getattr(certificate, 'certificate_pdf', None)
     
     # Get is_public (defaults to False for security)
-    is_public = getattr(certificate, 'is_public', False)
+    is_public = safe_getattr(certificate, 'is_public', False)
     
     # Get category from certificate model
-    category = getattr(certificate, 'category', None)
+    category = safe_getattr(certificate, 'category', None)
     if category:
         # If it's an enum, get its value
         if hasattr(category, 'value'):
@@ -743,7 +754,7 @@ async def convert_certificate_to_response(certificate):
         category = str(category)
     
     # Get generated_at as string
-    generated_at = getattr(certificate, 'generated_at', None)
+    generated_at = safe_getattr(certificate, 'generated_at', None)
     if generated_at:
         if isinstance(generated_at, datetime):
             generated_at = generated_at.isoformat()
@@ -755,13 +766,14 @@ async def convert_certificate_to_response(certificate):
     
     # Get creator info if available
     creator_info = None
-    if hasattr(certificate, 'creator') and certificate.creator:
+    creator = safe_getattr(certificate, 'creator', None)
+    if creator:
         creator_info = {
-            "id": certificate.creator.id,
-            "first_name": certificate.creator.first_name,
-            "last_name": certificate.creator.last_name,
-            "username": certificate.creator.username,
-            "email": certificate.creator.email
+            "id": creator.id,
+            "first_name": creator.first_name,
+            "last_name": creator.last_name,
+            "username": creator.username,
+            "email": creator.email
         }
     
     return {
@@ -770,11 +782,16 @@ async def convert_certificate_to_response(certificate):
         "candidate_name": candidate_name,
         "candidate_email": None,  # Not stored in most certificate types
         "spa_id": spa_id,
-        "passport_size_photo": getattr(certificate, "passport_size_photo", None),
-        "candidate_signature": getattr(certificate, "candidate_signature", None),
-        "candidate_photo": getattr(certificate, "candidate_photo", None),
-        "employee_photo": getattr(certificate, "employee_photo", None),
-        "employee_signature": getattr(certificate, "employee_signature", None),
+        "manager_name": safe_getattr(certificate, "manager_name", None),
+        "employee_name": safe_getattr(certificate, "employee_name", None),
+        "first_name": safe_getattr(certificate, "first_name", None),
+        "last_name": safe_getattr(certificate, "last_name", None),
+        "customer_name": safe_getattr(certificate, "customer_name", None),
+        "passport_size_photo": safe_getattr(certificate, "passport_size_photo", None),
+        "candidate_signature": safe_getattr(certificate, "candidate_signature", None),
+        "candidate_photo": safe_getattr(certificate, "candidate_photo", None),
+        "employee_photo": safe_getattr(certificate, "employee_photo", None),
+        "employee_signature": safe_getattr(certificate, "employee_signature", None),
         "certificate_pdf": certificate_pdf,
         "is_public": is_public,
         "generated_at": generated_at,
@@ -1143,14 +1160,8 @@ async def  _all_certificates_admin(
 ):
     """Get all certificates with user information (admin only)"""
     try:
-        # Optimized fetching with specific skip/limit
         certificates = await get_all_certificates_with_users(db, skip=skip, limit=limit)
-        
-        # Apply pagination after combining and sorting (now much faster as data is limited)
-        paginated_certificates = certificates[skip:skip + limit]
-        
-        # Pydantic will handle the conversion including creator info automatically
-        return paginated_certificates
+        return [await convert_certificate_to_response(cert) for cert in certificates]
     except Exception as e:
         logger.error(f"Error getting all certificates: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to retrieve certificates: {str(e)}")
@@ -1165,13 +1176,8 @@ async def  _all_certificates_hr(
 ):
     """Get all certificates for HR (HR can see all certificates from all users)"""
     try:
-        # Optimized fetching with specific skip/limit
         certificates = await get_all_certificates_with_users(db, skip=skip, limit=limit)
-        
-        # Apply pagination after combining and sorting
-        paginated_certificates = certificates[skip:skip + limit]
-        
-        return paginated_certificates
+        return [await convert_certificate_to_response(cert) for cert in certificates]
     except Exception as e:
         logger.error(f"Error getting HR certificates: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to retrieve certificates: {str(e)}")
