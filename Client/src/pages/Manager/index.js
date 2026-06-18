@@ -16,5 +16,3 @@ export { default as ManagerViewHiringDetails } from './Hiring/ViewHiringDetails'
 // Manager Layouts
 export { default as ManagerSidebar } from './Layouts/Sidebar';
 
-// Manager Staff Management
-export { ManagerStaffManage, AddStaffPage, EditStaffPage, ViewStaffPage } from './StaffManage';

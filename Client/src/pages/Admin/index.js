@@ -36,12 +36,3 @@ export { default as QueryTypeList } from './Query/QueryTypeList';
 
 // Admin Tutorials
 export { default as AdminTutorials } from './tutorials/Tutorials';
-
-// Admin Staff Management
-export { default as AdminStaffManage } from './StaffManage/AdminStaffManage';
-export { default as AddStaffPage } from './StaffManage/AddStaffForm';
-export { default as EditStaffPage } from './StaffManage/EditStaffForm';
-export { default as ViewStaffPage } from './StaffManage/ViewStaffDetails';
-
-// Admin API Key Management
-export { default as AdminApiKeysPage } from './Apikey';

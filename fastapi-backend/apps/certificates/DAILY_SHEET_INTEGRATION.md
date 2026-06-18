@@ -121,7 +121,7 @@ templates = await create_category_templates(
                             <th>CLIENT CONT_NO</th>
                             <th>DURATION</th>
                             <th>IN-TIME</th>
-                            <th>STAFF NAME</th>
+                            <th>NAME</th>
                             <th>CASH</th>
                             <th>CARD / GPAY</th>
                             <th>REMARK</th>

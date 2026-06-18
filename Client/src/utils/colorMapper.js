@@ -40,7 +40,6 @@ export const colorMap = {
   'text-green-800': 'text-[var(--color-success-dark)]',
   'border-green-500': 'border-[var(--color-success)]',
   'bg-green-100': 'bg-[var(--color-success-light)]',
-  'text-green-800': 'text-[var(--color-success-dark)]',
   
   // Error Colors (Red)
   'bg-red-600': 'bg-[var(--color-error)]',
@@ -52,7 +51,6 @@ export const colorMap = {
   'border-red-500': 'border-[var(--color-error)]',
   'border-red-300': 'border-[var(--color-error-light)]',
   'bg-red-50': 'bg-[var(--color-error-light)]',
-  'text-red-700': 'text-[var(--color-error-dark)]',
   
   // Warning Colors (Amber)
   'bg-yellow-600': 'bg-[var(--color-warning)]',
@@ -62,10 +60,7 @@ export const colorMap = {
   'text-amber-600': 'text-[var(--color-warning)]',
   
   // Info Colors (Blue)
-  'bg-blue-500': 'bg-[var(--color-info)]',
-  'bg-blue-600': 'bg-[var(--color-info)]',
   'text-blue-500': 'text-[var(--color-info)]',
-  'border-blue-500': 'border-[var(--color-info)]',
   
   // Gray Scale
   'bg-gray-50': 'bg-[var(--color-gray-50)]',

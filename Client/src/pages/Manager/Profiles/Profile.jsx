@@ -21,7 +21,7 @@ const ManagerProfile = () => {
 
   const loadSpas = async () => {
     try { const res = await adminApi.forms.getSpas(); setSpas(res.data || []); }
-    catch {}
+    catch { /* SPA list is optional for profile editing. */ }
   };
 
   const loadProfile = async () => {

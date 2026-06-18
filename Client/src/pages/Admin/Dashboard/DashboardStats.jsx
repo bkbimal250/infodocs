@@ -23,8 +23,6 @@ const DashboardStats = () => {
     totalForms: 0,
     totalSpas: 0,
     totalHiringForms: 0,
-    totalStaff: 0,
-    activeStaff: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -46,8 +44,6 @@ const DashboardStats = () => {
         totalForms: data.total_forms || 0, 
         totalSpas: data.total_spas || 0,
         totalHiringForms: data.total_hiring_forms || 0,
-        totalStaff: data.total_staff || 0,
-        activeStaff: data.active_staff || 0,
       });
     } catch (error) {
       console.error('Error loading stats:', error);
@@ -63,14 +59,6 @@ const DashboardStats = () => {
       subtitle: `${stats.activeUsers} active`,
       icon: HiOutlineUsers,
       color: 'blue',
-    },
-    {
-      title: 'Total Staff',
-      value: stats.totalStaff,
-      subtitle: `${stats.activeStaff} active`,
-      icon: HiOutlineUsers, // Using standard users icon for now
-      color: 'orange',
-      link: '/admin/staff',
     },
     {
       title: 'Certificates',
@@ -107,8 +95,8 @@ const DashboardStats = () => {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
-        {[...Array(6)].map((_, i) => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+      {[...Array(5)].map((_, i) => (
           <div key={i} className="bg-[var(--color-bg-primary)] rounded-lg shadow p-6 animate-pulse">
             <div className="h-4 bg-[var(--color-gray-200)] rounded w-3/4 mb-4"></div>
             <div className="h-8 bg-[var(--color-gray-200)] rounded w-1/2 mb-2"></div>
@@ -129,7 +117,7 @@ const DashboardStats = () => {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
       {statCards.map((card, index) => {
         const CardContent = (
           <div

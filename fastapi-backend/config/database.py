@@ -134,20 +134,8 @@ async def init_db():
     # Tutorials
     from apps.tutorials.models import Tutorial
 
-    # Staff
-    from apps.StaffManagement.models import (
-        Staff,
-        StaffDocument,
-        StaffEvent,
-        WorkHistory,
-        StaffVerificationLog,
-    )
-
     # Queries
     from apps.Query.models import Query, QueryType
-
-    # Integrations
-    from apps.integrations.models import IntegrationApiKey
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

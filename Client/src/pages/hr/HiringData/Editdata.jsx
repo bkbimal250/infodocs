@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { adminApi } from '../../../api/Admin/adminApi';
+import { hrApi } from '../../../api/hr/hrApi';
 
 /**
  * Edit Hiring Form Component
@@ -39,7 +39,7 @@ const EditData = ({ hiringForm, isOpen, onSuccess, onCancel }) => {
 
   const loadSpas = async () => {
     try {
-      const response = await adminApi.forms.getAllSpas();
+      const response = await hrApi.getSpas();
       setSpas(response.data || []);
     } catch (err) {
       console.error('Failed to load SPAs:', err);
@@ -73,7 +73,7 @@ const EditData = ({ hiringForm, isOpen, onSuccess, onCancel }) => {
         }
       });
 
-      await adminApi.forms.updateHiringForm(hiringForm.id, updateData);
+      await hrApi.updateHiringForm(hiringForm.id, updateData);
       setSuccess('Hiring form updated successfully!');
       
       setTimeout(() => {
@@ -150,7 +150,7 @@ const EditData = ({ hiringForm, isOpen, onSuccess, onCancel }) => {
                 <option value="">Select SPA Location</option>
                 {spas.map((spa) => (
                   <option key={spa.id} value={spa.id}>
-                    {spa.name} - {spa.city}, {spa.state}
+                    {[spa.name, spa.area, spa.city, spa.state].filter(Boolean).join(' - ')}
                   </option>
                 ))}
               </select>

@@ -11,9 +11,6 @@ import SpaSelectionField from './compoenents/SpaSelectionField';
  * 
  * > [!IMPORTANT]
  * > **Role Access Update**: Based on your feedback ("manager and users when do this"), I am adding the `user` role to the authorized list for the `/hiring-forms` route in `AppRouter.jsx`.
- * 
- * > [!WARNING]
- * > **Data Validation**: I confirmed that `staff_required` is being sent as the result of `parseInt(formData.staff_required)`, which returns `NaN` if the field is empty. This triggers a 422 error from the backend. I will add a check to ensure it's a valid number.
  */
 const role_options = [
   'Therapist',
@@ -42,7 +39,6 @@ const HiringForms = () => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     spa_id: '',
-    staff_required: '',
     for_role: '',
     description: '',
     required_experience: '',
@@ -123,19 +119,10 @@ const HiringForms = () => {
       return;
     }
 
-    // Validate staff_required
-    const staffCount = parseInt(formData.staff_required);
-    if (isNaN(staffCount) || staffCount <= 0) {
-      toast.error('Please enter a valid number for staff required');
-      setLoading(false);
-      return;
-    }
-
     try {
       const submitData = {
         ...formData,
         spa_id: parseInt(formData.spa_id),
-        staff_required: parseInt(formData.staff_required),
       };
 
       const response = await apiClient.post('/forms/hiring-forms', submitData);
@@ -145,7 +132,6 @@ const HiringForms = () => {
       // Reset form
       setFormData({
         spa_id: '',
-        staff_required: '',
         for_role: '',
         description: '',
         required_experience: '',
@@ -189,17 +175,6 @@ const HiringForms = () => {
             <h2 className="text-lg font-semibold">💼 Position Details</h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-              <div>
-                <Label required>Staff Required</Label>
-                <Input
-                  type="number"
-                  name="staff_required"
-                  value={formData.staff_required}
-                  onChange={handleInputChange}
-                  placeholder="e.g. 2"
-                />
-              </div>
 
               <div>
                 <Label required>Role</Label>

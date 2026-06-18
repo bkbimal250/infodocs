@@ -5,14 +5,12 @@ import {
   HiOutlineDocumentText,
   HiOutlineClipboardList,
   HiOutlineBriefcase,
-  HiOutlineUser,
   HiOutlineDocument,
   HiOutlineLocationMarker,
   HiOutlineBell,
   HiOutlineClock,
   HiOutlineChatAlt,
   HiOutlineVideoCamera,
-  HiOutlineKey,
 } from 'react-icons/hi';
 
 /**
@@ -36,11 +34,6 @@ const AdminSidebar = ({ user, onLinkClick }) => {
       name: 'Users',
       path: '/admin/users',
       icon: HiOutlineUsers,
-    },
-    {
-      name: 'Staff',
-      path: '/admin/staff',
-      icon: HiOutlineUser,
     },
     {
       name: 'Certificates',
@@ -82,12 +75,6 @@ const AdminSidebar = ({ user, onLinkClick }) => {
       name: 'Recent Activity',
       path: '/admin/activities',
       icon: HiOutlineClock,
-    },
-    {
-      name: 'API Keys',
-      path: '/admin/api-keys',
-      icon: HiOutlineKey,
-      superAdminOnly: true,
     },
   ];
 

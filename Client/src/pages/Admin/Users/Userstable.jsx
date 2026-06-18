@@ -36,7 +36,7 @@ const getRoleDisplay = (role) => {
     'admin': 'Administrator',
     'spa_manager': 'SPA Manager',
     'hr': 'HR Manager',
-    'user': 'Staff User'
+    'user': 'User'
   };
   return roleMap[role.toLowerCase()] || role.charAt(0).toUpperCase() + role.slice(1);
 };

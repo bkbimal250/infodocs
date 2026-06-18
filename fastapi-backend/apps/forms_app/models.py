@@ -70,7 +70,7 @@ class SPA(Base):
 
 
 
-# any one can send the hiring form to the spa
+# any one can send the hiring form to the spa, hr check required staff
 
 class Hiring_Form(Base):
     """Hiring Form Model"""
@@ -84,8 +84,6 @@ class Hiring_Form(Base):
     # Track who submitted the form
     created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
 
-# hiriing requirements posted by the spa
-    staff_required=Column(Integer, nullable=False)
     for_role = Column(String(255), nullable=False)
     description = Column(Text, nullable=False)
     required_experience = Column(String(255), nullable=False) 

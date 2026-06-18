@@ -16,6 +16,8 @@ export const CERTIFICATE_CATEGORIES = {
   INVOICE_SPA_BILL: 'invoice_spa_bill',
   ID_CARD: 'id_card',
   DAILY_SHEET: 'daily_sheet',
+  UNDER_TAKING_SHEET: 'undertaking_sheet',
+  JOB_FORM_SHEET: 'job_form_sheet',
 };
 
 export const CERTIFICATE_CATEGORY_METADATA = {
@@ -60,15 +62,14 @@ export const CERTIFICATE_CATEGORY_METADATA = {
     description: 'Daily transaction and activity sheet',
   },
   [CERTIFICATE_CATEGORIES.UNDER_TAKING_SHEET]: {
-    title: 'Under taking form',
-    icon: 'daily-sheet',
-    description: 'Under Taking Forms',
-
+    title: 'Undertaking Form',
+    icon: 'undertaking-sheet',
+    description: 'Employee undertaking and verification form',
   },
   [CERTIFICATE_CATEGORIES.JOB_FORM_SHEET]: {
-    title: '',
-    icon: 'daily-sheet',
-    description: 'Job Form Forms',
+    title: 'Job Form',
+    icon: 'job-form',
+    description: 'Employee job application form',
   }
 };
 
@@ -208,12 +209,41 @@ export const CERTIFICATE_FIELDS = {
   },
 
   [CERTIFICATE_CATEGORIES.UNDER_TAKING_SHEET]: {
-    title: "Under Taking Form",
+    title: "Undertaking Form",
     icon: "undertaking-sheet",
-    description: "Undertaking Forms of Employee",
-    requiredFields: ['spa_id'],
+    description: "Employee undertaking and verification form",
+    requiredFields: ['employee_name', 'employee_position', 'date', 'spa_id'],
     fields: [
+      { name: 'employee_name', label: 'Employee Name', type: 'text', placeholder: 'Full Name' },
+      { name: 'employee_position', label: 'Position', type: 'text', placeholder: 'Job Position' },
+      { name: 'date', label: 'Date of Undertaking', type: 'date' },
+      { name: 'employee_photo', label: 'Employee Photo', type: 'file' },
+      { name: 'employee_signature', label: 'Employee Signature', type: 'file' },
+    ]
+  },
 
+  [CERTIFICATE_CATEGORIES.JOB_FORM_SHEET]: {
+    title: "Job Form",
+    icon: "job-form",
+    description: "Employee job application form",
+    requiredFields: ['first_name', 'last_name', 'phone', 'address', 'city', 'state', 'zip_code', 'age', 'position_applied', 'date', 'spa_id'],
+    fields: [
+      { name: 'first_name', label: 'First Name', type: 'text', placeholder: 'First Name' },
+      { name: 'middle_name', label: 'Middle Name', type: 'text', placeholder: 'Middle Name' },
+      { name: 'last_name', label: 'Last Name', type: 'text', placeholder: 'Last Name' },
+      { name: 'phone', label: 'Phone Number', type: 'text', placeholder: 'Mobile Number' },
+      { name: 'alt_phone', label: 'Alternate Phone', type: 'text', placeholder: 'Alternate Number' },
+      { name: 'age', label: 'Age', type: 'text', placeholder: 'Age' },
+      { name: 'age_proof', label: 'Age Proof', type: 'text', placeholder: 'e.g. Aadhar Card' },
+      { name: 'address', label: 'Full Address', type: 'textarea', placeholder: 'Full Address' },
+      { name: 'city', label: 'City', type: 'text', placeholder: 'City' },
+      { name: 'state', label: 'State', type: 'text', placeholder: 'State' },
+      { name: 'zip_code', label: 'Zip Code', type: 'text', placeholder: 'Zip Code' },
+      { name: 'position_applied', label: 'Position Applied For', type: 'text', placeholder: 'Job Position' },
+      { name: 'date', label: 'Application Date', type: 'date' },
+      { name: 'skills', label: 'Skills & Experience', type: 'textarea', placeholder: 'Skills and experience' },
+      { name: 'employee_photo', label: 'Passport Photo', type: 'file' },
+      { name: 'employee_signature', label: 'Signature', type: 'file' },
     ]
   }
 };

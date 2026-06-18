@@ -1,10 +1,8 @@
 import { Link, useLocation } from 'react-router-dom';
 import {
   HiOutlineChartBar,
-  HiOutlineUser,
   HiOutlineDocumentText,
   HiOutlineBriefcase,
-  HiOutlineSparkles,
   HiOutlineBell,
   HiOutlineClock,
   HiOutlineUserCircle,
@@ -34,12 +32,6 @@ const ManagerSidebar = ({ onLinkClick }) => {
       path: '/manager/certificates',
       icon: HiOutlineDocumentText,
     },
-    {
-      name: 'Staff',
-      path: '/manager/staff',
-      icon: HiOutlineSparkles,
-    },
-
     {
       name: 'Hiring',
       path: '/manager/hiring',

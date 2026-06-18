@@ -138,12 +138,32 @@ const CertificatePreviewPage = () => {
       };
       
       const response = await certificateApi.generateCertificate(processedData);
+      const certificateId = response.data?.certificate_id;
+      if (!certificateId) {
+        throw new Error('Certificate ID missing from generation response');
+      }
+
+      let status = null;
+      for (let attempt = 0; attempt < 60; attempt += 1) {
+        const statusResponse = await certificateApi.getGenerationStatus(certificateId);
+        status = statusResponse.data;
+        if (status?.status === 'completed') {
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+
+      if (status?.status !== 'completed') {
+        throw new Error('PDF generation is still processing');
+      }
       
       const filename = generateCertificateFilename(
         'certificate',
         generationData.name || 'recipient'
       );
-      downloadFile(response.data, filename);
+      const pdfResponse = await certificateApi.downloadPDF(certificateId);
+      const pdfBlob = new Blob([pdfResponse.data], { type: 'application/pdf' });
+      downloadFile(pdfBlob, filename);
       
       setSuccess('PDF generated successfully!');
     } catch (err) {

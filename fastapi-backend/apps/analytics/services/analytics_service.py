@@ -10,7 +10,6 @@ from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession as Session
 
 from apps.forms_app.models import Hiring_Form, SPA
-from apps.StaffManagement.models import Staff, EmploymentStatusEnum
 from apps.users.models import User
 from apps.Query.models import Query
 from apps.certificates.models import (
@@ -34,14 +33,12 @@ class AnalyticsService:
             # 1. Base statements
             stmts = [
                 select(func.count(Hiring_Form.id)),         # 0
-                select(func.count(Staff.id)),               # 1
-                select(func.count(Staff.id)).where(Staff.employment_status == EmploymentStatusEnum.active), # 2
-                select(func.count(User.id)),                # 3
-                select(func.count(User.id)).where(User.is_active == True), # 4
-                select(func.count(Query.id)),               # 5
-                select(func.count(Query.id)).where(Query.status == "pending"), # 6
-                select(func.count(SPA.id)).where(SPA.is_active == True), # 7
-                select(func.count(CertificateTemplate.id)) # 8
+                select(func.count(User.id)),                # 1
+                select(func.count(User.id)).where(User.is_active == True), # 2
+                select(func.count(Query.id)),               # 3
+                select(func.count(Query.id)).where(Query.status == "pending"), # 4
+                select(func.count(SPA.id)).where(SPA.is_active == True), # 5
+                select(func.count(CertificateTemplate.id)) # 6
             ]
             
             # 2. Certificate models statements
@@ -64,21 +61,19 @@ class AnalyticsService:
             # Extract results
             counts = [r.scalar() for r in results]
             
-            # Certificate counts start at index 9 (8 base + 1 template)
-            total_certificates = sum(counts[9:])
+            # Certificate counts start after the base statements.
+            total_certificates = sum(counts[7:])
             
             return {
                 "total_forms": counts[0],
                 "total_hiring_forms": counts[0], # Alias for frontend consistency
-                "total_staff": counts[1],
-                "active_staff": counts[2],
-                "total_users": counts[3],
-                "active_users": counts[4],
-                "total_queries": counts[5],
-                "pending_queries": counts[6],
-                "total_spas": counts[7], # Using active spas count for "total spas" in dash if needed
-                "active_spas": counts[7],
-                "total_templates": counts[8],
+                "total_users": counts[1],
+                "active_users": counts[2],
+                "total_queries": counts[3],
+                "pending_queries": counts[4],
+                "total_spas": counts[5], # Using active spas count for "total spas" in dash if needed
+                "active_spas": counts[5],
+                "total_templates": counts[6],
                 "total_certificates": total_certificates
             }
         except Exception as e:
@@ -142,16 +137,14 @@ class AnalyticsService:
             # 1. Base statements
             base_stmts = [
                 select(func.count(Hiring_Form.id)),         # 0
-                select(func.count(Staff.id)),               # 1
-                select(func.count(Staff.id)).where(Staff.employment_status == EmploymentStatusEnum.active), # 2
-                select(func.count(User.id)),                # 3
-                select(func.count(User.id)).where(User.is_active == True), # 4
-                select(func.count(Query.id)),               # 5
-                select(func.count(Query.id)).where(Query.status == "pending"), # 6
-                select(func.count(SPA.id)).where(SPA.is_active == True), # 7
-                select(func.count(CertificateTemplate.id)), # 8
+                select(func.count(User.id)),                # 1
+                select(func.count(User.id)).where(User.is_active == True), # 2
+                select(func.count(Query.id)),               # 3
+                select(func.count(Query.id)).where(Query.status == "pending"), # 4
+                select(func.count(SPA.id)).where(SPA.is_active == True), # 5
+                select(func.count(CertificateTemplate.id)), # 6
                 # Candidate breakdown
-                select(Hiring_Form.for_role, func.count(Hiring_Form.id)).group_by(Hiring_Form.for_role) # 9
+                select(Hiring_Form.for_role, func.count(Hiring_Form.id)).group_by(Hiring_Form.for_role) # 7
             ]
             
             # 2. Certificate mappings
@@ -177,10 +170,11 @@ class AnalyticsService:
                 results.append(await db.execute(stmt))
             
             # Extract data
-            counts = [r.scalar() if i != 9 else r.all() for i, r in enumerate(results)]
+            candidate_idx = len(base_stmts) - 1
+            counts = [r.scalar() if i != candidate_idx else r.all() for i, r in enumerate(results)]
             
             # Candidate breakdown processing
-            candidate_results = counts[9]
+            candidate_results = counts[candidate_idx]
             candidate_breakdown = {row[0]: row[1] for row in candidate_results}
             
             # Certificate breakdown processing
@@ -197,15 +191,13 @@ class AnalyticsService:
                 "overall": {
                     "total_forms": counts[0],
                     "total_hiring_forms": counts[0],
-                    "total_staff": counts[1],
-                    "active_staff": counts[2],
-                    "total_users": counts[3],
-                    "active_users": counts[4],
-                    "total_queries": counts[5],
-                    "pending_queries": counts[6],
-                    "total_spas": counts[7],
-                    "active_spas": counts[7],
-                    "total_templates": counts[8],
+                    "total_users": counts[1],
+                    "active_users": counts[2],
+                    "total_queries": counts[3],
+                    "pending_queries": counts[4],
+                    "total_spas": counts[5],
+                    "active_spas": counts[5],
+                    "total_templates": counts[6],
                     "total_certificates": total_certificates
                 },
                 "candidates": {

@@ -44,7 +44,6 @@ const Header = ({ user, onLogout }) => {
     if (user.role === 'hr') {
       return [
         { path: '/hr/dashboard', label: 'Dashboard' },
-        { path: '/hr/candidates', label: 'Candidates' },
         { path: '/hr/hiring-data', label: 'Hiring Data' },
       ];
     }

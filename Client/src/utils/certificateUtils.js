@@ -295,7 +295,7 @@ export const prepareCertificateData = (category, formData, invoiceItems = []) =>
         manager_signature: formData.manager_signature || '',
       };
 
-    case CERTIFICATE_CATEGORIES.INVOICE_SPA_BILL:
+    case CERTIFICATE_CATEGORIES.INVOICE_SPA_BILL: {
       const validItems = (normalizedItems || []).filter(
         (item) => item.description && (item.rate || item.amount)
       );
@@ -311,6 +311,7 @@ export const prepareCertificateData = (category, formData, invoiceItems = []) =>
         subtotal: formData.subtotal || '₹0.00',
         amount_in_words: formData.amount_in_words || '',
       };
+    }
 
     case CERTIFICATE_CATEGORIES.ID_CARD:
       return {

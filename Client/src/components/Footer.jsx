@@ -35,11 +35,8 @@ const Footer = () => {
           {/* Brand */}
                {/* Logo + Brand */}
           <Link to="/" className="flex items-center">
-            <img
-              className="h-12 w-auto object-contain"
-              src="/infodocs.png"
-              alt="Infodocs Logo"
-            />
+            <h1 className="text-2xl font-bold text-gray-800"><a href="https://bimaldeveloper.netlify.app/" target="_blank" rel="noopener noreferrer">Bimal Developer</a></h1>
+            
           </Link>
 
           {/* Quick Links */}

@@ -55,14 +55,12 @@ export const certificateApi = {
   },
 
   /**
-   * Generate a public certificate and return PDF for download
+   * Generate a public certificate and return processing metadata
    * @param {Object} data - { template_id, name, email, certificate_data }
-   * @returns {Promise} - Returns blob for PDF download
+   * @returns {Promise} - Returns { status, certificate_id, status_url, download_url }
    */
   generateCertificate: (data) => {
-    return apiClient.post('/certificates/generate', data, {
-      responseType: 'blob',
-    });
+    return apiClient.post('/certificates/generate', data);
   },
 
   /**
@@ -72,6 +70,15 @@ export const certificateApi = {
    */
   getCertificate: (id) => {
     return apiClient.get(`/certificates/generated/${id}`);
+  },
+
+  /**
+   * Get certificate PDF generation status
+   * @param {number} id - Certificate ID
+   * @returns {Promise}
+   */
+  getGenerationStatus: (id) => {
+    return apiClient.get(`/certificates/generated/${id}/status`);
   },
 
   /**
@@ -120,4 +127,3 @@ export const certificateApi = {
     });
   },
 };
-

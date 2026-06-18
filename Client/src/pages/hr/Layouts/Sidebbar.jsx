@@ -1,7 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import {
   HiOutlineChartBar,
-  HiOutlineUser,
   HiOutlineBriefcase,
   HiOutlineDocumentText,
   HiOutlineBell,
@@ -38,11 +37,6 @@ const HrSidebar = ({ onLinkClick }) => {
       name: 'Hiring Data',
       path: '/hr/hiring-data',
       icon: HiOutlineBriefcase,
-    },
-    {
-      name: 'Staff',
-      path: '/hr/staff',
-      icon: HiOutlineUser,
     },
     {
       name: 'Queries',

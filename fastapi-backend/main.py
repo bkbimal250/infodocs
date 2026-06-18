@@ -30,9 +30,6 @@ from apps.analytics.routers import analytics_router
 from apps.notifications.routers import notifications_router
 from apps.Query.routers import query_router
 from apps.tutorials.routers import tutorials_router
-from apps.StaffManagement.routers import router as staff_router
-from apps.integration.routers import router as integration_router
-from apps.integrations.routers import router as integrations_router
 
 # =========================================================
 # CORE
@@ -436,25 +433,6 @@ app.include_router(
     prefix="/api",
     tags=["Tutorials"]
 )
-
-app.include_router(
-    staff_router,
-    prefix="/api/staff",
-    tags=["Staff Management"]
-)
-
-app.include_router(
-    integration_router,
-    prefix="/api/integration",
-    tags=["Internal Integration"]
-)
-
-app.include_router(
-    integrations_router,
-    prefix="/api/integrations",
-    tags=["Integrations"]
-)
-
 
 # =========================================================
 # ROOT

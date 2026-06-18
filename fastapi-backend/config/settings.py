@@ -27,23 +27,6 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30 * 24 * 60  # 30 days
 
-    # ------------------------------------------------------------------
-    # Internal API Integration
-    # ------------------------------------------------------------------
-    INTERNAL_API_KEYS: Union[str, List[str]] = ""
-
-    @field_validator("INTERNAL_API_KEYS", mode="before")
-    @classmethod
-    def parse_internal_api_keys(cls, value):
-        """Parse comma-separated internal integration API keys."""
-        if isinstance(value, list):
-            return [key.strip() for key in value if isinstance(key, str) and key.strip()]
-        if isinstance(value, str):
-            if not value:
-                return []
-            return [key.strip() for key in value.split(",") if key.strip()]
-        return []
-
     def DATABASE_URL(self) -> str:
         """Return SQLAlchemy MySQL connection string."""
         return (
@@ -171,8 +154,6 @@ class Settings(BaseSettings):
     AUTO_CREATE_TABLES: bool = False
     LOG_FAST_REQUESTS: bool = False
     SLOW_REQUEST_MS: int = 500
-    INTEGRATION_LAST_USED_UPDATE_SECONDS: int = 300
-
     # ------------------------------------------------------------------
     # Background Removal API (remove.bg)
     # ------------------------------------------------------------------

@@ -382,7 +382,7 @@ const Dashboard = () => {
                     Create Certificate
                   </p>
                   <p className="text-xs text-gray-500">
-                    Generate a new certificate for staff
+                    Generate a new certificate
                   </p>
                 </div>
               </div>

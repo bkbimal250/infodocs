@@ -1,6 +1,6 @@
 import { HiXCircle } from 'react-icons/hi';
 import StatusBadge from './StatusBadge';
-import { formatDate } from '../utils/queryUtils';
+import { formatDateFull } from '../utils/queryUtils';
 
 /**
  * View Query Modal Component

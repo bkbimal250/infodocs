@@ -83,12 +83,10 @@ export const hrApi = {
   /**
    * Generate a certificate
    * @param {Object} data - Certificate data { template_id, name, certificate_data, spa_id? }
-   * @returns {Promise} - Returns blob for PDF download
+   * @returns {Promise} - Returns generation status metadata
    */
   generateCertificate: (data) => {
-    return apiClient.post('/certificates/generate', data, {
-      responseType: 'blob',
-    });
+    return apiClient.post('/certificates/generate', data);
   },
 
   /**
