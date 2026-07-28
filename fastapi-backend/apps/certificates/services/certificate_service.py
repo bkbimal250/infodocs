@@ -1276,12 +1276,31 @@ async def   create_generated_certificate(
 # Generated Certificate Queries
 # -------------------------
 
-async def  _generated_certificate_by_id(db: Session, certificate_id: int):
+def _normalize_certificate_category(category: Optional[Any]) -> Optional[CertificateCategory]:
+    if category is None:
+        return None
+    if isinstance(category, CertificateCategory):
+        return category
+    try:
+        return CertificateCategory(str(category))
+    except ValueError:
+        return None
+
+
+async def  _generated_certificate_by_id(db: Session, certificate_id: int, category: Optional[Any] = None):
     """
     Get a certificate by ID from any certificate table.
     🚀 Optimized: Parallelized searching across all certificate models.
     """
-    for config in CERTIFICATE_MODELS:
+    normalized_category = _normalize_certificate_category(category)
+    model_configs = CERTIFICATE_MODELS
+    if normalized_category:
+        model = await get_certificate_model(normalized_category)
+        model_configs = [
+            config for config in CERTIFICATE_MODELS if config["model"] is model
+        ]
+
+    for config in model_configs:
         model = config["model"]
         try:
             logger.info("Searching %s for certificate %s", model.__name__, certificate_id)

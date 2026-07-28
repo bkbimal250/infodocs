@@ -617,9 +617,10 @@ async def  generate_certificate(
             "status": "processing",
             "message": "Certificate generation started",
             "certificate_id": certificate.id,
+            "certificate_type": template.category.value,
             "pdf_url": None,
-            "status_url": f"/api/certificates/generated/{certificate.id}/status",
-            "download_url": f"/api/certificates/generated/{certificate.id}/download/pdf",
+            "status_url": f"/api/certificates/generated/{certificate.id}/status?category={template.category.value}",
+            "download_url": f"/api/certificates/generated/{certificate.id}/download/pdf?category={template.category.value}",
         }
     except HTTPException:
         raise
@@ -649,11 +650,12 @@ async def  list_public_certificates(
 @certificates_router.get("/generated/{certificate_id}/status")
 async def certificate_generation_status(
     certificate_id: int,
+    category: Optional[CertificateCategory] = Query(None, description="Certificate category to disambiguate ids across certificate tables"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
     """Return lightweight PDF generation status for frontend polling."""
-    certificate = await get_generated_certificate_by_id(db, certificate_id)
+    certificate = await get_generated_certificate_by_id(db, certificate_id, category)
     if not certificate:
         raise HTTPException(status_code=404, detail="Certificate not found")
 
@@ -689,7 +691,8 @@ async def certificate_generation_status(
         category = getattr(certificate, "category", None)
         certificate_type = category.value if hasattr(category, "value") else str(category or "unknown")
 
-    pdf_url = f"/api/certificates/generated/{certificate.id}/download/pdf" if pdf_ready else None
+    category_param = f"?category={certificate_type}" if certificate_type and certificate_type != "unknown" else ""
+    pdf_url = f"/api/certificates/generated/{certificate.id}/download/pdf{category_param}" if pdf_ready else None
 
     return {
         "id": certificate.id,
@@ -820,11 +823,12 @@ async def  list_my_certificates(
 @certificates_router.get("/generated/{certificate_id}", response_model=GeneratedCertificateResponse)
 async def  _certificate(
     certificate_id: int, 
+    category: Optional[CertificateCategory] = Query(None, description="Certificate category to disambiguate ids across certificate tables"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
     """Get a single certificate - requires authentication (no public access)"""
-    certificate = await get_generated_certificate_by_id(db, certificate_id)
+    certificate = await get_generated_certificate_by_id(db, certificate_id, category)
     if not certificate:
         raise HTTPException(status_code=404, detail="Certificate not found")
     
@@ -846,12 +850,13 @@ async def  _certificate(
 @certificates_router.get("/generated/{certificate_id}/download/pdf")
 async def  download_certificate_pdf(
     certificate_id: int, 
+    category: Optional[CertificateCategory] = Query(None, description="Certificate category to disambiguate ids across certificate tables"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
     """Download certificate as PDF - requires authentication (no public access)"""
     total_start = time.perf_counter()
-    certificate = await get_generated_certificate_by_id(db, certificate_id)
+    certificate = await get_generated_certificate_by_id(db, certificate_id, category)
     if not certificate:
         raise HTTPException(status_code=404, detail="Certificate not found")
     

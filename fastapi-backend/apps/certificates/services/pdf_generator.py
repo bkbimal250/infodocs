@@ -6,6 +6,7 @@ Author: Bimal Developer (Enhanced)
 import os
 import re
 import asyncio
+import inspect
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 from io import BytesIO
@@ -22,6 +23,7 @@ WEASYPRINT_AVAILABLE = False
 XHTML2PDF_AVAILABLE = False
 PDF2IMAGE_AVAILABLE = False
 _FONT_CONFIG = None  # Global cache for WeasyPrint font configuration
+_WEASYPRINT_WRITE_PDF_PARAMS = None
 
 try:
     from weasyprint import HTML, CSS
@@ -112,7 +114,32 @@ async def html_to_pdf(
         raise RuntimeError(
             f"PDF generation error: {str(e)}"
         ) from e
-    
+
+
+def _get_supported_weasyprint_pdf_kwargs(write_pdf, kwargs: Dict[str, Any]) -> Dict[str, Any]:
+    """Keep HTML.write_pdf calls compatible across WeasyPrint versions."""
+    global _WEASYPRINT_WRITE_PDF_PARAMS
+
+    if _WEASYPRINT_WRITE_PDF_PARAMS is None:
+        try:
+            _WEASYPRINT_WRITE_PDF_PARAMS = set(inspect.signature(write_pdf).parameters)
+        except (TypeError, ValueError):
+            _WEASYPRINT_WRITE_PDF_PARAMS = set(kwargs)
+
+    supported_kwargs = {
+        key: value
+        for key, value in kwargs.items()
+        if key in _WEASYPRINT_WRITE_PDF_PARAMS
+    }
+    skipped_kwargs = sorted(set(kwargs) - set(supported_kwargs))
+    if skipped_kwargs:
+        logger.info(
+            "Skipping unsupported WeasyPrint write_pdf options: %s",
+            ", ".join(skipped_kwargs),
+        )
+
+    return supported_kwargs
+
 
 async def _html_to_pdf_weasyprint(html_content: str, output_path: Optional[str] = None) -> bytes:
     """
@@ -168,14 +195,17 @@ async def _html_to_pdf_weasyprint(html_content: str, output_path: Optional[str] 
     
     try:
         html = HTML(string=html_content)
-        pdf_bytes = await asyncio.to_thread(
+        write_pdf_kwargs = _get_supported_weasyprint_pdf_kwargs(
             html.write_pdf,
-            stylesheets=[css],
-            font_config=_FONT_CONFIG,
-            optimize_images=True,
-            jpeg_quality=72,
-            optimize_size=('fonts', 'images')
+            {
+                "stylesheets": [css],
+                "font_config": _FONT_CONFIG,
+                "optimize_images": True,
+                "jpeg_quality": 72,
+                "optimize_size": ("fonts", "images"),
+            }
         )
+        pdf_bytes = await asyncio.to_thread(html.write_pdf, **write_pdf_kwargs)
         
         # Save to file if path provided
         if output_path:
