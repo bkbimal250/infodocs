@@ -138,9 +138,13 @@ const Certificates = () => {
     ];
   }, [certificates]);
 
-  const downloadPDF = async (certificateId) => {
+  const downloadPDF = async (certificateId, category = null) => {
     try {
-      const response = await apiClient.get(`/certificates/generated/${certificateId}/download/pdf`, { responseType: 'blob' });
+      const params = category ? { category } : {};
+      const response = await apiClient.get(
+        `/certificates/generated/${certificateId}/download/pdf`,
+        { responseType: 'blob', params }
+      );
       const blob = new Blob([response.data], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');

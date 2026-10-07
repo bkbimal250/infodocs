@@ -17,6 +17,7 @@ import logging
 logger = logging.getLogger(__name__)
 PDF_HEADER = b"%PDF-"
 MIN_PDF_SIZE_BYTES = 128
+PDF_GENERATION_SEMAPHORE = asyncio.Semaphore(1)
 
 # PDF Generation Libraries Check
 WEASYPRINT_AVAILABLE = False
@@ -71,38 +72,36 @@ async def html_to_pdf(
         raise ValueError("HTML content cannot be empty")
 
     try:
+        async with PDF_GENERATION_SEMAPHORE:
+            if WEASYPRINT_AVAILABLE:
 
-        if WEASYPRINT_AVAILABLE:
+                logger.info("Generating PDF with WeasyPrint")
 
-            logger.info("Generating PDF with WeasyPrint")
+                pdf_bytes = await _html_to_pdf_weasyprint(
+                    html_content,
+                    output_path
+                )
+                validate_pdf_bytes(pdf_bytes)
+                return pdf_bytes
 
-            # FIXED: await added
-            pdf_bytes = await _html_to_pdf_weasyprint(
-                html_content,
-                output_path
-            )
-            validate_pdf_bytes(pdf_bytes)
-            return pdf_bytes
+            elif XHTML2PDF_AVAILABLE:
 
-        elif XHTML2PDF_AVAILABLE:
+                logger.info("Generating PDF with xhtml2pdf")
 
-            logger.info("Generating PDF with xhtml2pdf")
+                pdf_bytes = await _html_to_pdf_xhtml2pdf(
+                    html_content,
+                    output_path
+                )
+                validate_pdf_bytes(pdf_bytes)
+                return pdf_bytes
 
-            # FIXED: await added
-            pdf_bytes = await _html_to_pdf_xhtml2pdf(
-                html_content,
-                output_path
-            )
-            validate_pdf_bytes(pdf_bytes)
-            return pdf_bytes
+            else:
 
-        else:
-
-            raise RuntimeError(
-                "No PDF generation library available. "
-                "Install with: pip install weasyprint "
-                "OR pip install xhtml2pdf"
-            )
+                raise RuntimeError(
+                    "No PDF generation library available. "
+                    "Install with: pip install weasyprint "
+                    "OR pip install xhtml2pdf"
+                )
 
     except Exception as e:
 
@@ -152,14 +151,11 @@ async def _html_to_pdf_weasyprint(html_content: str, output_path: Optional[str] 
     """
     from weasyprint import HTML, CSS
     from weasyprint.text.fonts import FontConfiguration
-    
-    # Use global font config to avoid reloading fonts on every request (huge performance boost)
+
     global _FONT_CONFIG
     if _FONT_CONFIG is None:
         _FONT_CONFIG = FontConfiguration()
-    
-    # Enhanced CSS for professional certificates (A4 portrait)
-    # Added hyphens: none to improve performance
+
     css = CSS(string="""
         @page {
             size: A4;
@@ -192,32 +188,35 @@ async def _html_to_pdf_weasyprint(html_content: str, output_path: Optional[str] 
             }
         }
     """)
-    
+
     try:
         html = HTML(string=html_content)
-        write_pdf_kwargs = _get_supported_weasyprint_pdf_kwargs(
-            html.write_pdf,
-            {
-                "stylesheets": [css],
-                "font_config": _FONT_CONFIG,
-                "optimize_images": True,
-                "jpeg_quality": 72,
-                "optimize_size": ("fonts", "images"),
-            }
-        )
-        pdf_bytes = await asyncio.to_thread(html.write_pdf, **write_pdf_kwargs)
-        
-        # Save to file if path provided
+        try:
+            write_pdf_kwargs = _get_supported_weasyprint_pdf_kwargs(
+                html.write_pdf,
+                {
+                    "stylesheets": [css],
+                    "font_config": _FONT_CONFIG,
+                    "optimize_images": True,
+                    "jpeg_quality": 72,
+                    "optimize_size": ("fonts", "images"),
+                }
+            )
+            pdf_bytes = await asyncio.to_thread(html.write_pdf, **write_pdf_kwargs)
+        finally:
+            html = None
+            css = None
+
         if output_path:
             Path(output_path).parent.mkdir(parents=True, exist_ok=True)
             with open(output_path, 'wb') as f:
                 f.write(pdf_bytes)
             logger.info(f"PDF saved to: {output_path}")
-        
+
         validate_pdf_bytes(pdf_bytes)
         logger.info("PDF generated successfully (%s bytes)", len(pdf_bytes))
         return pdf_bytes
-        
+
     except Exception as e:
         logger.error(f"WeasyPrint error: {str(e)}")
         raise
@@ -524,25 +523,37 @@ async def save_base64_image(base64_data: str, certificate_id: int, image_type: s
     try:
         import base64
         start_time = datetime.now()
-        
-        # Remove data:image prefix if present
+
         if ',' in base64_data:
-            header, data = base64_data.split(',', 1)
+            _, data = base64_data.split(',', 1)
         else:
             data = base64_data
-        
-        # Decode base64
+
         try:
-            image_bytes = base64.b64decode(data)
+            image_bytes = base64.b64decode(data, validate=True)
         except Exception as e:
             logger.warning(f"Invalid base64 data for {image_type}: {e}")
             return None
-        
+
+        if len(image_bytes) == 0:
+            logger.warning(f"Empty image payload for {image_type}")
+            return None
+
+        if len(image_bytes) > 8 * 1024 * 1024:
+            logger.warning(f"Rejecting oversized image payload for {image_type}: {len(image_bytes)} bytes")
+            return None
+
         def optimize_image(raw_bytes: bytes) -> bytes:
             from PIL import Image, ImageOps
 
             with Image.open(BytesIO(raw_bytes)) as img:
                 img = ImageOps.exif_transpose(img)
+                width, height = img.size
+                max_width = 1600
+                max_height = 1200
+                if width > max_width or height > max_height:
+                    img.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
+
                 has_alpha = img.mode in ("RGBA", "LA") or (
                     img.mode == "P" and "transparency" in img.info
                 )
@@ -552,44 +563,42 @@ async def save_base64_image(base64_data: str, certificate_id: int, image_type: s
                 img.thumbnail(max_size, Image.Resampling.LANCZOS)
 
                 output = BytesIO()
-                img.save(
-                    output,
-                    format="WEBP",
-                    quality=72 if "signature" not in image_type else 78,
-                    method=6,
-                    lossless=False,
-                )
-                return output.getvalue()
+                try:
+                    img.save(
+                        output,
+                        format="WEBP",
+                        quality=72 if "signature" not in image_type else 78,
+                        method=6,
+                        lossless=False,
+                    )
+                    return output.getvalue()
+                finally:
+                    output.close()
 
-        image_bytes = await asyncio.to_thread(optimize_image, image_bytes)
+        optimized_bytes = await asyncio.to_thread(optimize_image, image_bytes)
+        del image_bytes
 
-        # Create unique filename
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
         filename = f"cert_{certificate_id}_{image_type}_{timestamp}.webp"
         file_path = MEDIA_DIR / filename
-        
-        # Ensure directory exists (async if available)
+
         if AIOFILES_AVAILABLE:
             await aiofiles.os.makedirs(str(file_path.parent), exist_ok=True)
         else:
             file_path.parent.mkdir(parents=True, exist_ok=True)
-        
-        # Write file (async if available, fallback to sync)
+
         if AIOFILES_AVAILABLE:
             async with aiofiles.open(file_path, 'wb') as f:
-                await f.write(image_bytes)
+                await f.write(optimized_bytes)
         else:
             with open(file_path, 'wb') as f:
-                f.write(image_bytes)
-        
+                f.write(optimized_bytes)
+
         duration = (datetime.now() - start_time).total_seconds()
-        logger.info("[%.3fs] Upload %s (%s bytes): %s", duration, image_type, len(image_bytes), filename)
-        
-        # Return relative path for HTTP access (matches MEDIA_DIR structure)
-        # MEDIA_DIR is settings.UPLOAD_DIR / "certificates"
-        # So relative path is "certificates/filename"
+        logger.info("[%.3fs] Upload %s (%s bytes): %s", duration, image_type, len(optimized_bytes), filename)
+        del optimized_bytes
         return f"certificates/{filename}"
-        
+
     except Exception as e:
         logger.error(f"Error saving base64 image: {str(e)}")
         return None

@@ -39,8 +39,8 @@ const ViewCertificates = () => {
     try {
       setDownloading(true);
       const response = format === 'pdf'
-        ? await certificateApi.downloadPDF(certificate.id)
-        : await certificateApi.downloadImage(certificate.id);
+        ? await certificateApi.downloadPDF(certificate.id, certificate.category)
+        : await certificateApi.downloadImage(certificate.id, certificate.category);
 
       // Create blob and download
       const url = window.URL.createObjectURL(new Blob([response.data]));

@@ -68,8 +68,9 @@ export const certificateApi = {
    * @param {number} id - Certificate ID
    * @returns {Promise}
    */
-  getCertificate: (id) => {
-    return apiClient.get(`/certificates/generated/${id}`);
+  getCertificate: (id, category = null) => {
+    const params = category ? { category } : {};
+    return apiClient.get(`/certificates/generated/${id}`, { params });
   },
 
   /**
@@ -77,8 +78,9 @@ export const certificateApi = {
    * @param {number} id - Certificate ID
    * @returns {Promise}
    */
-  getGenerationStatus: (id) => {
-    return apiClient.get(`/certificates/generated/${id}/status`);
+  getGenerationStatus: (id, category = null) => {
+    const params = category ? { category } : {};
+    return apiClient.get(`/certificates/generated/${id}/status`, { params });
   },
 
   /**
@@ -86,9 +88,11 @@ export const certificateApi = {
    * @param {number} certificateId - Certificate ID
    * @returns {Promise}
    */
-  downloadPDF: (certificateId) => {
+  downloadPDF: (certificateId, category = null) => {
+    const params = category ? { category } : {};
     return apiClient.get(`/certificates/generated/${certificateId}/download/pdf`, {
       responseType: 'blob',
+      params,
     });
   },
 

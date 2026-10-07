@@ -25,7 +25,27 @@ pnpm-debug.log*
 # Scratch and Test files from the AI
 scratch/
 tests/
+test/
+__tests__/
+spec/
+specs/
+**/tests/
+**/test/
+**/__tests__/
+**/spec/
+**/specs/
 test_*.py
+*_test.py
+*_tests.py
+**/test_*
+**/test.*
+**/*_test.*
+**/*_tests.*
+**/Test*
+**/*Test.*
+**/*Tests.*
+*.test.*
+*.spec.*
 check_db*.py
 bench_*.py
 

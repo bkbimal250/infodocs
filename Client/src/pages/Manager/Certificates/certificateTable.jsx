@@ -84,8 +84,11 @@ const CertificateTable = ({
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-100">
-            {paginatedCertificates.map((cert) => (
-              <tr key={cert.id} className="hover:bg-gray-50/80 transition-colors group">
+            {paginatedCertificates.map((cert) => {
+              const certificateCategory = cert.category || cert.certificate_data?.category;
+
+              return (
+              <tr key={`${certificateCategory || 'certificate'}-${cert.id}`} className="hover:bg-gray-50/80 transition-colors group">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-100 transition-colors">
@@ -95,8 +98,8 @@ const CertificateTable = ({
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getCategoryClass(cert.category || cert.certificate_data?.category)}`}>
-                    {formatCategory(cert.category || cert.certificate_data?.category)}
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getCategoryClass(certificateCategory)}`}>
+                    {formatCategory(certificateCategory)}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -118,7 +121,7 @@ const CertificateTable = ({
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <div className="flex items-center justify-end gap-2">
                     <button
-                      onClick={() => onDownloadPDF(cert.id)}
+                      onClick={() => onDownloadPDF(cert.id, certificateCategory)}
                       className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                       title="Download PDF"
                     >
@@ -136,15 +139,18 @@ const CertificateTable = ({
                   </div>
                 </td>
               </tr>
-            ))}
+            )})}
           </tbody>
         </table>
       </div>
 
       {/* Mobile View (Cards) */}
       <div className="md:hidden divide-y divide-gray-100">
-        {paginatedCertificates.map((cert) => (
-          <div key={cert.id} className="p-4 space-y-4 hover:bg-gray-50/50 transition-colors">
+        {paginatedCertificates.map((cert) => {
+          const certificateCategory = cert.category || cert.certificate_data?.category;
+
+          return (
+          <div key={`${certificateCategory || 'certificate'}-${cert.id}`} className="p-4 space-y-4 hover:bg-gray-50/50 transition-colors">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="p-1.5 bg-blue-50 text-blue-600 rounded-lg">
@@ -152,8 +158,8 @@ const CertificateTable = ({
                 </div>
                 <span className="font-bold text-gray-900">#{cert.id}</span>
               </div>
-              <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${getCategoryClass(cert.category || cert.certificate_data?.category)}`}>
-                {formatCategory(cert.category || cert.certificate_data?.category)}
+              <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${getCategoryClass(certificateCategory)}`}>
+                {formatCategory(certificateCategory)}
               </span>
             </div>
 
@@ -172,7 +178,7 @@ const CertificateTable = ({
 
             <div className="flex items-center gap-2 pt-2">
               <button
-                onClick={() => onDownloadPDF(cert.id)}
+                onClick={() => onDownloadPDF(cert.id, certificateCategory)}
                 className="flex-1 flex items-center justify-center gap-2 py-2 bg-blue-50 text-blue-600 rounded-xl text-sm font-bold active:scale-95 transition-transform"
               >
                 <HiOutlineDownload className="h-4 w-4" />
@@ -188,7 +194,7 @@ const CertificateTable = ({
               )}
             </div>
           </div>
-        ))}
+        )})}
       </div>
 
       {/* Pagination Footer */}

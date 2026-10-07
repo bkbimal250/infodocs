@@ -67,8 +67,11 @@ const CertificateTable = ({
           </thead>
 
           <tbody className="bg-[var(--color-bg-primary)] divide-y divide-gray-200">
-            {paginatedCertificates.map((certificate) => (
-              <tr key={certificate.id} className="hover:bg-[var(--color-bg-secondary)]">
+            {paginatedCertificates.map((certificate) => {
+              const certificateCategory = certificate.category || certificate.certificate_data?.category;
+
+              return (
+              <tr key={`${certificateCategory || 'certificate'}-${certificate.id}`} className="hover:bg-[var(--color-bg-secondary)]">
 
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
@@ -82,8 +85,7 @@ const CertificateTable = ({
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
                     {formatCategory(
-                      certificate.category ||
-                      certificate.certificate_data?.category ||
+                      certificateCategory ||
                       (getCategoryName ? getCategoryName(certificate) : '')
                     )}
                   </span>
@@ -115,7 +117,7 @@ const CertificateTable = ({
 
                     {/* Download */}
                     <button
-                      onClick={() => onDownloadPDF(certificate.id)}
+                      onClick={() => onDownloadPDF(certificate.id, certificateCategory)}
                       className="text-green-600 hover:text-green-900 cursor-pointer"
                       title="Download PDF"
                     >
@@ -124,7 +126,7 @@ const CertificateTable = ({
 
                     {/* Delete */}
                     <button
-                      onClick={() => onDelete(certificate.id, certificate.category)}
+                      onClick={() => onDelete(certificate.id, certificateCategory)}
                       className="text-red-600 hover:text-red-900 cursor-pointer"
                       title="Delete"
                     >
@@ -147,7 +149,7 @@ const CertificateTable = ({
                 </td>
 
               </tr>
-            ))}
+            )})}
           </tbody>
         </table>
       </div>

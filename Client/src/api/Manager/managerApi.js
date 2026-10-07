@@ -59,8 +59,9 @@ export const managerApi = {
    * @param {number} id - Certificate ID
    * @returns {Promise}
    */
-  getCertificate: (id) => {
-    return apiClient.get(`/certificates/generated/${id}`);
+  getCertificate: (id, category = null) => {
+    const params = category ? { category } : {};
+    return apiClient.get(`/certificates/generated/${id}`, { params });
   },
 
   /**
@@ -68,9 +69,11 @@ export const managerApi = {
    * @param {number} id - Certificate ID
    * @returns {Promise}
    */
-  downloadCertificatePDF: (id) => {
+  downloadCertificatePDF: (id, category = null) => {
+    const params = category ? { category } : {};
     return apiClient.get(`/certificates/generated/${id}/download/pdf`, {
-      responseType: 'blob'
+      responseType: 'blob',
+      params
     });
   },
 

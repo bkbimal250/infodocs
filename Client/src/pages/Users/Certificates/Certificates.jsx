@@ -90,11 +90,12 @@ const Certificates = () => {
     }
   };
 
-  const downloadPDF = async (certificateId) => {
+  const downloadPDF = async (certificateId, category = null) => {
     try {
+      const params = category ? { category } : {};
       const response = await apiClient.get(
         `/certificates/generated/${certificateId}/download/pdf`,
-        { responseType: 'blob' }
+        { responseType: 'blob', params }
       );
       
       if (!response.data) {
@@ -121,11 +122,12 @@ const Certificates = () => {
     }
   };
 
-  const downloadImage = async (certificateId) => {
+  const downloadImage = async (certificateId, category = null) => {
     try {
+      const params = category ? { category } : {};
       const response = await apiClient.get(
         `/certificates/generated/${certificateId}/download/image`,
-        { responseType: 'blob' }
+        { responseType: 'blob', params }
       );
       
       if (!response.data) {
@@ -152,11 +154,12 @@ const Certificates = () => {
     }
   };
 
-  const printPDF = async (certificateId) => {
+  const printPDF = async (certificateId, category = null) => {
     try {
+      const params = category ? { category } : {};
       const response = await apiClient.get(
         `/certificates/generated/${certificateId}/download/pdf`,
-        { responseType: 'blob' }
+        { responseType: 'blob', params }
       );
       const blob = new Blob([response.data], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);

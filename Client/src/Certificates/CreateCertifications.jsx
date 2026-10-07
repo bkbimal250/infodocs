@@ -395,6 +395,7 @@ const CreateCertifications = () => {
 
       const generationData = {
         template_id: selectedTemplate.id,
+        category: selectedTemplate.category || categoryKey,
         name: requestName,
         email: formData.email,
         spa_id: selectedSpaId || formData.spa_id || null,
@@ -469,8 +470,8 @@ const CreateCertifications = () => {
       }
 
       let status = null;
-      for (let attempt = 0; attempt < 60; attempt += 1) {
-        const statusResponse = await certificateApi.getGenerationStatus(certificateId);
+      for (let attempt = 0; attempt < 15; attempt += 1) {
+        const statusResponse = await certificateApi.getGenerationStatus(certificateId, selectedTemplate.category || categoryKey);
         status = statusResponse.data;
         if (status?.status === 'completed') {
           break;
@@ -478,15 +479,11 @@ const CreateCertifications = () => {
         await new Promise((resolve) => setTimeout(resolve, 1000));
       }
 
-      if (status?.status !== 'completed') {
-        throw new Error('PDF generation is still processing');
-      }
-
       const filename = generateCertificateFilename(
         selectedTemplate.name || 'certificate',
         requestName || 'recipient'
       );
-      const pdfResponse = await certificateApi.downloadPDF(certificateId);
+      const pdfResponse = await certificateApi.downloadPDF(certificateId, selectedTemplate.category || categoryKey);
       const pdfBlob = new Blob([pdfResponse.data], { type: 'application/pdf' });
       downloadFile(pdfBlob, filename);
 

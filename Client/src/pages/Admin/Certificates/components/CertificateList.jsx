@@ -55,6 +55,10 @@ const CertificateList = ({ certificates = [], loading, onRefresh }) => {
     return 'Unknown';
   };
 
+  const getCertificateRawCategory = (cert) => (
+    cert.category || cert.certificate_data?.category || null
+  );
+
   const getCategoryColor = (category) => {
     const normalized = category?.toLowerCase() || '';
     if (normalized.includes('letter')) return 'bg-blue-100 text-blue-700 border-blue-200';
@@ -127,11 +131,12 @@ const CertificateList = ({ certificates = [], loading, onRefresh }) => {
     selectedIds.size > 0 && selectedIds.size < filteredCertificates.length;
 
   // Download
-  const handleDownloadPDF = async (certificateId) => {
+  const handleDownloadPDF = async (certificateId, category = null) => {
     try {
+      const params = category ? { category } : {};
       const response = await apiClient.get(
         `/certificates/generated/${certificateId}/download/pdf`,
-        { responseType: 'blob' }
+        { responseType: 'blob', params }
       );
 
       const blob = new Blob([response.data], { type: 'application/pdf' });
@@ -329,7 +334,7 @@ const CertificateList = ({ certificates = [], loading, onRefresh }) => {
         <td className="px-6 py-4">
           <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all duration-200">
             <button
-              onClick={() => handleDownloadPDF(cert.id)}
+              onClick={() => handleDownloadPDF(cert.id, getCertificateRawCategory(cert))}
               title="Download PDF"
               className="p-2 text-emerald-600 bg-emerald-50 rounded-xl hover:bg-emerald-100 transition-all active:scale-90"
             >

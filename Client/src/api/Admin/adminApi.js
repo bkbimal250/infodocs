@@ -143,9 +143,11 @@ export const adminApi = {
      * @param {number} id - Certificate ID
      * @returns {Promise}
      */
-    downloadCertificatePDF: (id) => {
+    downloadCertificatePDF: (id, category = null) => {
+      const params = category ? { category } : {};
       return apiClient.get(`/certificates/generated/${id}/download/pdf`, {
-        responseType: 'blob'
+        responseType: 'blob',
+        params
       });
     },
 
@@ -160,10 +162,12 @@ export const adminApi = {
      * @param {number} certificateId - Certificate ID
      * @returns {Promise}
      */
-    downloadCertificate: (certificateId) => {
+    downloadCertificate: (certificateId, category = null) => {
       // Backend route: GET /api/certificates/generated/{id}/download/pdf
+      const params = category ? { category } : {};
       return apiClient.get(`/certificates/generated/${certificateId}/download/pdf`, {
         responseType: 'blob',
+        params,
       });
     },
 

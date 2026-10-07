@@ -12,6 +12,22 @@ dist
 dist-ssr
 *.local
 
+# Test files
+**/__tests__/
+**/test/
+**/tests/
+**/spec/
+**/specs/
+**/test_*
+**/test.*
+**/*_test.*
+**/*_tests.*
+**/Test*
+**/*Test.*
+**/*Tests.*
+*.test.*
+*.spec.*
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
