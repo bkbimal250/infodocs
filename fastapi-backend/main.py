@@ -337,6 +337,7 @@ async def http_exception_handler(
             ),
             "status_code": exc.status_code,
         },
+        headers=getattr(exc, "headers", None),
     )
 
 

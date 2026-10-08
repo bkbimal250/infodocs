@@ -56,7 +56,10 @@ from apps.certificates.services.background_removal import (
     remove_background_from_image,
     remove_background_from_base64,
     REMBG_AVAILABLE,
-    REMBG_ERROR
+    REMBG_ERROR,
+    RembgBusyError,
+    RembgTimeoutError,
+    RembgUnavailableError,
 )
 from core.exceptions import NotFoundError, ValidationError
 
@@ -148,6 +151,31 @@ async def  remove_background_endpoint(
             "format": output_format.upper()
         }
     
+    except RembgBusyError as e:
+        logger.warning(f"Background removal busy: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail="Background removal service is currently busy. Please retry shortly.",
+            headers={"Retry-After": "5"}
+        )
+    except RembgTimeoutError as e:
+        logger.warning(f"Background removal timed out: {e}")
+        raise HTTPException(
+            status_code=504,
+            detail="Background removal processing timed out."
+        )
+    except RembgUnavailableError as e:
+        logger.error(f"Background removal unavailable: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail="Background removal service is currently unavailable. Please try again later."
+        )
+    except ValueError as e:
+        logger.warning(f"Invalid background removal input: {e}")
+        raise HTTPException(
+            status_code=400,
+            detail=str(e)
+        )
     except ImportError as e:
         logger.error(f"rembg not available: {e}", exc_info=True)
         raise HTTPException(
@@ -200,6 +228,31 @@ async def  remove_background_base64_endpoint(
             "format": output_format.upper()
         }
     
+    except RembgBusyError as e:
+        logger.warning(f"Background removal busy: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail="Background removal service is currently busy. Please retry shortly.",
+            headers={"Retry-After": "5"}
+        )
+    except RembgTimeoutError as e:
+        logger.warning(f"Background removal timed out: {e}")
+        raise HTTPException(
+            status_code=504,
+            detail="Background removal processing timed out."
+        )
+    except RembgUnavailableError as e:
+        logger.error(f"Background removal unavailable: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail="Background removal service is currently unavailable. Please try again later."
+        )
+    except ValueError as e:
+        logger.warning(f"Invalid background removal input: {e}")
+        raise HTTPException(
+            status_code=400,
+            detail=str(e)
+        )
     except ImportError as e:
         logger.error(f"rembg not available: {e}", exc_info=True)
         raise HTTPException(

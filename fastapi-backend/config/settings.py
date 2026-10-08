@@ -162,6 +162,10 @@ class Settings(BaseSettings):
         description="API key for remove.bg background removal service"
     )
     REMOVE_BG_API_URL: str = "https://api.remove.bg/v1.0/removebg"
+    REMBG_JOB_TIMEOUT_SECONDS: float = 120.0
+    REMBG_MAX_IMAGE_BYTES: int = 10 * 1024 * 1024
+    REMBG_MAX_IMAGE_PIXELS: int = 16_000_000
+    REMBG_LOCK_FILE: str = ""
 
     # ------------------------------------------------------------------
     # ENV Settings
