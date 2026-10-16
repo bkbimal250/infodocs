@@ -1,4 +1,5 @@
 import apiClient from '../../utils/apiConfig';
+import { BACKGROUND_REMOVAL_TIMEOUT_MS } from '../../utils/backgroundRemovalUtils';
 
 /**
  * Public Certificate API endpoints
@@ -101,9 +102,10 @@ export const certificateApi = {
    * Remove background from an image file
    * @param {File} file - Image file to remove background from
    * @param {string} outputFormat - Output format (PNG, JPEG, etc.). Default is PNG.
+   * @param {Object} options - Optional request options (e.g. { signal, timeout })
    * @returns {Promise} - Returns { success, image (base64 data URL), format }
    */
-  removeBackground: (file, outputFormat = 'PNG') => {
+  removeBackground: (file, outputFormat = 'PNG', options = {}) => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('output_format', outputFormat);
@@ -111,6 +113,8 @@ export const certificateApi = {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
+      timeout: options.timeout || BACKGROUND_REMOVAL_TIMEOUT_MS,
+      signal: options.signal,
     });
   },
 
@@ -118,9 +122,10 @@ export const certificateApi = {
    * Remove background from a base64-encoded image
    * @param {string} base64Image - Base64-encoded image string (with or without data URL prefix)
    * @param {string} outputFormat - Output format (PNG, JPEG, etc.). Default is PNG.
+   * @param {Object} options - Optional request options (e.g. { signal, timeout })
    * @returns {Promise} - Returns { success, image (base64 data URL), format }
    */
-  removeBackgroundFromBase64: (base64Image, outputFormat = 'PNG') => {
+  removeBackgroundFromBase64: (base64Image, outputFormat = 'PNG', options = {}) => {
     const formData = new FormData();
     formData.append('image', base64Image);
     formData.append('output_format', outputFormat);
@@ -128,6 +133,8 @@ export const certificateApi = {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
+      timeout: options.timeout || BACKGROUND_REMOVAL_TIMEOUT_MS,
+      signal: options.signal,
     });
   },
 };

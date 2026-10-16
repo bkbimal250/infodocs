@@ -436,9 +436,8 @@ async def request_phone_login_otp(
     """Request OTP for login using phone number."""
     ip_address = request.client.host if request.client else None
     logger.info(
-        "Phone OTP request received phone=%s ip=%s user_agent=%s",
-        otp_request.phone_number,
-        ip_address,
+        "Phone OTP request received origin=%s user_agent=%s",
+        request.headers.get("origin"),
         request.headers.get("user-agent"),
     )
     try:
@@ -475,8 +474,12 @@ async def request_phone_login_otp(
         error_detail = getattr(e, 'message', str(e))
         raise HTTPException(status_code=422, detail=error_detail)
     except Exception as e:
-        logger.exception("Phone OTP request failed for user=%s", user.id)
-        raise HTTPException(status_code=500, detail=f"Failed to send OTP: {str(e)}")
+        logger.error(
+            "Phone OTP request failed user_id=%s error_type=%s",
+            user.id,
+            type(e).__name__,
+        )
+        raise HTTPException(status_code=500, detail="Failed to send OTP. Please try again.")
 
 
 @auth_router.post("/login_with_phone_otp", response_model=TokenResponseSchema)
@@ -490,10 +493,8 @@ async def login_with_phone_otp(
     """Login with phone number and OTP."""
     ip_address = request.client.host if request.client else None
     logger.info(
-        "Phone OTP verification request received phone=%s entered_otp=%s ip=%s user_agent=%s",
-        otp_data.phone_number,
-        otp_data.otp,
-        ip_address,
+        "Phone OTP verification request received origin=%s user_agent=%s",
+        request.headers.get("origin"),
         request.headers.get("user-agent"),
     )
     try:
@@ -614,8 +615,8 @@ async def request_password_reset(
             
             # Generate OTP for password reset
             try:
-                otp_code = await generate_otp(db, user.id, "password_reset")
-                logger.info(f"OTP generated successfully for user {user.id}: {otp_code}")
+                await generate_otp(db, user.id, "password_reset")
+                logger.info("Password reset OTP generated successfully for user_id=%s", user.id)
                 
                 # Log activity and create notification
                 try:

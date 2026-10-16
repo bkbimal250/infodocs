@@ -68,9 +68,9 @@ async def generate_otp(db: Session, user_id: int, purpose: str) -> str:
     logger = logging.getLogger(__name__)
 
     logger.info(
-        "Generated OTP id=%s for user=%s purpose=%s",
+        "Generated OTP id=%s for user_id=%s purpose=%s",
         otp.id,
-        user.email,
+        user.id,
         purpose,
     )
     logger.debug(
@@ -86,9 +86,8 @@ async def generate_otp(db: Session, user_id: int, purpose: str) -> str:
     # Check if email should be skipped (development mode)
     if settings.SKIP_EMAIL:
         logger.info(
-            "SKIP_EMAIL is enabled. OTP code %s generated for user %s (purpose: %s) but email not sent.",
-            code,
-            user.email,
+            "Email OTP not sent because SKIP_EMAIL is enabled user_id=%s purpose=%s",
+            user.id,
             purpose,
         )
         return code
@@ -114,8 +113,8 @@ async def generate_otp(db: Session, user_id: int, purpose: str) -> str:
         if purpose in ("login", "password_reset"):
             raise ValidationError(f"Failed to send OTP email: {error_msg}")
         logger.info(
-            "Registration/OTP generation succeeded despite email failure. OTP: %s",
-            code,
+            "Registration OTP generation succeeded despite email failure otp_id=%s",
+            otp.id,
         )
 
     return code
@@ -165,11 +164,10 @@ async def generate_phone_otp(db: Session, user_id: int, purpose: str = "phone_lo
     logger = logging.getLogger(__name__)
 
     logger.info(
-        "Generated phone OTP id=%s user=%s purpose=%s code=%s expires_at=%s invalidated_previous=%s",
+        "Generated phone OTP id=%s user_id=%s purpose=%s expires_at=%s invalidated_previous=%s",
         otp.id,
         user.id,
         purpose,
-        code,
         otp.expires_at,
         len(previous_active_otps),
     )
@@ -189,15 +187,19 @@ async def generate_phone_otp(db: Session, user_id: int, purpose: str = "phone_lo
         await send_sms(user.phone_number, message)
         logger.info("Phone OTP sent successfully to user=%s otp_id=%s", user.id, otp.id)
     except Exception as e:
-        logger.exception("Failed to send phone OTP for otp_id=%s user=%s", otp.id, user.id)
-        logger.info(
-            "Phone OTP remains unused for debugging/manual verification otp_id=%s user=%s code=%s expires_at=%s",
+        logger.error(
+            "Failed to send phone OTP otp_id=%s user_id=%s error_type=%s",
             otp.id,
             user.id,
-            code,
+            type(e).__name__,
+        )
+        logger.info(
+            "Phone OTP remains unused after delivery failure otp_id=%s user_id=%s expires_at=%s",
+            otp.id,
+            user.id,
             otp.expires_at,
         )
-        raise ValidationError(f"Failed to send phone OTP: {str(e)}")
+        raise ValidationError("Failed to send phone OTP")
 
     return code
 
@@ -350,10 +352,9 @@ async def verify_otp(db: Session, user_id: int, code: str, purpose: str) -> bool
     normalized_code = normalize_otp_code(code)
     if not normalized_code:
         logger.info(
-            "OTP verification failed: empty entered OTP user_id=%s purpose=%s raw_value=%r",
+            "OTP verification failed: empty code user_id=%s purpose=%s",
             user_id,
             purpose,
-            code,
         )
         return False
 
@@ -370,42 +371,28 @@ async def verify_otp(db: Session, user_id: int, code: str, purpose: str) -> bool
     
     if not otp:
         logger.info(
-            "OTP verification failed: no OTP rows user_id=%s purpose=%s entered_otp=%s",
+            "OTP verification failed: no OTP rows user_id=%s purpose=%s",
             user_id,
             purpose,
-            normalized_code,
         )
         return False
 
     logger.info(
-        "Recent OTP rows user_id=%s purpose=%s rows=%s",
+        "OTP verification candidates loaded user_id=%s purpose=%s count=%s",
         user_id,
         purpose,
-        [
-            {
-                "id": recent_otp.id,
-                "code": recent_otp.code,
-                "is_used": recent_otp.is_used,
-                "created_at": str(recent_otp.created_at),
-                "expires_at": str(recent_otp.expires_at),
-            }
-            for recent_otp in recent_otps
-        ],
+        len(recent_otps),
     )
 
     db_code = normalize_otp_code(otp.code)
     expires_at = _ensure_timezone_aware(otp.expires_at)
     logger.info(
-        "OTP verification debug user_id=%s purpose=%s latest_otp_id=%s entered_otp=%s db_otp=%s is_used=%s created_at=%s expires_at=%s now=%s",
+        "OTP verification checking latest code otp_id=%s user_id=%s purpose=%s is_used=%s expires_at=%s",
+        otp.id,
         user_id,
         purpose,
-        otp.id,
-        normalized_code,
-        db_code,
         otp.is_used,
-        otp.created_at,
         expires_at,
-        now,
     )
 
     if otp.is_used:
@@ -419,14 +406,11 @@ async def verify_otp(db: Session, user_id: int, code: str, purpose: str) -> bool
     
     if now > expires_at:
         logger.info(
-            "OTP verification failed: expired otp_id=%s user_id=%s purpose=%s entered_otp=%s db_otp=%s expires_at=%s now=%s",
+            "OTP verification failed: expired otp_id=%s user_id=%s purpose=%s expires_at=%s",
             otp.id,
             user_id,
             purpose,
-            normalized_code,
-            db_code,
             expires_at,
-            now,
         )
         otp.is_used = True
         await db.commit()
@@ -434,12 +418,10 @@ async def verify_otp(db: Session, user_id: int, code: str, purpose: str) -> bool
 
     if db_code != normalized_code:
         logger.info(
-            "OTP verification failed: latest OTP mismatch otp_id=%s user_id=%s purpose=%s entered_otp=%s db_otp=%s",
+            "OTP verification failed: latest OTP mismatch otp_id=%s user_id=%s purpose=%s",
             otp.id,
             user_id,
             purpose,
-            normalized_code,
-            db_code,
         )
         return False
     
@@ -454,4 +436,3 @@ async def verify_otp(db: Session, user_id: int, code: str, purpose: str) -> bool
     )
     
     return True
-

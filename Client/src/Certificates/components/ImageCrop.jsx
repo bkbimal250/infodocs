@@ -106,16 +106,7 @@ const ImageCrop = ({ imageSrc, onCropComplete, onCancel, aspectRatio = null }) =
       cropHeight * scaleY
     );
 
-    return new Promise((resolve) => {
-      canvas.toBlob((blob) => {
-        if (!blob) {
-          resolve(null);
-          return;
-        }
-        const url = URL.createObjectURL(blob);
-        resolve(url);
-      }, 'image/jpeg', 0.95);
-    });
+    return Promise.resolve(canvas.toDataURL('image/png'));
   }, []);
 
   const handleCropComplete = useCallback(async () => {

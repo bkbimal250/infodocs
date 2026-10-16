@@ -408,17 +408,26 @@ def _execute_job_with_lock(
                 if proc.is_alive():
                     proc.kill()
                     proc.join(timeout=3)
-            else:
+            elif proc.pid is not None:
                 proc.join(timeout=2)
-        except Exception as reap_err:
+        except BaseException as reap_err:
             logger.warning("Error reaping child inference process: %s", reap_err)
+        finally:
+            try:
+                parent_conn.close()
+            except Exception:
+                pass
 
-        try:
-            parent_conn.close()
-        except Exception:
-            pass
-
-        lock.release()
+            # Ensure the lock is ONLY released if the child has confirmed exit.
+            # If the child process is still alive, retain the lock to prevent another
+            # worker from spawning a second concurrent model process.
+            if not proc.is_alive():
+                lock.release()
+            else:
+                logger.critical(
+                    "Child process %s could not be confirmed terminated; retaining lock for safety",
+                    proc.pid,
+                )
 
     if timed_out:
         raise RembgTimeoutError(f"Background removal request timed out after {timeout_s:.1f} seconds")

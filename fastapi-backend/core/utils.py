@@ -293,9 +293,9 @@ def _sms_provider_accepted(response: httpx.Response) -> bool:
     )
     if any(marker in body_lower for marker in failure_markers):
         logger.error(
-            "SMS provider rejected request status=%s body=%s",
+            "SMS provider rejected request status=%s response_body_length=%s",
             response.status_code,
-            body,
+            len(body),
         )
         return False
 
@@ -312,9 +312,9 @@ def _sms_provider_accepted(response: httpx.Response) -> bool:
         return True
 
     logger.error(
-        "SMS provider returned HTTP %s with unclassified body=%s",
+        "SMS provider returned HTTP %s with unclassified response_body_length=%s",
         response.status_code,
-        body,
+        len(body),
     )
     return False
 
@@ -370,11 +370,11 @@ async def _send_sms_request(phone_number: str, message: str) -> None:
 
             response_body = response.text.strip()
             logger.info(
-                "SMS provider response phone=%s status=%s attempt=%s body=%s",
+                "SMS provider response phone=%s status=%s attempt=%s body_length=%s",
                 masked_phone,
                 response.status_code,
                 attempt + 1,
-                response_body,
+                len(response_body),
             )
             response.raise_for_status()
 
@@ -392,31 +392,32 @@ async def _send_sms_request(phone_number: str, message: str) -> None:
             status_code = exc.response.status_code
             response_body = exc.response.text.strip()
             if status_code < 500 or attempt >= retry_count:
-                logger.exception(
-                    "SMS provider HTTP error phone=%s status=%s attempt=%s body=%s",
+                logger.error(
+                    "SMS provider HTTP error phone=%s status=%s attempt=%s body_length=%s",
                     masked_phone,
                     status_code,
                     attempt + 1,
-                    response_body,
+                    len(response_body),
                 )
                 raise ValueError(
-                    f"SMS provider HTTP error status={status_code} body={response_body[:250]}"
+                    f"SMS provider HTTP error status={status_code}"
                 ) from exc
 
             logger.warning(
-                "Retrying SMS after provider HTTP %s phone=%s attempt=%s body=%s",
+                "Retrying SMS after provider HTTP %s phone=%s attempt=%s body_length=%s",
                 status_code,
                 masked_phone,
                 attempt + 1,
-                response_body,
+                len(response_body),
             )
         except httpx.TimeoutException as exc:
             if attempt >= retry_count:
-                logger.exception(
-                    "SMS provider timeout phone=%s attempt=%s timeout=%s",
+                logger.error(
+                    "SMS provider timeout phone=%s attempt=%s timeout=%s error_type=%s",
                     masked_phone,
                     attempt + 1,
                     settings.SMS_TIMEOUT_SECONDS,
+                    type(exc).__name__,
                 )
                 raise ValueError(
                     f"SMS provider timed out after {settings.SMS_TIMEOUT_SECONDS}s"
@@ -430,29 +431,31 @@ async def _send_sms_request(phone_number: str, message: str) -> None:
             )
         except httpx.TransportError as exc:
             if _is_ssl_error(exc):
-                logger.exception(
-                    "SMS provider SSL error phone=%s verify_ssl=%s attempt=%s",
+                logger.error(
+                    "SMS provider SSL error phone=%s verify_ssl=%s attempt=%s error_type=%s",
                     masked_phone,
                     settings.SMS_VERIFY_SSL,
                     attempt + 1,
+                    type(exc).__name__,
                 )
                 raise ValueError(
                     "SMS provider SSL verification failed. Check provider certificate chain or SMS_VERIFY_SSL."
                 ) from exc
 
             if attempt >= retry_count:
-                logger.exception(
-                    "SMS provider transport error phone=%s attempt=%s",
+                logger.error(
+                    "SMS provider transport error phone=%s attempt=%s error_type=%s",
                     masked_phone,
                     attempt + 1,
+                    type(exc).__name__,
                 )
-                raise ValueError(f"SMS provider transport error: {str(exc)}") from exc
+                raise ValueError("SMS provider transport error") from exc
 
             logger.warning(
-                "Retrying SMS after transport error phone=%s attempt=%s error=%s",
+                "Retrying SMS after transport error phone=%s attempt=%s error_type=%s",
                 masked_phone,
                 attempt + 1,
-                exc,
+                type(exc).__name__,
             )
 
 
@@ -481,4 +484,3 @@ async def send_sms(phone_number: str, message: str) -> None:
     except Exception as exc:
         logger.exception("Failed to send SMS to %s", _mask_phone_number(phone_number))
         raise ValueError(f"Failed to send SMS: {str(exc)}") from exc
-
