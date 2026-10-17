@@ -35,4 +35,4 @@ export { default as AddQuerytype } from './Query/AddQuerytype';
 export { default as QueryTypeList } from './Query/QueryTypeList';
 
 // Admin Tutorials
-export { default as AdminTutorials } from './tutorials/Tutorials';
+export { default as AdminTutorials } from './tutorials/tutorials';
