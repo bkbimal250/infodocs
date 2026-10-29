@@ -1,7 +1,7 @@
 RewriteEngine On
 
-# API requests must reach PHP before the React fallback, including /api itself.
-RewriteRule ^api(?:/.*)?$ api/index.php [END]
+# Do not serve the React application for API paths on Apache.
+RewriteRule ^api(?:/.*)?$ - [R=404,L]
 
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d

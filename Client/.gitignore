@@ -28,9 +28,6 @@ dist-ssr
 *.test.*
 *.spec.*
 
-*.public/api.*
-
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

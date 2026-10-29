@@ -33,9 +33,10 @@ Client/
 
 ## Setup
 
-For Hostinger File Manager hosting, follow [HOSTINGER_DEPLOYMENT.md](HOSTINGER_DEPLOYMENT.md).
-Authenticated requests use the website's `/api` route. `VITE_API_BASE_URL`
-is used only by the existing static asset helpers, not by the authenticated client.
+For VPS hosting with Nginx and FastAPI, follow
+[VPS_NGINX_DEPLOYMENT.md](VPS_NGINX_DEPLOYMENT.md). The frontend's authenticated
+requests use the website's `/api` route; Nginx must proxy it to FastAPI.
+`VITE_API_BASE_URL` is used only by the existing static asset helpers.
 
 1. Install dependencies:
 ```bash
@@ -132,4 +133,3 @@ npm run build
 ```bash
 npm run preview
 ```
-
