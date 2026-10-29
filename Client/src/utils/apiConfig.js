@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://infodocs.api.d0s369.co.in/api';
+const API_BASE_URL = '/api';
 
 if (import.meta.env.DEV) {
   console.log('API Base URL:', API_BASE_URL);
@@ -9,7 +9,7 @@ if (import.meta.env.DEV) {
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 60000,
-  withCredentials: true, // Required for sending cookies across origins
+  withCredentials: true, // Same-origin HttpOnly session through the Hostinger proxy
 });
 
 apiClient.interceptors.request.use(

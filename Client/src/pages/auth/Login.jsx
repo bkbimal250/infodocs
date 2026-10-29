@@ -80,7 +80,13 @@ const Login = () => {
       navigate(getDashboardPath(user.role), { replace: true });
     } catch (profileErr) {
       console.error('Error fetching profile after login:', profileErr);
-      setError('Verification failed. Please refresh and try again.');
+      if (profileErr.response?.status === 401) {
+        setError(
+          "Login was accepted, but your session could not be verified. Please reload and try again. If this continues, contact support."
+        );
+      } else {
+        setError('Login was accepted, but your session could not be verified. Please try again.');
+      }
     }
   };
 

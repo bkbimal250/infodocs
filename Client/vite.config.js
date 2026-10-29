@@ -15,7 +15,7 @@ export default defineConfig({
       '/api': {
         target: 'https://infodocs.api.d0s369.co.in',
         changeOrigin: true,
-        secure: false,
+        secure: true,
       },
     },
   },

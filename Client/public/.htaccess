@@ -1,0 +1,8 @@
+RewriteEngine On
+
+# API requests must reach PHP before the React fallback, including /api itself.
+RewriteRule ^api(?:/.*)?$ api/index.php [END]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.html [END]

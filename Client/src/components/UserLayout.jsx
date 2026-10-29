@@ -31,7 +31,13 @@ const UserLayout = ({ children }) => {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await authApi.logout();
+    } catch {
+      window.alert('Unable to sign out. Please check your connection and try again.');
+      return;
+    }
     localStorage.removeItem('user');
     setUser(null);
     navigate('/login');

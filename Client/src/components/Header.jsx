@@ -13,6 +13,7 @@ const Header = ({ user, onLogout }) => {
   const handleLogout = () => {
     if (onLogout) {
       onLogout();
+      return;
     }
     navigate('/login');
   };
